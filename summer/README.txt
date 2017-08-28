@@ -1,17 +1,14 @@
 
  SUMMER LANGUAGE:
 
-
  To compile type:
    make
 
-
- To test the Summer Language(WINDOWS), type:
+To test in Windows, type:
    summer.exe test.s
 
- To test the Summer Language(LINUX), type:
+ To test in Linux, type:
    ./summer test.s
-
 
  BETA.
 

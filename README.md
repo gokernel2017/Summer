@@ -8,6 +8,8 @@ TANKS TO:
   02 - Fabrice Bellard: www.bellard.org
 ----------------------------------------------
 
+This use my JIT library ( asm32 ).
+
 BETA.
 
 BY: Francisco - gokernel@hotmail.com

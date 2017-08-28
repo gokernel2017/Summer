@@ -1,5 +1,4 @@
-# Summer
-Summer Language
+# Summer Language
 
 TANKS TO:
 ----------------------------------------------

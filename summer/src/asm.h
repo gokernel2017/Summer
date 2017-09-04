@@ -14,8 +14,7 @@
 // FILE:
 //   asm.h
 //
-// START DATE:
-//   23/08/2017 - 11:45
+// START DATE: 23/08/2017 - 11:45
 //
 // BY Francisco - gokernel@hotmail.com
 //
@@ -25,9 +24,10 @@
 #define _ASM_H_
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdarg.h>
+#include <ctype.h>    // isdigit()
 #ifdef WIN32
     #include <windows.h>
 #endif
@@ -97,14 +97,23 @@ struct ASM_jump {
 };
 
 //-------------------------------------------------------------------
+//-------------------------  GLOBAL VARIABLE  -----------------------
+//-------------------------------------------------------------------
+//
+extern int erro;
+
+//-------------------------------------------------------------------
 //-------------------------  ASM PUBLIC API  ------------------------
 //-------------------------------------------------------------------
 //
 extern ASM  * asm_new             (unsigned long size);
 extern void   asm_free            (ASM *a);
 extern void   asm_reset           (ASM *a);
-extern void   asm_set_executable  (void *ptr, unsigned long len);
+extern int    asm_set_executable  (void *ptr, unsigned long len);
 extern void   asm_label           (ASM *a, char *name); // create a label
+//
+extern void   asm_Erro            (char *s);
+extern char * asm_ErroGet         (void);
 
 //--------------------------------
 // gen / emit:
@@ -123,6 +132,7 @@ extern void   asm_jmp             (ASM *a, char *name); // jump to label
 extern void   asm_jg              (ASM *a, char *name);
 
 extern void   asm_call            (ASM *a, void *func);
+extern void   asm_sub_esp         (ASM *a, char c);
 
 #ifdef __cplusplus
 }

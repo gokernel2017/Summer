@@ -23,6 +23,12 @@
 //
 #include "asm.h"
 
+#define STR_ERRO_SIZE   1024
+
+// global:
+int erro;
+
+static char strErro[STR_ERRO_SIZE];
 static void asm_change_jump (ASM *a);
 
 ASM *asm_new (unsigned long size) {
@@ -96,13 +102,16 @@ void asm_reset (ASM *a) {
 // Set executable: a->code
 //
 //-------------------------------------------------------------------
-void asm_set_executable (void *ptr, unsigned long len) {
+int asm_set_executable (void *ptr, unsigned long len) {
+
+    if (asm_ErroGet()) return 1;
+
 #ifdef WIN32
     unsigned long old_protect;
 
     if (!VirtualProtect(ptr, len, PAGE_EXECUTE_READWRITE, &old_protect)) {
-        printf ("ERROR: asm_set_executable() ... NOT FOUND - VirtualProtect()\n");
-        exit (-1);
+        asm_Erro ("ERROR: asm_set_executable() ... NOT FOUND - VirtualProtect()\n");
+        return 1; // erro
     }
 #endif
 
@@ -114,10 +123,12 @@ void asm_set_executable (void *ptr, unsigned long len) {
     end = (unsigned long)ptr + len;
     end = (end + PageSize - 1) & ~(PageSize - 1);
     if (mprotect((void *)start, end - start, PROT_READ | PROT_WRITE | PROT_EXEC) == -1) {
-        printf ("ERROR: asm_set_executable() ... NOT FOUND - mprotec()\n");
-        exit (-1);
+        asm_Erro ("ERROR: asm_set_executable() ... NOT FOUND - mprotec()\n");
+        return 1; // erro
     }
 #endif
+
+    return 0; // no erro
 }
 void asm_label (ASM *a, char *name) {
     if (name) {
@@ -144,6 +155,19 @@ void asm_label (ASM *a, char *name) {
         }
     }
 }
+
+void asm_Erro (char *s) {
+    erro = 1;
+    if ((strlen(strErro) + strlen(s)) < STR_ERRO_SIZE)
+        strcat (strErro, s);
+}
+char *asm_ErroGet (void) {
+    if (strErro[0])
+        return strErro;
+    else
+        return NULL;
+}
+
 //-------------------------------------------------------------------
 //--------------------------  GEN / EMIT  ---------------------------
 //-------------------------------------------------------------------
@@ -180,6 +204,10 @@ void asm_end (ASM *a) {
     a->p[0] = 0xc9; // c9 : leave
     a->p[1] = 0xc3; // c3 : ret
     a->p += 2;
+    if ((a->p - a->code) > a->size) {
+        asm_Erro ("ASM ERRO: code > size\n");
+        return;
+    }
     asm_change_jump (a);
 }
 void asm_get_addr (ASM *a, void *ptr) {
@@ -325,4 +353,7 @@ void asm_call (ASM *a, void *func) {
     //
     g(a,0xb8); asm_get_addr(a, func);
     g2(a,0xff,0xd0);
+}
+void asm_sub_esp (ASM *a, char c) {
+    g3(a,0x83,0xec,(char)c); // 83 ec     08   sub  $0x8,%esp
 }

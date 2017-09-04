@@ -1,14 +1,21 @@
 
  SUMMER LANGUAGE:
 
- To compile type:
-   make
+ To compile with( JIT ) type:
+   make -f Makefile_JIT clean
+   make -f Makefile_JIT
 
-To test in Windows, type:
+ To compile with( VM ) type:
+   make -f Makefile_VM clean
+   make -f Makefile_VM
+
+
+ To test the Summer Language(WINDOWS), type:
    summer.exe test.s
 
- To test in Linux, type:
+ To test the Summer Language(LINUX), type:
    ./summer test.s
+
 
  BETA.
 

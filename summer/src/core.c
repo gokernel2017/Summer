@@ -45,11 +45,14 @@ static char
     func_name [100]
     ;
 
+extern void g4 (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3, UCHAR c4);
+
 //-------------------------------------------------------------------
 //######################  PRIVATE PROTOTYPES  #######################
 //-------------------------------------------------------------------
 //
 static void word_int    (ASM *a);
+static void print_i     (int i);
 //
 static void expression  (ASM *a);
 static void expr0       (ASM *a);
@@ -66,10 +69,10 @@ ASM *core_Init (unsigned long size) {
 
 // for debug !
 #ifdef USE_JIT
-    printf ("Core_Init JIT 32\n");
+    printf ("Core_Init JIT 32\n\n");
 #endif
 #ifdef USE_VM
-    printf ("Core_Init VM(Virtual Machine)\n");
+    printf ("Core_Init VM(Virtual Machine)\n\n");
 #endif
         if ((a            = asm_new (ASM_DEFAULT_SIZE))==NULL) return NULL;
         if ((asm_function = asm_new (ASM_DEFAULT_SIZE))==NULL) return NULL;
@@ -78,6 +81,8 @@ ASM *core_Init (unsigned long size) {
         #ifdef USE_JIT
         asm_set_executable (asm_include->code, ASM_DEFAULT_SIZE - 2);
         #endif
+
+        CreateVarLong ("i", 0);
 
         if (erro)
       return NULL;
@@ -103,16 +108,102 @@ static int stmt (ASM *a) {
     return 1;
 }
 static void expression (ASM *a) {
+    char buf[100];
+
+    if (tok==TOK_NUMBER) {
+        expr0(a);
+
+        #ifdef USE_JIT
+        //-----------------------------------
+        // push argument 1:
+        //-----------------------------------
+        //
+        asm_popl_var(a, &Gvar[0].value.l); // Copia o TOPO DA PILHA ( %ESP ) para a variavel
+        // c7 44 24   04   dc 05 00 00 	  movl    $0x5dc,0x4(%esp)
+        g4(a,0xc7,0x44,0x24,(char)0);
+        *(long*)a->p = -1;
+        a->p += sizeof(long);
+        asm_call(a, print_i);
+        #endif
+        #ifdef USE_VM
+        sprintf (buf, "EXPRESSION: ");
+        vme_prints (a, strlen(buf), buf);
+        vme_popvar (a, 0);
+        vme_printvar (a, 0);
+        vme_printc (a, 10); // new line
+        #endif
+  return;
+    }
+
     if (tok==TOK_ID) {
         int i;
-        char temp[100], var_name[100], buf[100];
+        char _token_[100], var_name[100];
+        char *_str_ = str;   // save string
+        int _tok_ = tok; // save tok
 
-        strcpy (temp, token); // save token
-        strcpy (var_name, token);
+        strcpy (_token_, token); // save token
 
         if ((i=VarFind(token))!=-1) {
 
             tok=lex();
+
+            // EXPRESSION: a * b + c * d;
+            if (tok == '*' || tok == '/' ||  tok == '+' || tok == '-') {
+                // restore
+                str = _str_;
+                tok = _tok_;
+                strcpy (token, _token_);
+
+                expr0(a);
+
+                #ifdef USE_JIT
+                //-----------------------------------
+                // push argument 1:
+                //-----------------------------------
+                //
+                asm_popl_var(a, &Gvar[0].value.l); // Copia o TOPO DA PILHA ( %ESP ) para a variavel
+                // c7 44 24   04   dc 05 00 00 	  movl    $0x5dc,0x4(%esp)
+                g4(a,0xc7,0x44,0x24,(char)0);
+                *(long*)a->p = -1;
+                a->p += sizeof(long);
+                asm_call(a, print_i);
+                #endif
+                #ifdef USE_VM
+                sprintf (buf, "EXPRESSION: ");
+                vme_prints (a, strlen(buf), buf);
+                vme_popvar (a, 0);
+                vme_printvar (a, 0);
+                vme_printc (a, 10); // new line
+                #endif
+            return;
+            }
+
+            // or a expressin:
+            // a * b + c * d;
+            //expr0(a);
+
+            // display variable value:
+            if (tok==';') {
+            #ifdef USE_JIT
+            //-----------------------------------
+            // push argument 1:
+            //-----------------------------------
+            //
+            // c7 44 24   04   dc 05 00 00 	  movl    $0x5dc,0x4(%esp)
+            g4(a,0xc7,0x44,0x24,(char)0);
+            *(long*)a->p = i;
+            a->p += sizeof(long);
+            asm_call(a, print_i);
+            #endif
+            #ifdef USE_VM
+            sprintf (buf, "%s: ", Gvar[i].name);
+            vme_prints (a, strlen(buf), buf);
+            vme_printvar (a, i);
+            vme_printc (a, 10); // new line
+            #endif
+            return;
+            }
+
 
             if (tok==TOK_PLUS_PLUS) {
                 #ifdef USE_JIT
@@ -139,15 +230,14 @@ static void expression (ASM *a) {
                 #ifdef USE_VM
                 vme_popvar (a, i);
                 #endif
+            return;
             }
 
         } else { //: if ((i=VarFind(token))!=-1)
-            sprintf (buf, "ERRO LINE(%d) - Ilegal identifier '%s'", line, temp);
+            sprintf (buf, "ERRO LINE(%d) - Ilegal identifier '%s'", line, _token_);
             asm_Erro (buf);
         }
-
     } else {
-        char buf[100];
         sprintf (buf, "EXPR ERRO LINE(%d) - Ilegar Word (%s)\n", line, token);
         asm_Erro (buf);
     }
@@ -252,8 +342,10 @@ int core_Parse (ASM *a, char *text) {
     str = text;
     line = 1;
 
-    #ifdef USE_JIT
+    asm_ErroReset();
     asm_reset (a);
+
+    #ifdef USE_JIT
     asm_begin (a);
     asm_sub_esp (a, 100); //: 100 / 4 ==: MAXIMO DE 25 PARAMETROS, VARIAVEL LOCAL
     #endif
@@ -375,8 +467,17 @@ int VarFind (char *name) {
     }
     return -1;
 }
+void print_i (int i) {
+    if (i == -1) {
+        printf ("EXPRESSION: %ld\n", Gvar[0].value.l);
+    } else {
+        printf ("%s: %ld\n", Gvar[i].name, Gvar[i].value.l);
+    }
+}
+
 #endif
 
+/*
 void display_var (void) {
     TVar *v = Gvar;
     while (v->name) {
@@ -384,3 +485,4 @@ void display_var (void) {
         v++;
     }
 }
+*/

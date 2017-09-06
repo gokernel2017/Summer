@@ -173,7 +173,7 @@ case OP_PRINTC:
     continue;
 
 case OP_HALT:
-    printf ("\nOpcode HALT - (sp - stack): %d\n", (sp - stack));
+//    printf ("\nOpcode HALT - (sp - stack): %d\n", (sp - stack));
     return;
     }//: switch (code[vm->ip++])
 
@@ -383,6 +383,35 @@ int VarFind (char *name) {
     return -1;
 }
 
+void asm_reset (ASM *vm) {
+
+    vm->p = vm->code;
+
+    // reset ASM_label:
+    while (vm->label != NULL) {
+        ASM_label *temp = vm->label->next;
+        if (vm->label->name)
+            free (vm->label->name);
+        free (vm->label);
+        vm->label = temp;
+    }
+    // reset ASM_jump:
+    while (vm->jump != NULL) {
+        ASM_jump *temp = vm->jump->next;
+        if (vm->jump->name)
+            free(vm->jump->name);
+        free (vm->jump);
+        vm->jump = temp;
+    }
+
+//    if (vm->label == NULL) printf ("vm_reset LABEL == Null\n");
+//    if (vm->jump == NULL)  printf ("vm_reset JUMP  == Null\n");
+
+    vm->label = NULL;
+    vm->jump  = NULL;
+    vm->ip = 0;
+}
+
 void asm_Erro (char *s) {
     erro = 1;
     if ((strlen(strErro) + strlen(s)) < STR_ERRO_SIZE)
@@ -393,4 +422,8 @@ char *asm_ErroGet (void) {
         return strErro;
     else
         return NULL;
+}
+void asm_ErroReset (void) {
+    erro = 0;
+    strErro[0] = 0;
 }

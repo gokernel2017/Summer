@@ -176,7 +176,9 @@ extern void vme_cmpl        (ASM *vm);
 extern void vme_jmp         (ASM *vm, char *name);
 extern void vme_jg          (ASM *vm, char *name);
 
+extern void asm_reset       (ASM *vm);
 extern void asm_Erro        (char *s);
 extern char *asm_ErroGet    (void);
+extern void asm_ErroReset   (void);
 
 #endif // ! _VM_H_

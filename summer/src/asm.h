@@ -114,6 +114,7 @@ extern void   asm_label           (ASM *a, char *name); // create a label
 //
 extern void   asm_Erro            (char *s);
 extern char * asm_ErroGet         (void);
+extern void   asm_ErroReset       (void);
 
 //--------------------------------
 // gen / emit:

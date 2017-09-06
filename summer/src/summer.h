@@ -44,11 +44,14 @@
     #include "vm.h"
 #endif
 
-
 //-------------------------------------------------------------------
 //-------------------------  DEFINE / ENUM  -------------------------
 //-------------------------------------------------------------------
 //
+#define SUMMER_VERSION          0
+#define SUMMER_VERSION_SUB      1
+#define SUMMER_VERSION_PATCH    0
+
 #define TOKEN_SIZE    1024
 
 enum {

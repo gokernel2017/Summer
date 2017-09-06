@@ -157,7 +157,7 @@ void asm_label (ASM *a, char *name) {
 }
 
 void asm_Erro (char *s) {
-    erro = 1;
+    erro++;
     if ((strlen(strErro) + strlen(s)) < STR_ERRO_SIZE)
         strcat (strErro, s);
 }
@@ -166,6 +166,10 @@ char *asm_ErroGet (void) {
         return strErro;
     else
         return NULL;
+}
+void asm_ErroReset (void) {
+    erro = 0;
+    strErro[0] = 0;
 }
 
 //-------------------------------------------------------------------

@@ -43,7 +43,7 @@ int main (int argc, char *argv[]) {
 
                 ( (void(*)()) a->code ) (); //<<<<<<<  execute JIT here  >>>>>>>
 
-                printf ("\n<<<<<<<  Parse OK  >>>>>>>\n");
+//                printf ("\n<<<<<<<  Parse OK  >>>>>>>\n");
             }
             else printf ("\n%s\n", asm_ErroGet());
             #endif
@@ -51,20 +51,48 @@ int main (int argc, char *argv[]) {
             #ifdef USE_VM
             vm_run (a);
             #endif
-
-            display_var();
-
         }
         else printf ("\n%s\n", asm_ErroGet());
 
         free (text);
 
-        // free parse ...
-
-        printf ("\nExiting With Sucess !\n");
-
     } else {
-        printf ("\nUSAGE: %s <file.s>\n", argv[0]);
+        char string [1024];
+
+        #ifdef USE_JIT
+        if (asm_set_executable (a->code, ASM_DEFAULT_SIZE - 2) != 0) {
+            printf ("\n%s\n", asm_ErroGet());
+      return -1;
+        }
+        #endif
+
+        printf ("__________________________________________________________________\n\n");
+        printf (" SUMMER Language Version: %d.%d.%d\n\n", SUMMER_VERSION, SUMMER_VERSION_SUB, SUMMER_VERSION_PATCH);
+//        printf (" SIMPLE_VERSION_RELEASE: %c%s%c\n\n", '"', SIMPLE_VERSION_RELEASE, '"');
+        printf (" To exit type: 'quit' or 'q'\n");
+        printf ("__________________________________________________________________\n\n");
+
+        for (;;) {
+            printf ("SUMMER > ");
+            gets (string);
+            if (!strcmp(string, "quit") || !strcmp(string, "q") ) break;
+
+            //if (*string==0) strcpy(string, "info(0);");
+
+            if (!core_Parse (a, string)) {
+
+                #ifdef USE_JIT
+                ( (void(*)()) a->code ) (); // <<<<<<< execute here >>>>>>>
+                #endif
+
+                #ifdef USE_VM
+                vm_run (a);
+                #endif
+            }
+            else printf ("\n%s\n", asm_ErroGet());
+        }
     }
+
+    printf ("\nExiting With Sucess !\n");
     return 0;
 }

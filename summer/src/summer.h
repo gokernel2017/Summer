@@ -53,6 +53,7 @@
 
 enum {
     TOK_INT = 255,
+    TOK_FLOAT,
     TOK_FUNCTION,
 
     TOK_ID,
@@ -80,8 +81,10 @@ enum { // variable type:
 //-------------------------------------------------------------------
 //
 typedef struct FUNC     FUNC;
-typedef union  TValue   TValue; 
+#ifdef USE_JIT
+typedef union  TValue   TValue;
 typedef struct TVar     TVar;
+#endif
 
 struct FUNC {
     char  *name;
@@ -91,6 +94,7 @@ struct FUNC {
     UCHAR *code;
     struct FUNC  *next;
 };
+#ifdef USE_JIT
 union TValue {
     long    l;  //: type long integer
     float   f;  //: type float
@@ -103,13 +107,13 @@ struct TVar {
     TValue  value;
     void    *info;  // any information ... struct type use this
 };
-
+#endif
 
 //-------------------------------------------------------------------
 //------------------------  GLOBAL VARIABLE  ------------------------
 //-------------------------------------------------------------------
 //
-extern TVar   *Gvar;
+extern TVar   Gvar[255];
 
 // lex.c
 extern char   *str;
@@ -132,10 +136,15 @@ extern int      core_Parse        (ASM *a, char *text);
 
 extern char   * core_FileOpen     (const char *FileName);
 
-extern void     core_CreateVarInt (char *name, long value);
-extern int      core_VarFind      (char *name); // if not exist return -1
+extern int      VarFind           (char *name); // if not exist return -1
 
 extern UCHAR  * core_FuncFind     (char *name);
+
+//---------------------------
+// vm.c
+//---------------------------
+//
+extern void     CreateVarLong     (char *name, long value);
 
 //---------------------------
 // lex.c

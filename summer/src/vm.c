@@ -21,6 +21,30 @@
 //
 //-------------------------------------------------------------------
 //
+// MIT LICENSE
+//
+// Copyright (c) 2017, Francisco G.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+//-------------------------------------------------------------------
+//
 #include "vm.h"
 
 #define STR_ERRO_SIZE 1024
@@ -35,14 +59,14 @@ enum { // variable type:
 };
 
 // global:
-int erro;
+int   erro;
+TVar  Gvar [VAR_SIZE];
 
 static char strErro[STR_ERRO_SIZE];
 
-static VALUE  stack [STACK_SIZE];
-static VALUE  *sp = stack;
-static VAR    var [VAR_SIZE];
-static int    flag;
+static TValue   stack [STACK_SIZE];
+static TValue   *sp = stack;
+static int      flag;
 
 void vm_run (ASM *vm) {
     register UCHAR *code = vm->code;
@@ -65,25 +89,25 @@ case OP_PUSHF: // float
 case OP_PUSHVAR: {
     UCHAR i = (UCHAR)code[vm->ip];
     sp++;
-    switch (var[i].type) {
-    case TYPE_LONG:  sp->l = var[i].value.l; break;
-    case TYPE_FLOAT: sp->f = var[i].value.f; break;
+    switch (Gvar[i].type) {
+    case TYPE_LONG:  sp->l = Gvar[i].value.l; break;
+    case TYPE_FLOAT: sp->f = Gvar[i].value.f; break;
     }
     vm->ip++;
     } continue;
 
 case OP_POPVAR: {
     UCHAR i = (UCHAR)code[vm->ip];
-    switch (var[i].type) {
-    case TYPE_LONG:  var[i].value.l = sp->l; break;
-    case TYPE_FLOAT: var[i].value.f = sp->f; break;
+    switch (Gvar[i].type) {
+    case TYPE_LONG:  Gvar[i].value.l = sp->l; break;
+    case TYPE_FLOAT: Gvar[i].value.f = sp->f; break;
     }
     vm->ip++;
     sp--;
     } continue;
 
 case OP_INCVAR:
-    var[ (UCHAR)(code[vm->ip]) ].value.l++;
+    Gvar[ (UCHAR)(code[vm->ip]) ].value.l++;
     vm->ip++;
     continue;
 
@@ -130,9 +154,9 @@ case OP_JG: // <
 
 case OP_PRINTVAR: {
     UCHAR i = (UCHAR)code[vm->ip];
-    switch (var[i].type) {
-    case TYPE_LONG:  printf ("%ld", var[i].value.l); break;
-    case TYPE_FLOAT: printf ("%f",  var[i].value.f); break;
+    switch (Gvar[i].type) {
+    case TYPE_LONG:  printf ("%ld", Gvar[i].value.l); break;
+    case TYPE_FLOAT: printf ("%f",  Gvar[i].value.f); break;
     }
     vm->ip++;
     } continue;
@@ -167,8 +191,8 @@ ASM *asm_new (unsigned long size) {
     }
     return NULL;
 }
-void vm_var (char *name, int type) {
-    VAR *v = var;
+void CreateVarLong (char *name, long value) {
+    TVar *v = Gvar;
     int i = 0;
     while (v->name) {
         if (!strcmp(v->name, name))
@@ -178,7 +202,25 @@ void vm_var (char *name, int type) {
     }
     if (i < VAR_SIZE) {
         v->name = strdup(name);
-        v->type = type;
+        v->type = TYPE_LONG;
+        v->value.l = value;
+        v->info = NULL;
+    }
+}
+void CreateVarFloat (char *name, float value) {
+    TVar *v = Gvar;
+    int i = 0;
+    while (v->name) {
+        if (!strcmp(v->name, name))
+      return;
+        v++;
+        i++;
+    }
+    if (i < VAR_SIZE) {
+        v->name = strdup(name);
+        v->type = TYPE_FLOAT;
+        v->value.f = value;
+        v->info = NULL;
     }
 }
 
@@ -329,8 +371,8 @@ void vme_cmpl (ASM *vm) {
     *vm->p++ = OP_CMPL;
 }
 
-int vm_var_find (char *name) {
-    VAR *v = var;
+int VarFind (char *name) {
+    TVar *v = Gvar;
     int i = 0;
     while(v->name) {
         if (!strcmp(v->name, name))

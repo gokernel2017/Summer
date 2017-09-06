@@ -25,18 +25,20 @@
 //
 #include "summer.h"
 
+extern void display_var (void);
+
 int main (int argc, char *argv[]) {
-    char *str;
+    char *text;
     ASM *a;
 
     if ((a = core_Init(ASM_DEFAULT_SIZE)) == NULL)
   return -1;
 
-    if (argc >= 2 && (str = core_FileOpen(argv[1])) != NULL) {
+    if (argc >= 2 && (text = core_FileOpen(argv[1])) != NULL) {
 
-        if (!core_Parse (a, str)) {
+        if (!core_Parse (a, text)) {
 
-#ifdef USE_JIT
+            #ifdef USE_JIT
             if (asm_set_executable (a->code, ASM_LEN(a)) == 0) {
 
                 ( (void(*)()) a->code ) (); //<<<<<<<  execute JIT here  >>>>>>>
@@ -44,14 +46,18 @@ int main (int argc, char *argv[]) {
                 printf ("\n<<<<<<<  Parse OK  >>>>>>>\n");
             }
             else printf ("\n%s\n", asm_ErroGet());
-#endif
-#ifdef USE_VM
+            #endif
+
+            #ifdef USE_VM
             vm_run (a);
-#endif
+            #endif
+
+            display_var();
+
         }
         else printf ("\n%s\n", asm_ErroGet());
 
-        free (str);
+        free (text);
 
         // free parse ...
 

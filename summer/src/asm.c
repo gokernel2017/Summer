@@ -357,3 +357,58 @@ void asm_call (ASM *a, void *func) {
 void asm_sub_esp (ASM *a, char c) {
     g3(a,0x83,0xec,(char)c); // 83 ec     08   sub  $0x8,%esp
 }
+
+void asm_popl_var (ASM *a, void *var) {
+    // stack--;
+    g2(a,0x8f,0x05); asm_get_addr(a, var); // 8f 05    60 40 40 00    popl   0x404060
+}
+
+//------------------------------------------------
+void asm_imul_eax_esp (ASM *a) {
+//    stack--;
+    g(a,0x58);                  // 58               pop  %eax
+    g4(a,0x0f,0xaf,0x04,0x24);  // 0f af 04 24      imul   (%esp),%eax
+    g3(a,0x89,0x04,0x24);       // 89 04 24         mov    %eax,(%esp)
+}
+void asm_idivl_eax_esp (ASM *a) {
+//    stack--;
+//    stack--;
+    g(a,0x59);        // 59       pop    %ecx
+    g(a,0x58);        // 58       pop    %eax
+    g(a,0x99);        // 99       cltd
+    g2(a,0xf7,0xf9);  // f7 f9    idiv   %ecx
+    g(a,0x50);        // 50       push   %eax
+//    stack++;
+}
+void asm_add_eax_esp (ASM *a) {
+//    stack--;
+    g(a,0x58);              // 58         pop  %eax
+    g3(a,0x01,0x04,0x24);   // 01 04 24   add   %eax,(%esp)
+}
+void asm_sub_eax_esp (ASM *a) {
+//    stack--;
+    g(a,0x58);            // 58           pop  %eax
+    g3(a,0x29,0x04,0x24); // 29 04 24     sub    %eax,(%esp)
+}
+//------------------------------------------------
+
+// push variable on: %esp:
+//
+void asm_pushl_var (ASM *a, void *var) {
+//    stack++;
+    g2(a,0xff,0x35); asm_get_addr(a,var); // ff 35    60 40 40 00   pushl   0x404060
+}
+// push number on: %esp:
+//
+void asm_push_number (ASM *a, long value) {
+//    stack++;
+    if (value == (char)value) {
+        g(a,0x6a);  // 6a   64    push   $0x64
+        *a->p = value;
+        a->p += sizeof(char);
+    } else {
+        g(a,0x68); // 68    00 e1 f5 05    push  $0x5f5e100
+        *(long*)a->p = value;
+        a->p += sizeof(long);
+    }
+}

@@ -133,6 +133,16 @@ extern void   asm_jg              (ASM *a, char *name);
 
 extern void   asm_call            (ASM *a, void *func);
 extern void   asm_sub_esp         (ASM *a, char c);
+extern void   asm_popl_var        (ASM *a, void *var);
+
+void asm_imul_eax_esp (ASM *a);
+void asm_idivl_eax_esp (ASM *a);
+void asm_add_eax_esp (ASM *a);
+void asm_sub_eax_esp (ASM *a);
+
+void asm_pushl_var (ASM *a, void *var);
+void asm_push_number (ASM *a, long value);
+
 
 #ifdef __cplusplus
 }

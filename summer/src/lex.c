@@ -113,6 +113,7 @@ top:
         *p = 0;
 
         if (!strcmp(token, "int"))      return TOK_INT;
+        if (!strcmp(token, "float"))    return TOK_FLOAT;
         if (!strcmp(token, "function")) return TOK_FUNCTION;
 
         return TOK_ID;

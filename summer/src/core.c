@@ -164,7 +164,6 @@ static void expression (ASM *a) {
             asm_call (a, print_var, 0, 0);
         #endif
         #ifdef USE_VM
-            vme_prints (a, strlen(buf), buf);
             vme_popvar (a, main_variable_type);
             vme_printvar (a, main_variable_type);
             vme_printc (a, 10); // new line
@@ -247,7 +246,6 @@ static void expression (ASM *a) {
                 asm_call (a, print_var, 0, 0);
                 #endif
                 #ifdef USE_VM
-                vme_prints (a, strlen(buf), buf);
                 vme_popvar (a, main_variable_type);
                 vme_printvar (a, main_variable_type);
                 vme_printc (a, 10); // new line

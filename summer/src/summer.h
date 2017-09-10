@@ -38,6 +38,7 @@
 
 #if defined(USE_JIT)
     #include "asm.h"
+    #include "def.h"
 #endif
 
 #if defined(USE_VM)
@@ -70,24 +71,12 @@ enum {
     TOK_AND_AND,      // &&
     TOK_PTR           // ->
 };
-enum { // variable type:
-    TYPE_LONG = 1,
-    TYPE_FLOAT,
-    TYPE_STRING,
-    TYPE_POINTER,
-    TYPE_STRUCT,
-    TYPE_PSTRUCT  // struct data *p;
-};
 
 //-------------------------------------------------------------------
 //----------------------------  STRUCT  -----------------------------
 //-------------------------------------------------------------------
 //
 typedef struct FUNC     FUNC;
-#ifdef USE_JIT
-typedef union  TValue   TValue;
-typedef struct TVar     TVar;
-#endif
 
 struct FUNC {
     char  *name;
@@ -97,26 +86,11 @@ struct FUNC {
     UCHAR *code;
     struct FUNC  *next;
 };
-#ifdef USE_JIT
-union TValue {
-    long    l;  //: type long integer
-    float   f;  //: type float
-    char    *s; //: type pointer of char
-    void    *p; //: type pointer
-};
-struct TVar {
-    char    *name;
-    int     type;
-    TValue  value;
-    void    *info;  // any information ... struct type use this
-};
-#endif
 
 //-------------------------------------------------------------------
 //------------------------  GLOBAL VARIABLE  ------------------------
 //-------------------------------------------------------------------
 //
-extern TVar   Gvar[255];
 
 // lex.c
 extern char   *str;
@@ -143,11 +117,8 @@ extern int      VarFind           (char *name); // if not exist return -1
 
 extern UCHAR  * core_FuncFind     (char *name);
 
-//---------------------------
-// vm.c
-//---------------------------
-//
 extern void     CreateVarLong     (char *name, long value);
+extern void     CreateVarFloat    (char *name, float value);
 
 //---------------------------
 // lex.c

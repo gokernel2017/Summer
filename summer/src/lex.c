@@ -193,9 +193,14 @@ top:
 
         return *str++;
 
+//    default:
+//        printf ("ERRO LINE(%d): Ilegal char: (%c) %d\n", line, *str, *str);
     default:
-        printf ("ERRO LINE(%d): Ilegal char: (%c) %d\n", line, *str, *str);
-
+        {
+        char buf[100];
+        sprintf (buf, "LEX ERRO LINE(%d): Ilegal char: (%c) %d\n", line, *str, *str);
+        asm_Erro (buf);
+        }
     }//: switch (c) {
     return 0;
 }

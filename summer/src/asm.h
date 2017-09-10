@@ -132,18 +132,28 @@ extern void   asm_cmpl            (ASM *a, long value, void *var);
 extern void   asm_jmp             (ASM *a, char *name); // jump to label
 extern void   asm_jg              (ASM *a, char *name);
 
-extern void   asm_call            (ASM *a, void *func);
+extern void   asm_call            (ASM *vm, void *func, UCHAR argc, UCHAR ret);
 extern void   asm_sub_esp         (ASM *a, char c);
 extern void   asm_popl_var        (ASM *a, void *var);
 
-void asm_imul_eax_esp (ASM *a);
-void asm_idivl_eax_esp (ASM *a);
-void asm_add_eax_esp (ASM *a);
-void asm_sub_eax_esp (ASM *a);
+extern void   asm_imul_eax_esp    (ASM *a);
+extern void   asm_idivl_eax_esp   (ASM *a);
+extern void   asm_add_eax_esp     (ASM *a);
+extern void   asm_sub_eax_esp     (ASM *a);
 
-void asm_pushl_var (ASM *a, void *var);
-void asm_push_number (ASM *a, long value);
+extern void   asm_pushl_var       (ASM *a, void *var);
+extern void   asm_push_number     (ASM *a, long value);
 
+
+// FLOAT:
+extern void asm_float_flds_value (ASM *a, float value);
+extern void asm_float_flds (ASM *a, void *var);
+extern void asm_float_fmulp (ASM *a);
+extern void asm_float_fdivp (ASM *a);
+extern void asm_float_faddp (ASM *a);
+extern void asm_float_fsubp (ASM *a);
+
+extern void asm_float_fstps (ASM *a, void *var);
 
 #ifdef __cplusplus
 }

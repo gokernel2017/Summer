@@ -21,46 +21,17 @@
 //
 //-------------------------------------------------------------------
 //
-// MIT LICENSE
-//
-// Copyright (c) 2017, Francisco G.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-//
-//-------------------------------------------------------------------
-//
 #include "vm.h"
 
 #define STR_ERRO_SIZE 1024
 #define STACK_SIZE    1024
-#define VAR_SIZE      255
-
-enum { // variable type:
-    TYPE_LONG = 1,
-    TYPE_FLOAT,
-    TYPE_STRING,
-    TYPE_POINTER
-};
+#define ARG_SIZE      15
 
 // global:
-int   erro;
-TVar  Gvar [VAR_SIZE];
+int     erro;
+TValue  arg [ARG_SIZE];
+TValue  ret;
+int     arg_count;
 
 static char strErro[STR_ERRO_SIZE];
 
@@ -172,8 +143,65 @@ case OP_PRINTC:
     printf ("%c", code[vm->ip++]);
     continue;
 
+// call a C Function
+// 
+case OP_CALL: {
+    UCHAR ret_type;
+    TValue(*func)() = *(void**)(code+vm->ip);
+    float (*func_float)() = *(void**)(code+vm->ip);
+    vm->ip += sizeof(void*);
+    arg_count = (UCHAR)(code[vm->ip]); //printf ("CALL ARG_COUNT = %d\n", arg_count);
+    vm->ip++;
+    ret_type = (UCHAR)(code[vm->ip]);
+    vm->ip++;
+
+    switch (arg_count) {
+    case 0:
+        if (ret_type != 'f') {
+            ret=func();
+        } else {
+            ret.f=func_float();
+        }
+        break;
+    case 1:
+        if (ret_type != 'f') {
+            ret=func(sp[0]); sp--;
+        } else {
+            ret.f=func_float(sp[0]); sp--;
+        }
+        break;
+    case 2:
+        if (ret_type != 'f') {
+            arg[0] = sp[0]; sp--;
+            arg[1] = sp[0]; sp--;
+            // reverse order
+            ret=func(arg[1], arg[0]);
+        } else {
+            arg[0] = sp[0]; sp--;
+            arg[1] = sp[0]; sp--;
+            // reverse order
+            ret.f=func_float(arg[1], arg[0]);
+        }
+        break;
+    case 3:
+        if (ret_type != 'f') {
+            arg[0] = sp[0]; sp--;
+            arg[1] = sp[0]; sp--;
+            arg[2] = sp[0]; sp--;
+            // reverse order
+            ret=func(arg[2], arg[1], arg[0]);
+        } else {
+            arg[0] = sp[0]; sp--;
+            arg[1] = sp[0]; sp--;
+            arg[2] = sp[0]; sp--;
+            // reverse order
+            ret.f=func_float(arg[2], arg[1], arg[0]);
+        }
+        break;
+    }//: switch (arg_count)
+    } continue;
+
 case OP_HALT:
-//    printf ("\nOpcode HALT - (sp - stack): %d\n", (sp - stack));
     return;
     }//: switch (code[vm->ip++])
 
@@ -191,39 +219,6 @@ ASM *asm_new (unsigned long size) {
     }
     return NULL;
 }
-void CreateVarLong (char *name, long value) {
-    TVar *v = Gvar;
-    int i = 0;
-    while (v->name) {
-        if (!strcmp(v->name, name))
-      return;
-        v++;
-        i++;
-    }
-    if (i < VAR_SIZE) {
-        v->name = strdup(name);
-        v->type = TYPE_LONG;
-        v->value.l = value;
-        v->info = NULL;
-    }
-}
-void CreateVarFloat (char *name, float value) {
-    TVar *v = Gvar;
-    int i = 0;
-    while (v->name) {
-        if (!strcmp(v->name, name))
-      return;
-        v++;
-        i++;
-    }
-    if (i < VAR_SIZE) {
-        v->name = strdup(name);
-        v->type = TYPE_FLOAT;
-        v->value.f = value;
-        v->info = NULL;
-    }
-}
-
 void vm_label (ASM *vm, char *name) {
     if (name) {
         ASM_label *lab;
@@ -276,6 +271,9 @@ void vme_mull (ASM *vm) {
 
 void vme_addf (ASM *vm) {
     *vm->p++ = OP_ADDF;
+}
+void vme_mulf (ASM *vm) {
+    *vm->p++ = OP_MULF;
 }
 
 void asm_end (ASM *vm) {
@@ -371,16 +369,17 @@ void vme_cmpl (ASM *vm) {
     *vm->p++ = OP_CMPL;
 }
 
-int VarFind (char *name) {
-    TVar *v = Gvar;
-    int i = 0;
-    while(v->name) {
-        if (!strcmp(v->name, name))
-      return i;
-        v++;
-        i++;
-    }
-    return -1;
+void asm_call (ASM *vm, void *func, UCHAR argc, UCHAR ret) {
+    *vm->p++ = OP_CALL;
+    *(void**)vm->p = func;
+    vm->p += sizeof(void*);
+    *vm->p++ = argc;
+    *vm->p++ = ret;
+}
+
+
+void vme_argc (ASM *vm, UCHAR c) {
+    *vm->p++ = c;
 }
 
 void asm_reset (ASM *vm) {
@@ -403,9 +402,6 @@ void asm_reset (ASM *vm) {
         free (vm->jump);
         vm->jump = temp;
     }
-
-//    if (vm->label == NULL) printf ("vm_reset LABEL == Null\n");
-//    if (vm->jump == NULL)  printf ("vm_reset JUMP  == Null\n");
 
     vm->label = NULL;
     vm->jump  = NULL;

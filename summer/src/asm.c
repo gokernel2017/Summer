@@ -25,6 +25,8 @@
 
 #define STR_ERRO_SIZE   1024
 
+float asmFvalue;
+
 // global:
 int erro;
 
@@ -351,7 +353,8 @@ static void asm_change_jump (ASM *a) {
 
 }//: static void asm_change_jump (ASM *a)
 
-void asm_call (ASM *a, void *func) {
+void asm_call (ASM *a, void *func, UCHAR argc, UCHAR ret) {
+//void asm_call (ASM *a, void *func) {
     // b8   7a 13 40 00       mov    $0x40137a,%eax
     // ff d0                	call   *%eax
     //
@@ -415,4 +418,88 @@ void asm_push_number (ASM *a, long value) {
         *(long*)a->p = value;
         a->p += sizeof(long);
     }
+}
+
+//-------------------------------------------------------------------
+//###########################  MATH FLOAT  ##########################
+//-------------------------------------------------------------------
+//
+// load a float value:
+// USAGE:
+//   asm_float_flds_value (a, 12345.00);
+//
+void asm_float_flds_value (ASM *a, float value) {
+    // b8     9a 19 c9 42       	mov    $0x42c9199a,%eax
+    //
+    g(a,0xb8);
+    *(float*)a->p = value;
+    a->p += sizeof(float);
+
+    // a3     00 20 40 00       	mov    %eax,0x402000
+    //
+    g(a,0xa3);
+    *(void**)a->p = &asmFvalue;
+    a->p += sizeof(void*);
+
+    // FLDS VARIABLE ( asmFvalue ):
+    //
+    // d9 05    04 20 40 00    	flds   0x402004
+    //
+    g2 (a,0xd9,0x05);
+    *(void**)a->p = &asmFvalue;
+    a->p += sizeof(void*);
+}
+
+//
+// load a float variable:
+// USAGE:
+//   asm_float_flds (a, &var_name);
+//
+void asm_float_flds (ASM *a, void *var) {
+    // d9 05    04 20 40 00    	flds   0x402004
+    //
+    g2(a,0xd9,0x05);
+    *(void**)a->p = var;
+    a->p += sizeof(void*);
+}
+
+//
+// multiply the stack float:
+// USAGE:
+//   asm_float_fmulp (a);
+//
+void asm_float_fmulp (ASM *a) { g2 (a,0xde,0xc9); } // de c9    fmulp  %st,%st(1)
+
+//
+// divide the stack float:
+// USAGE:
+//   asm_float_fmulp (a);
+//
+void asm_float_fdivp (ASM *a) { g2(a,0xde,0xf1); } // de f1    fdivp  %st,%st(1)
+
+//
+// add the stack float:
+// USAGE:
+//   asm_float_faddp (a);
+//
+void asm_float_faddp (ASM *a) { g2 (a,0xde,0xc1); } // de c1    faddp  %st,%st(1)
+
+//
+// sub the stack float:
+// USAGE:
+//   asm_float_faddp (a);
+//
+void asm_float_fsubp (ASM *a) { g2 (a,0xde,0xe1); } // de e1    fsubp  %st,%st(1)
+
+//
+// set the variable and CLEAR the stack:
+// USAGE:
+//   asm_float_fstps (a, &var_name);
+//
+void asm_float_fstps (ASM *a, void *var) {
+    // d9 1d    00 20 40 00    	fstps  0x402000
+    //
+    g2(a,0xd9,0x1d);
+    *(void**)a->p = var;
+    a->p += sizeof(void*);
 }

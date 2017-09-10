@@ -43,7 +43,6 @@ int main (int argc, char *argv[]) {
 
                 ( (void(*)()) a->code ) (); //<<<<<<<  execute JIT here  >>>>>>>
 
-//                printf ("\n<<<<<<<  Parse OK  >>>>>>>\n");
             }
             else printf ("\n%s\n", asm_ErroGet());
             #endif
@@ -68,7 +67,6 @@ int main (int argc, char *argv[]) {
 
         printf ("__________________________________________________________________\n\n");
         printf (" SUMMER Language Version: %d.%d.%d\n\n", SUMMER_VERSION, SUMMER_VERSION_SUB, SUMMER_VERSION_PATCH);
-//        printf (" SIMPLE_VERSION_RELEASE: %c%s%c\n\n", '"', SIMPLE_VERSION_RELEASE, '"');
         printf (" To exit type: 'quit' or 'q'\n");
         printf ("__________________________________________________________________\n\n");
 
@@ -77,7 +75,7 @@ int main (int argc, char *argv[]) {
             gets (string);
             if (!strcmp(string, "quit") || !strcmp(string, "q") ) break;
 
-            //if (*string==0) strcpy(string, "info(0);");
+            if (*string==0) strcpy(string, "info(0);");
 
             if (!core_Parse (a, string)) {
 
@@ -94,5 +92,6 @@ int main (int argc, char *argv[]) {
     }
 
     printf ("\nExiting With Sucess !\n");
+
     return 0;
 }

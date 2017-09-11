@@ -31,16 +31,17 @@
 TVar  Gvar[255];
 int   return_type;
 
-//static FUNC   *Gfunc = NULL;  // store the user functions
+static FUNC   *Gfunc = NULL;  // store the user functions
 static ASM    *asm_function = NULL;
 static ASM    *asm_include = NULL;
+static ARG    argument[20];
 
 static int
     is_function,
     main_variable_type,
     var_type,
-    is_recursive
-//    argument_count
+    is_recursive,
+    argument_count
     ;
 static char
     func_name [100]
@@ -55,6 +56,8 @@ extern void g2 (ASM *a, UCHAR c1, UCHAR c2);
 //
 static void   word_int      (ASM *a);
 static void   word_float    (ASM *a);
+static void   word_function (ASM *a);
+//
 static void   print_var     (int index);
 //
 static void   expression    (ASM *a);
@@ -63,30 +66,36 @@ static void   expr1         (ASM *a);
 static void   expr2         (ASM *a);
 static void   expr3         (ASM *a);
 static int    see           (void);   // get the next char ... no increment ( str )
-static void   execute_call  (ASM *a, UCHAR *code);
-static UCHAR  *FuncFind     (char *name);
+static void   execute_call  (ASM *a, FUNC *fi);
+static FUNC *FuncFind  (char *name);
 
 void lib_info (int arg);
+void lib_hello (void);
 void lib_arg_float (float arg1, int arg2);
 
-struct LIB {
+/*
+struct FUNC {
     char  *name;
     char  *proto; // prototype
-    UCHAR *code;
-}stdlib[]={
-  { "info", "00", (UCHAR*)lib_info },
-  { "arg_float", "00", (UCHAR*)lib_arg_float },
-  { NULL,     NULL, NULL }
+    UCHAR *code;  // the function on JIT MODE | or VM in VM MODE
+    int   type;   // FUNC_TYPE_COMPILED = 0, FUNC_TYPE_NATIVE, FUNC_TYPE_VM
+    int   len;
+    struct FUNC  *next;
 };
-typedef struct {
-    char  *name;
-    char  *proto;
-    char  *code;
-}FUNC_INFO;
-FUNC_INFO func_info;
-
+*/
+FUNC stdlib[]={
+  //-----------------------------------------------------------------
+  // char*        char*   UCHAR*/ASM*             int   int   FUNC*
+  // name         proto   code                    type  len   next
+  //-----------------------------------------------------------------
+  { "info",       "0i",   (UCHAR*)lib_info,       0,    0,    NULL },
+  { "hello",      "00",   (UCHAR*)lib_hello,      0,    0,    NULL },
+  { "arg_float",  "00",   (UCHAR*)lib_arg_float,  0,    0,    NULL },
+  { NULL,         NULL,   NULL,                   0,    0,    NULL }
+};
 
 void func_null (void) { printf ("FUNCTION: func_null\n"); }
+FUNC func_null_default = { "func_null", "00", (UCHAR*)func_null, 0, 0, NULL };
 
 ASM *core_Init (unsigned long size) {
     static int init = 0;
@@ -102,12 +111,12 @@ ASM *core_Init (unsigned long size) {
 #ifdef USE_VM
     printf ("Core_Init VM (Virtual Machine)\n\n");
 #endif
-        if ((a            = asm_new (ASM_DEFAULT_SIZE))==NULL) return NULL;
-        if ((asm_function = asm_new (ASM_DEFAULT_SIZE))==NULL) return NULL;
-        if ((asm_include  = asm_new (ASM_DEFAULT_SIZE))==NULL) return NULL;
+        if ((a            = asm_new (size))==NULL) return NULL;
+        if ((asm_function = asm_new (size))==NULL) return NULL;
+        if ((asm_include  = asm_new (size))==NULL) return NULL;
 
         #ifdef USE_JIT
-        asm_set_executable (asm_include->code, ASM_DEFAULT_SIZE - 2);
+        asm_set_executable (asm_include->code, size - 2);
         #endif
 
         CreateVarLong  ("0TYPE_LONG", 0);
@@ -130,12 +139,18 @@ static int stmt (ASM *a) {
     tok = lex();
 
     switch (tok) {
-    case TOK_INT:   word_int   (a_f); return 1;
-    case TOK_FLOAT: word_float (a_f); return 1;
-    default:        expression (a_f); return 1;
-    case ';':
+    case '{':
+        while (!erro && tok && tok != '}') stmt(a_f);
+        tok = 1;
         return 1;
-    case   0: return 0;
+    case TOK_INT:      word_int      (a_f); return 1;
+    case TOK_FLOAT:    word_float    (a_f); return 1;
+    case TOK_FUNCTION: word_function (a_f); return 1;
+    default:           expression    (a_f); return 1;
+    case ';':
+    case '}':
+        return 1;
+    case 0: return 0;
     }
     return 1;
 }
@@ -177,14 +192,14 @@ static void expression (ASM *a) {
         char *_str_;
         int  _tok_;
         int  _line_;
-        UCHAR *code;
+        FUNC *fi;
 
         main_variable_type = var_type = TYPE_LONG; // 0
 
         // call a function without return:
         // function_name (...);
-        if ((code = FuncFind(token)) != NULL) {
-            execute_call (a, code);
+        if ((fi = FuncFind(token)) != NULL) {
+            execute_call (a, fi);
       return;
         }
 
@@ -253,11 +268,11 @@ static void expression (ASM *a) {
             }
 
         } else { //: if ((i=VarFind(token))!=-1)
-            sprintf (buf, "ERRO LINE(%d) - Ilegal Identifier '%s'", line, _token_);
+            sprintf (buf, "EXPRESSION ERRO LINE(%d) - Ilegal Identifier '%s'", line, _token_);
             asm_Erro (buf);
         }
     } else {
-        sprintf (buf, "EXPR ERRO LINE(%d) - Ilegar Word (%s)\n", line, token);
+        sprintf (buf, "EXPRESSION ERRO LINE(%d) - Ilegar Word (%s)\n", line, token);
         asm_Erro (buf);
     }
 }
@@ -357,7 +372,7 @@ void expr3 (ASM *a) {
 
         } else {
             char buf[255];
-            sprintf(buf, "%s: '%s'", "EXPRESSION VAR NOT FOUND:", token);
+            sprintf(buf, "ERRO LINE(%d expr0()): Var Not Found '%s'", line, token);
             asm_Erro (buf);
         }
     }
@@ -382,7 +397,8 @@ void expr3 (ASM *a) {
     }
     else asm_Erro("Expression");
 }
-void execute_call (ASM *a, UCHAR *code) {
+//void execute_call (ASM *a, UCHAR *code) {
+void execute_call (ASM *a, FUNC *fi) {
     int count=0, pos=0, size = 4;
 //    int exist_string = 0;
 
@@ -426,7 +442,20 @@ void execute_call (ASM *a, UCHAR *code) {
 
     }//: while (!erro && (tok=lex()))
 
-    asm_call (a, code, count, (UCHAR)return_type);
+    return_type = '0';
+
+    if (fi->proto) return_type = fi->proto[0];
+
+    #ifdef USE_JIT    
+    asm_call (a, fi->code, count, (UCHAR)return_type);
+    #endif
+    #ifdef USE_VM
+    if (fi->type == FUNC_TYPE_VM) {
+        asm_callvm (a, (ASM*)(fi->code));
+    } else {
+        asm_call (a, fi->code, count, (UCHAR)return_type);
+    }
+    #endif
 }
 
 int core_Parse (ASM *a, char *text) {
@@ -535,6 +564,165 @@ static void word_float (ASM *a) {
     }
     if (tok != ';') asm_Erro ("ERRO: The word(float) need the char(;) on the end\n");
 }
+static void word_function (ASM *a) {
+    struct FUNC *func;
+    ASM *vm;
+    char name[255], proto[255]={0};
+    int i;
+
+    tok=lex();
+
+    strcpy (name,token);
+
+    // if exist ... return
+    //
+    if (FuncFind(name)!=NULL) {
+        int brace = 0;
+
+        printf ("Function exist: ... REBOBINANDO '%s'\n", name);
+
+        while((tok=lex()) && tok!=')');
+
+        if (see()=='{') { } else asm_Erro ("word(if) need start block: '{'\n");
+
+        while((tok=lex())){
+            if (tok == '{') brace++;
+            if (tok == '}') brace--;
+            if (brace <= 0) break;
+        }
+
+  return;
+    }
+
+    // PASSA PARAMETROS ... IMPLEMENTADA APENAS ( int ) ... AGUARDE
+    //
+    // O analizador de expressao vai usar esses depois...
+    //
+    // VEJA EM ( expr3() ):
+    // ---------------------
+    // Funcoes usadas:
+    //     ArgumentFind();
+    //     asm_push_argument();
+    // ---------------------
+    //
+    argument_count = 0;
+    while ((tok=lex())) {
+/*
+        if (tok==TOK_INT) {
+            strcpy (argument[argument_count].type, "int");
+            tok=lex();
+            if (tok==TOK_ID) {
+                strcpy (argument[argument_count].name, token);
+                argument_count++;
+            }
+        }
+*/
+        if (tok==TOK_ID) {
+            argument[argument_count].type[0] = 0;
+            strcpy (argument[argument_count].name, token);
+            strcat (proto, token);
+            strcat (proto, ", ");
+            argument_count++;
+        }
+        if (tok=='{') break;
+
+    }
+    if (tok=='{') str--; else { asm_Erro("Word Function need char: '{'"); return; }
+
+    is_function = 1;
+//    local.count = 0;
+    strcpy (func_name, name);
+
+    // compiling to buffer ( f ):
+    //
+    asm_reset (asm_function);
+    #ifdef USE_JIT
+    asm_begin(asm_function);
+    asm_sub_esp(asm_function,100);
+    #endif
+    stmt (a); // here start from char: '{'
+    asm_end (asm_function);
+
+    if (erro) return;
+
+    if ((i=strlen(proto)) >= 3 )
+        proto[i-2]=0;
+
+#ifdef USE_JIT
+    // new function:
+    //
+    func = (struct FUNC*) malloc (sizeof(struct FUNC));
+    func->name = strdup (func_name);
+    func->proto = strdup (proto);
+    func->type = FUNC_TYPE_COMPILED;
+    func->len = ASM_LEN (asm_function);//asm_function->len;
+    func->code = (UCHAR*) malloc (func->len);
+    // NOW: copy the buffer ( f ):
+    for (i=0;i<func->len;i++) {
+        func->code[i] = asm_function->code[i];
+    }
+/*
+    //-------------------------------------------
+    // HACKING ... ;)
+    // Resolve Recursive:
+    // change 4 bytes ( func_null ) to this
+    //-------------------------------------------
+    if (is_recursive)
+    for (i=0;i<func->len;i++) {
+        // b8     7a 13 40 00       mov    $0x40137a,%eax
+        //
+        if (func->code[i] == 0xb8) { // unsigned char: 184
+
+            i++; // ... HERE: 4 bytes ...
+
+            // ff d0    call   *%eax
+            //
+            if (*(func->code+i+4) == 0xff && *(func->code+i+5) == 0xd0) {
+                if (*(void**)(func->code+i) == func_null) {
+                    *(void**)(func->code+i) = func->code; //<<< change here
+                    i += 5;
+                }
+            }
+        }
+    }
+*/
+
+    asm_set_executable (func->code, func->len-1);
+#endif
+#ifdef USE_VM
+    if ((vm = asm_new (ASM_LEN (asm_function)))!=NULL) {
+        // new function:
+        //
+        func = (struct FUNC*) malloc (sizeof(struct FUNC));
+        func->name = strdup (func_name);
+        func->proto = strdup (proto);
+        func->type = FUNC_TYPE_VM;
+        func->len = ASM_LEN (asm_function);//asm_function->len;
+        // NOW: copy the buffer ( f ):
+        for (i=0;i<func->len;i++) {
+            vm->code[i] = asm_function->code[i];
+        }
+        func->code = vm;
+
+/*
+    //-------------------------------------------
+    // HACKING ... ;)
+    // Resolve Recursive:
+    // change 4 bytes ( func_null ) to this
+    //-------------------------------------------
+    if (is_recursive)
+*/
+    }
+    else return;
+
+#endif
+
+    // add on top:
+    func->next = Gfunc;
+    Gfunc = func;
+
+    is_function = is_recursive = argument_count = *func_name = 0;
+}
 
 static int see (void) {
     char *s = str;
@@ -598,36 +786,37 @@ static void print_var (int index) {
 }
 #endif // #ifdef USE_JIT
 
-UCHAR *FuncFind (char *name) {
-    struct LIB  *lib;
-//    FUNC        *func;
+//UCHAR *FuncFind (char *name) {
+FUNC *FuncFind (char *name) {
+    FUNC  *fi;
+    FUNC  *lib;
+    FUNC  *func;
 //    T_import    *imp;
 
     if (!strcmp(name, func_name)) {
         is_recursive = 1;
-        return (UCHAR*)func_null; // to change, SEE IN ( word_function() )
+        fi = &func_null_default;
+        return fi;
+//        return (UCHAR*)func_null; // to change, SEE IN ( word_function() )
     }
 
     // array:
     lib = stdlib;
     while (lib->name) {
-        if ((lib->name[0]==name[0]) && !strcmp(lib->name, name)) {
-            func_info.name = lib->name;
-            func_info.proto = lib->proto;
-            func_info.code = lib->code;
-            if (lib->proto) return_type = lib->proto[0];
-            return lib->code;
-        }
+        if ((lib->name[0]==name[0]) && !strcmp(lib->name, name))
+      return lib;
         lib++;
     }
-/*
+
     // linked list:
     func = Gfunc;
     while(func){
-        if ((func->name[0]==name[0]) && !strcmp(func->name, name)) return func->code;
+        if ((func->name[0]==name[0]) && !strcmp(func->name, name))
+      return func;
         func = func->next;
     }
 
+/*
     // 03: linked list:
     imp = Gimport;
     while (imp) {
@@ -647,16 +836,23 @@ void lib_info (int arg) {
         while (v->name) {
             if (v->type==TYPE_LONG)  printf ("Gvar[%d](%s) = %ld\n", i, v->name, v->value.l);
             if (v->type==TYPE_FLOAT) printf ("Gvar[%d](%s) = %f\n", i, v->name, v->value.f);
-            v++;
+            v++; i++;
         }
         } break;
 
     case 2: {
-        struct LIB *lib = stdlib;
+        FUNC *fi = stdlib;
         printf ("FUNCTIONS:\n---------------\n");
-        while (lib->name) {
-            printf ("%s\n", lib->name);
-            lib++;
+        while (fi->name) {
+            if(fi->proto) printf ("%s ", fi->proto);
+            printf ("%s\n", fi->name);
+            fi++;
+        }
+        fi = Gfunc;
+        while(fi){
+            if(fi->proto) printf ("%s ", fi->proto);
+            printf ("%s\n", fi->name);
+            fi = fi->next;
         }
         } break;
 
@@ -664,6 +860,10 @@ void lib_info (int arg) {
         printf ("USAGE: info(1);\n\nInfo Options:\n 1: Variables\n 2: Functions\n 3: Defines\n 4: Words\n");
     }
 }
+void lib_hello (void) {
+    printf ("Function HELLO WORLD\n");
+}
+
 void lib_arg_float (float arg1, int arg2) {
     printf ("arg_float: %f %d\n", arg1, arg2);
 }

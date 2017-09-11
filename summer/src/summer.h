@@ -72,19 +72,27 @@ enum {
     TOK_PTR           // ->
 };
 
+enum { FUNC_TYPE_NATIVE_C = 0, FUNC_TYPE_COMPILED, FUNC_TYPE_VM };
+
 //-------------------------------------------------------------------
 //----------------------------  STRUCT  -----------------------------
 //-------------------------------------------------------------------
 //
-typedef struct FUNC     FUNC;
+typedef struct FUNC       FUNC;
+typedef struct FUNC_INFO  FUNC_INFO;
+typedef struct ARG        ARG;
 
 struct FUNC {
     char  *name;
     char  *proto; // prototype
-    int   type;   // FUNC_TYPE_COMPILED, FUNC_TYPE_NATIVE
+    UCHAR *code;  // the function on JIT MODE | or VM in VM MODE
+    int   type;   // FUNC_TYPE_COMPILED = 0, FUNC_TYPE_NATIVE, FUNC_TYPE_VM
     int   len;
-    UCHAR *code;
     struct FUNC  *next;
+};
+struct ARG {
+    char  type[20]; // "int", "float", "data_struct"
+    char  name[20];
 };
 
 //-------------------------------------------------------------------
@@ -115,7 +123,7 @@ extern char   * core_FileOpen     (const char *FileName);
 
 extern int      VarFind           (char *name); // if not exist return -1
 
-extern UCHAR  * core_FuncFind     (char *name);
+//extern UCHAR  * core_FuncFind     (char *name);
 
 extern void     CreateVarLong     (char *name, long value);
 extern void     CreateVarFloat    (char *name, float value);

@@ -73,7 +73,17 @@ int main (int argc, char *argv[]) {
         for (;;) {
             printf ("SUMMER > ");
             gets (string);
-            if (!strcmp(string, "quit") || !strcmp(string, "q") ) break;
+            if (!strcmp(string, "quit") || !strcmp(string, "q")) break;
+
+            if (!strcmp(string, "clear") || !strcmp(string, "cls")) {
+                #ifdef WIN32
+                system("cls");
+                #endif
+                #ifdef __linux__
+                system("clear");
+                #endif
+                continue;
+            }
 
             if (*string==0) strcpy(string, "info(0);");
 

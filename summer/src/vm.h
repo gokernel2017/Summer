@@ -69,7 +69,8 @@ enum {
     OP_PRINTS,
     OP_PRINTC,
 
-    OP_CALL
+    OP_CALL,      // call a C Function
+    OP_CALLVM     // call a VM Function
 };
 
 //-----------------------------------------------
@@ -136,6 +137,7 @@ extern void vme_jmp         (ASM *vm, char *name);
 extern void vme_jg          (ASM *vm, char *name);
 
 extern void asm_call        (ASM *vm, void *func, UCHAR argc, UCHAR ret);
+extern void asm_callvm      (ASM *vm, void *func);
 extern void vme_argc        (ASM *vm, UCHAR c);
 
 extern void asm_reset       (ASM *vm);

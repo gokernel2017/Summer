@@ -16,5 +16,12 @@ int a = 10, b = 20, c = 3, d = 5, i;
 
   i; // display value of i: 230
 
+function increment () {
+  i++;
+}
 
-//  info (1);
+  increment ();
+
+  // argument 1: display the list of Variables
+  // argument 2: display the list of Functions
+  info (1);

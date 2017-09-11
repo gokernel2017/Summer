@@ -55,7 +55,6 @@ extern "C" {
 
 #define UCHAR               unsigned char
 #define ULONG               unsigned long
-#define ASM_LEN(arg)        (arg->p - arg->code)
 #define OP_NOP              0x90
 
 enum { // jump type for change the labels

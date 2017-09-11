@@ -40,25 +40,25 @@ static TValue   *sp = stack;
 static int      flag;
 
 void vm_run (ASM *vm) {
-    register UCHAR *code = vm->code;
+//    register UCHAR *code = vm->code;
 
     for (;;)
-    switch (code[vm->ip++]) {
+    switch (vm->code[vm->ip++]) {
 
 case OP_PUSHL: // long
     sp++;
-    sp->l = *(long*)(code+vm->ip);
+    sp->l = *(long*)(vm->code+vm->ip);
     vm->ip += sizeof(long);
     continue;
 
 case OP_PUSHF: // float
     sp++;
-    sp->f = *(float*)(code+vm->ip);
+    sp->f = *(float*)(vm->code+vm->ip);
     vm->ip += sizeof(float);
     continue;
 
 case OP_PUSHVAR: {
-    UCHAR i = (UCHAR)code[vm->ip];
+    UCHAR i = (UCHAR)vm->code[vm->ip];
     sp++;
     switch (Gvar[i].type) {
     case TYPE_LONG:  sp->l = Gvar[i].value.l; break;
@@ -68,7 +68,7 @@ case OP_PUSHVAR: {
     } continue;
 
 case OP_POPVAR: {
-    UCHAR i = (UCHAR)code[vm->ip];
+    UCHAR i = (UCHAR)vm->code[vm->ip];
     switch (Gvar[i].type) {
     case TYPE_LONG:  Gvar[i].value.l = sp->l; break;
     case TYPE_FLOAT: Gvar[i].value.f = sp->f; break;
@@ -78,7 +78,7 @@ case OP_POPVAR: {
     } continue;
 
 case OP_INCVAR:
-    Gvar[ (UCHAR)(code[vm->ip]) ].value.l++;
+    Gvar[ (UCHAR)(vm->code[vm->ip]) ].value.l++;
     vm->ip++;
     continue;
 
@@ -99,32 +99,32 @@ case OP_CMPL:
     continue;
 
 case OP_JMP:
-    vm->ip = *(unsigned short*)(code+vm->ip);
+    vm->ip = *(unsigned short*)(vm->code+vm->ip);
     continue;
 
 case OP_JEQ: // ==
     if (!flag)
-        vm->ip = *(unsigned short*)(code+vm->ip);
+        vm->ip = *(unsigned short*)(vm->code+vm->ip);
     else
         vm->ip += sizeof(unsigned short);
     continue;
 
 case OP_JNE: // !=
     if (flag)
-        vm->ip = *(unsigned short*)(code+vm->ip);
+        vm->ip = *(unsigned short*)(vm->code+vm->ip);
     else
         vm->ip += sizeof(unsigned short);
     continue;
 
 case OP_JG: // <
     if (flag > 0) 
-        vm->ip = *(unsigned short*)(code+vm->ip);
+        vm->ip = *(unsigned short*)(vm->code+vm->ip);
     else
         vm->ip += sizeof(unsigned short);
     continue;
 
 case OP_PRINTVAR: {
-    UCHAR i = (UCHAR)code[vm->ip];
+    UCHAR i = (UCHAR)vm->code[vm->ip];
     switch (Gvar[i].type) {
     case TYPE_LONG:  printf ("%ld", Gvar[i].value.l); break;
     case TYPE_FLOAT: printf ("%f",  Gvar[i].value.f); break;
@@ -133,39 +133,48 @@ case OP_PRINTVAR: {
     } continue;
 
 case OP_PRINTS: {
-    UCHAR i = (UCHAR)(code[vm->ip]);
+    UCHAR i = (UCHAR)(vm->code[vm->ip]);
     vm->ip++;    
     while (i--)
-        printf ("%c", code[vm->ip++]);
+        printf ("%c", vm->code[vm->ip++]);
     } continue;
 
 case OP_PRINTC:
-    printf ("%c", code[vm->ip++]);
+    printf ("%c", vm->code[vm->ip++]);
     continue;
+
+// call a VM Function
+// 
+case OP_CALLVM: {
+    ASM *local = *(void**)(vm->code+vm->ip);
+    vm->ip += sizeof(void*);
+    local->ip = 0;
+    vm_run (local);
+    } continue;
 
 // call a C Function
 // 
 case OP_CALL: {
     UCHAR ret_type;
-    TValue(*func)() = *(void**)(code+vm->ip);
-    float (*func_float)() = *(void**)(code+vm->ip);
+    long (*func)() = *(void**)(vm->code+vm->ip);
+    float (*func_float)() = *(void**)(vm->code+vm->ip);
     vm->ip += sizeof(void*);
-    arg_count = (UCHAR)(code[vm->ip]); //printf ("CALL ARG_COUNT = %d\n", arg_count);
+    arg_count = (UCHAR)(vm->code[vm->ip]); //printf ("CALL ARG_COUNT = %d\n", arg_count);
     vm->ip++;
-    ret_type = (UCHAR)(code[vm->ip]);
+    ret_type = (UCHAR)(vm->code[vm->ip]);
     vm->ip++;
 
     switch (arg_count) {
     case 0:
         if (ret_type != 'f') {
-            ret=func();
+            ret.l=func();
         } else {
             ret.f=func_float();
         }
         break;
     case 1:
         if (ret_type != 'f') {
-            ret=func(sp[0]); sp--;
+            ret.l=func(sp[0]); sp--;
         } else {
             ret.f=func_float(sp[0]); sp--;
         }
@@ -175,7 +184,7 @@ case OP_CALL: {
             arg[0] = sp[0]; sp--;
             arg[1] = sp[0]; sp--;
             // reverse order
-            ret=func(arg[1], arg[0]);
+            ret.l=func(arg[1], arg[0]);
         } else {
             arg[0] = sp[0]; sp--;
             arg[1] = sp[0]; sp--;
@@ -189,7 +198,7 @@ case OP_CALL: {
             arg[1] = sp[0]; sp--;
             arg[2] = sp[0]; sp--;
             // reverse order
-            ret=func(arg[2], arg[1], arg[0]);
+            ret.l=func(arg[2], arg[1], arg[0]);
         } else {
             arg[0] = sp[0]; sp--;
             arg[1] = sp[0]; sp--;
@@ -202,8 +211,9 @@ case OP_CALL: {
     } continue;
 
 case OP_HALT:
+    //printf ("OPCODE OP_HALT\n");
     return;
-    }//: switch (code[vm->ip++])
+    }//: switch (vm->code[vm->ip++])
 
 }//: void vm_run (VM *vm)
 
@@ -376,6 +386,12 @@ void asm_call (ASM *vm, void *func, UCHAR argc, UCHAR ret) {
     *vm->p++ = argc;
     *vm->p++ = ret;
 }
+void asm_callvm (ASM *vm, void *func) {
+    *vm->p++ = OP_CALLVM;
+    *(void**)vm->p = func;
+    vm->p += sizeof(void*);
+}
+
 
 
 void vme_argc (ASM *vm, UCHAR c) {

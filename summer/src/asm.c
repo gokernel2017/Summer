@@ -353,7 +353,7 @@ static void asm_change_jump (ASM *a) {
 
 }//: static void asm_change_jump (ASM *a)
 
-void asm_call (ASM *a, void *func, UCHAR argc, UCHAR ret) {
+void asm_call (ASM *a, void *func, UCHAR argc) {
 //void asm_call (ASM *a, void *func) {
     // b8   7a 13 40 00       mov    $0x40137a,%eax
     // ff d0                	call   *%eax
@@ -502,4 +502,29 @@ void asm_float_fstps (ASM *a, void *var) {
     g2(a,0xd9,0x1d);
     *(void**)a->p = var;
     a->p += sizeof(void*);
+}
+
+void asm_mov_reg_var (ASM *a, int reg, void *var) { // move: %register to variable
+    if (reg >= 0 && reg <= 7) {
+        switch (reg) {
+        case EAX: g(a,0xa3);       break; // a3       10 40 40 00   mov   %eax, 0x404010
+        case ECX: g2(a,0x89,0x0d); break; // 89 0d    60 40 40 00   mov   %ecx, 0x404060
+        case EDX: g2(a,0x89,0x15); break; // 89 15    60 40 40 00   mov   %edx, 0x404060
+        case EBX: g2(a,0x89,0x1d); break;//  89 1d    60 40 40 00   mov   %ebx, 0x404060
+        default: return;
+        }
+        asm_get_addr(a,var);
+    }
+}
+void asm_mov_var_reg (ASM *a, void *var, int reg) { // move: variable to %register
+    if (reg >= 0 && reg <= 7) {
+        switch (reg) {
+        case EAX: g(a,0xa1);       break; // a1       60 40 40 00   mov   0x404060, %eax
+        case ECX: g2(a,0x8b,0x0d); break;	// 8b 0d    70 40 40 00   mov   0x404070, %ecx
+        case EDX: g2(a,0x8b,0x15); break; // 8b 15    70 40 40 00   mov   0x404070, %edx
+        case EBX: g2(a,0x8b,0x1d); break; // 8b 1d    60 40 40 00   mov   0x404060, %ebx
+        default: return;
+        }
+        asm_get_addr (a, var);
+    }
 }

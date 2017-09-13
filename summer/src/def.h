@@ -12,9 +12,13 @@
 //---------------  DEFINE / ENUM  ---------------
 //-----------------------------------------------
 //
-#define UCHAR         unsigned char
-#define ASM_LEN(arg)  (arg->p - arg->code)
-#define GVAR_SIZE     255
+#define UCHAR           unsigned char
+#define ASM_LEN(arg)    (arg->p - arg->code)
+#define GVAR_SIZE       255
+
+#define VAR_RET         2
+
+#define TYPE_NO_RETURN  255
 
 enum { // variable type:
     TYPE_LONG = 0,
@@ -50,4 +54,3 @@ struct TVar {
 //-----------------------------------------------
 //
 extern TVar Gvar[GVAR_SIZE];
-extern int  return_type;

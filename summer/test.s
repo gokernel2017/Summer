@@ -1,12 +1,24 @@
 //-----------------------------------------------
 // Display:
+// ---------
 //
+// Summer Language: Hello World Test
+//
+// 505
 // 215
-// 230 
+// 230
+// 231
 //
 //-----------------------------------------------
 //
 int a = 10, b = 20, c = 3, d = 5, i;
+
+  //
+  // YES: a "Hello World"
+  //
+  "\nSummer Language: Hello World Test\n\n";
+
+  250 + 255; // display: 505
   
   a * b + c * d; // display: 215
 
@@ -17,7 +29,7 @@ int a = 10, b = 20, c = 3, d = 5, i;
   i; // display value of i: 230
 
 function increment () {
-  i++;
+  i++; i;
 }
 
   increment ();

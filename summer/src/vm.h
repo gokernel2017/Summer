@@ -111,7 +111,7 @@ extern int erro;
 //
 extern ASM  *asm_new        (unsigned long size);
 extern void vm_run          (ASM *vm);
-extern void vm_label        (ASM *vm, char *name);
+extern void asm_label       (ASM *vm, char *name);
 //
 // emit:
 //
@@ -136,8 +136,8 @@ extern void vme_cmpl        (ASM *vm);
 extern void vme_jmp         (ASM *vm, char *name);
 extern void vme_jg          (ASM *vm, char *name);
 
-extern void asm_call        (ASM *vm, void *func, UCHAR argc, UCHAR ret);
-extern void asm_callvm      (ASM *vm, void *func);
+extern void asm_call        (ASM *vm, void *func, UCHAR argc);
+extern void asm_callvm      (ASM *vm, void *func, UCHAR argc);
 extern void vme_argc        (ASM *vm, UCHAR c);
 
 extern void asm_reset       (ASM *vm);

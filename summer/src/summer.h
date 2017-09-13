@@ -58,6 +58,7 @@
 enum {
     TOK_INT = 255,
     TOK_FLOAT,
+    TOK_IF,
     TOK_FUNCTION,
 
     TOK_ID,
@@ -78,9 +79,9 @@ enum { FUNC_TYPE_NATIVE_C = 0, FUNC_TYPE_COMPILED, FUNC_TYPE_VM };
 //----------------------------  STRUCT  -----------------------------
 //-------------------------------------------------------------------
 //
-typedef struct FUNC       FUNC;
-typedef struct FUNC_INFO  FUNC_INFO;
-typedef struct ARG        ARG;
+typedef struct FUNC         FUNC;
+typedef struct FUNC_INFO    FUNC_INFO;
+typedef struct ARG          ARG;
 
 struct FUNC {
     char  *name;
@@ -94,6 +95,7 @@ struct ARG {
     char  type[20]; // "int", "float", "data_struct"
     char  name[20];
 };
+
 
 //-------------------------------------------------------------------
 //------------------------  GLOBAL VARIABLE  ------------------------

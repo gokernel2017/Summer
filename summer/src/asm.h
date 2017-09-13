@@ -57,6 +57,16 @@ extern "C" {
 #define ULONG               unsigned long
 #define OP_NOP              0x90
 
+enum {
+    EAX = 0,
+    ECX,
+    EDX,
+    EBX,
+    ESP,
+    EBP,
+    ESI,
+    EDI
+};
 enum { // jump type for change the labels
     ASM_JUMP_JMP = 1,
     ASM_JUMP_JNE,
@@ -131,7 +141,7 @@ extern void   asm_cmpl            (ASM *a, long value, void *var);
 extern void   asm_jmp             (ASM *a, char *name); // jump to label
 extern void   asm_jg              (ASM *a, char *name);
 
-extern void   asm_call            (ASM *vm, void *func, UCHAR argc, UCHAR ret);
+extern void   asm_call            (ASM *vm, void *func, UCHAR argc);
 extern void   asm_sub_esp         (ASM *a, char c);
 extern void   asm_popl_var        (ASM *a, void *var);
 
@@ -153,6 +163,9 @@ extern void asm_float_faddp (ASM *a);
 extern void asm_float_fsubp (ASM *a);
 
 extern void asm_float_fstps (ASM *a, void *var);
+
+extern void asm_mov_reg_var (ASM *a, int reg, void *var); // move: %register to variable
+extern void asm_mov_var_reg (ASM *a, void *var, int reg); // move: variable to %register
 
 #ifdef __cplusplus
 }

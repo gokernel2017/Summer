@@ -77,10 +77,12 @@ case OP_POPVAR: {
     sp--;
     } continue;
 
-case OP_INCVAR:
-    Gvar[ (UCHAR)(vm->code[vm->ip]) ].value.l++;
+case OP_INCVAR: {
+    UCHAR index = (UCHAR)(vm->code[vm->ip]);
+    if (Gvar[index].type==TYPE_LONG)
+        Gvar[index].value.l++;
     vm->ip++;
-    continue;
+    } continue;
 
 case OP_MULL: sp[-1].l *= sp[0].l; sp--; continue;
 case OP_DIVL: sp[-1].l /= sp[0].l; sp--; continue;
@@ -135,8 +137,15 @@ case OP_PRINTVAR: {
 case OP_PRINTS: {
     UCHAR i = (UCHAR)(vm->code[vm->ip]);
     vm->ip++;    
-    while (i--)
-        printf ("%c", vm->code[vm->ip++]);
+    while (i--){
+        if (vm->code[vm->ip]=='\\' && vm->code[vm->ip+1]=='n') {
+            printf("%c", 10); // new line
+            i--;
+            vm->ip++;
+        } else printf ("%c", vm->code[vm->ip]);
+
+        vm->ip++;
+    }
     } continue;
 
 case OP_PRINTC:
@@ -148,6 +157,9 @@ case OP_PRINTC:
 case OP_CALLVM: {
     ASM *local = *(void**)(vm->code+vm->ip);
     vm->ip += sizeof(void*);
+    arg_count = (UCHAR)(vm->code[vm->ip]); //printf ("CALL ARG_COUNT = %d\n", arg_count);
+    vm->ip++;
+
     local->ip = 0;
     vm_run (local);
     } continue;
@@ -155,43 +167,51 @@ case OP_CALLVM: {
 // call a C Function
 // 
 case OP_CALL: {
-    UCHAR ret_type;
     long (*func)() = *(void**)(vm->code+vm->ip);
     float (*func_float)() = *(void**)(vm->code+vm->ip);
     vm->ip += sizeof(void*);
     arg_count = (UCHAR)(vm->code[vm->ip]); //printf ("CALL ARG_COUNT = %d\n", arg_count);
     vm->ip++;
-    ret_type = (UCHAR)(vm->code[vm->ip]);
-    vm->ip++;
 
     switch (arg_count) {
     case 0:
-        if (ret_type != 'f') {
-            ret.l=func();
-        } else {
-            ret.f=func_float();
-        }
+        if (Gvar[VAR_RET].type==TYPE_LONG)
+            Gvar[VAR_RET].value.l = func();
+        if (Gvar[VAR_RET].type==TYPE_FLOAT)
+            Gvar[VAR_RET].value.f = func_float();
+
+        // no return
+        if (Gvar[VAR_RET].type==TYPE_NO_RETURN) func();
         break;
     case 1:
-        if (ret_type != 'f') {
-            ret.l=func(sp[0]); sp--;
-        } else {
-            ret.f=func_float(sp[0]); sp--;
-        }
+        if (Gvar[VAR_RET].type==TYPE_LONG)
+            Gvar[VAR_RET].value.l = func(sp[0]);
+        if (Gvar[VAR_RET].type==TYPE_FLOAT)
+            Gvar[VAR_RET].value.f = func_float(sp[0]);
+
+        // no return
+        if (Gvar[VAR_RET].type==TYPE_NO_RETURN) func(sp[0]);
+
+        sp--;
         break;
     case 2:
-        if (ret_type != 'f') {
-            arg[0] = sp[0]; sp--;
-            arg[1] = sp[0]; sp--;
+        arg[0] = sp[0]; sp--;
+        arg[1] = sp[0]; sp--;
+
+        if (Gvar[VAR_RET].type==TYPE_LONG) {
             // reverse order
-            ret.l=func(arg[1], arg[0]);
-        } else {
-            arg[0] = sp[0]; sp--;
-            arg[1] = sp[0]; sp--;
+            Gvar[VAR_RET].value.l = func(arg[1], arg[0]);
+        }
+        if (Gvar[VAR_RET].type==TYPE_FLOAT) {
             // reverse order
-            ret.f=func_float(arg[1], arg[0]);
+            Gvar[VAR_RET].value.f = func_float(arg[1], arg[0]);
+        }
+        if (Gvar[VAR_RET].type==TYPE_NO_RETURN) {
+            // reverse order
+            func (arg[1], arg[0]);
         }
         break;
+/*
     case 3:
         if (ret_type != 'f') {
             arg[0] = sp[0]; sp--;
@@ -207,6 +227,7 @@ case OP_CALL: {
             ret.f=func_float(arg[2], arg[1], arg[0]);
         }
         break;
+*/
     }//: switch (arg_count)
     } continue;
 
@@ -229,7 +250,7 @@ ASM *asm_new (unsigned long size) {
     }
     return NULL;
 }
-void vm_label (ASM *vm, char *name) {
+void asm_label (ASM *vm, char *name) {
     if (name) {
         ASM_label *lab;
         ASM_label *l = vm->label;
@@ -379,20 +400,18 @@ void vme_cmpl (ASM *vm) {
     *vm->p++ = OP_CMPL;
 }
 
-void asm_call (ASM *vm, void *func, UCHAR argc, UCHAR ret) {
+void asm_call (ASM *vm, void *func, UCHAR argc) {
     *vm->p++ = OP_CALL;
     *(void**)vm->p = func;
     vm->p += sizeof(void*);
     *vm->p++ = argc;
-    *vm->p++ = ret;
 }
-void asm_callvm (ASM *vm, void *func) {
+void asm_callvm (ASM *vm, void *func, UCHAR argc) {
     *vm->p++ = OP_CALLVM;
     *(void**)vm->p = func;
     vm->p += sizeof(void*);
+    *vm->p++ = argc;
 }
-
-
 
 void vme_argc (ASM *vm, UCHAR c) {
     *vm->p++ = c;

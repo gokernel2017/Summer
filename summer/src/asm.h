@@ -129,6 +129,11 @@ extern void   asm_ErroReset       (void);
 // gen / emit:
 //--------------------------------
 //
+extern void g  (ASM *a, UCHAR c);
+extern void g2 (ASM *a, UCHAR c1, UCHAR c2);
+extern void g3 (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3);
+extern void g4 (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3, UCHAR c4);
+
 extern void   asm_begin           (ASM *a);
 extern void   asm_end             (ASM *a);
 extern void   asm_get_addr        (ASM *a, void *ptr);
@@ -166,6 +171,8 @@ extern void asm_float_fstps (ASM *a, void *var);
 
 extern void asm_mov_reg_var (ASM *a, int reg, void *var); // move: %register to variable
 extern void asm_mov_var_reg (ASM *a, void *var, int reg); // move: variable to %register
+
+extern void asm_push_argument (ASM *a, char arg);
 
 #ifdef __cplusplus
 }

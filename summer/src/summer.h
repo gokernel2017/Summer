@@ -61,6 +61,9 @@ enum {
     TOK_IF,
     TOK_FUNCTION,
 
+    TOK_IFDEF,        // #ifdef
+    TOK_ENDIF,        // #endif
+
     TOK_ID,
     TOK_NUMBER,
     TOK_STRING,
@@ -87,7 +90,7 @@ struct FUNC {
     char  *name;
     char  *proto; // prototype
     UCHAR *code;  // the function on JIT MODE | or VM in VM MODE
-    int   type;   // FUNC_TYPE_COMPILED = 0, FUNC_TYPE_NATIVE, FUNC_TYPE_VM
+    int   type;   // FUNC_TYPE_NATIVE_C = 0, FUNC_TYPE_COMPILED, FUNC_TYPE_VM
     int   len;
     struct FUNC  *next;
 };
@@ -126,6 +129,8 @@ extern char   * core_FileOpen     (const char *FileName);
 extern int      VarFind           (char *name); // if not exist return -1
 
 //extern UCHAR  * core_FuncFind     (char *name);
+
+extern void     core_DefineAdd    (char *name, int value);
 
 extern void     CreateVarLong     (char *name, long value);
 extern void     CreateVarFloat    (char *name, float value);

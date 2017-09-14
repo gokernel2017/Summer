@@ -67,6 +67,14 @@ case OP_PUSHVAR: {
     vm->ip++;
     } continue;
 
+case OP_PUSHARG: {
+    UCHAR i = (UCHAR)vm->code[vm->ip];
+    sp++;
+    sp[0] = vm->arg[i];
+    vm->ip++;
+//printf ("PUSH ARGUMENT(%d) = %ld\n", i, sp->l);
+    } continue;
+
 case OP_POPVAR: {
     UCHAR i = (UCHAR)vm->code[vm->ip];
     switch (Gvar[i].type) {
@@ -160,6 +168,24 @@ case OP_CALLVM: {
     arg_count = (UCHAR)(vm->code[vm->ip]); //printf ("CALL ARG_COUNT = %d\n", arg_count);
     vm->ip++;
 
+    switch(arg_count){
+    case 1: local->arg[0] = sp[0]; sp--; break;
+    case 2:
+        local->arg[1] = sp[0]; sp--;
+        local->arg[0] = sp[0]; sp--;
+        break;
+    case 3:
+        local->arg[2] = sp[0]; sp--;
+        local->arg[1] = sp[0]; sp--;
+        local->arg[0] = sp[0]; sp--;
+        break;
+    case 4:
+        local->arg[3] = sp[0]; sp--;
+        local->arg[2] = sp[0]; sp--;
+        local->arg[1] = sp[0]; sp--;
+        local->arg[0] = sp[0]; sp--;
+        break;
+    }//: switch(arg_count)
     local->ip = 0;
     vm_run (local);
     } continue;
@@ -184,15 +210,14 @@ case OP_CALL: {
         if (Gvar[VAR_RET].type==TYPE_NO_RETURN) func();
         break;
     case 1:
+        arg[0] = sp[0]; sp--;
         if (Gvar[VAR_RET].type==TYPE_LONG)
-            Gvar[VAR_RET].value.l = func(sp[0]);
+            Gvar[VAR_RET].value.l = func(arg[0]);
         if (Gvar[VAR_RET].type==TYPE_FLOAT)
-            Gvar[VAR_RET].value.f = func_float(sp[0]);
+            Gvar[VAR_RET].value.f = func_float(arg[0]);
 
         // no return
-        if (Gvar[VAR_RET].type==TYPE_NO_RETURN) func(sp[0]);
-
-        sp--;
+        if (Gvar[VAR_RET].type==TYPE_NO_RETURN) func(arg[0]);
         break;
     case 2:
         arg[0] = sp[0]; sp--;
@@ -246,6 +271,10 @@ ASM *asm_new (unsigned long size) {
         vm->label = NULL;
         vm->jump = NULL;
         vm->ip = 0;
+//        vm->arg[0].l=0;
+//        vm->arg[1].l=0;
+//        vm->arg[2].l=0;
+//        vm->arg[3].l=0;
         return vm;
     }
     return NULL;
@@ -289,6 +318,11 @@ void vme_pushf (ASM *vm, float value) {
     *(float*)vm->p = value;
     vm->p += sizeof(float);
 }
+void vme_pusharg (ASM *vm, UCHAR i) {
+    *vm->p++ = OP_PUSHARG;
+    *vm->p++ = i;
+}
+
 void vme_popvar (ASM *vm, UCHAR i) {
     *vm->p++ = OP_POPVAR;
     *vm->p++ = i;

@@ -13,27 +13,36 @@
 //
 int a = 10, b = 20, c = 3, d = 5, i;
 
-  //
-  // YES: a "Hello World"
-  //
-  "\nSummer Language: Hello World Test\n\n";
+    #ifdef USE_JIT
+    "\nSummer tag: USE_JIT\n";
+    #endif
+    #ifdef USE_VM
+    "\nSummer tag: USE_VM\n";
+    #endif
 
-  250 + 255; // display: 505
+    //
+    // YES: a "Hello World"
+    //
+    "\nSummer Language: Hello World Test.\n\n";
+
+    250 + 255; // display: 505
   
-  a * b + c * d; // display: 215
+    a * b + c * d; // display: 215
 
-  // i = 230;
-  //
-  i = a * b + c * d + 15;
+    // i = 230;
+    //
+    i = a * b + c * d + 15;
 
-  i; // display value of i: 230
+    i; // display value of i: 230
 
-function increment () {
-  i++; i;
+function increment ()
+{
+    i++; i;
 }
 
-  increment ();
+    increment ();
 
-  // argument 1: display the list of Variables
-  // argument 2: display the list of Functions
-  info (1);
+    // argument 1: display the list of Variables
+    // argument 2: display the list of Functions
+    info (1);
+

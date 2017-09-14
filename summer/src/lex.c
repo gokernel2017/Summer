@@ -116,6 +116,9 @@ top:
         if (!strcmp(token, "float"))    return TOK_FLOAT;
         if (!strcmp(token, "if"))       return TOK_IF;
         if (!strcmp(token, "function")) return TOK_FUNCTION;
+        //
+        if (!strcmp(token, "ifdef"))    return TOK_IFDEF;
+        if (!strcmp(token, "endif"))    return TOK_ENDIF;
 
         return TOK_ID;
     }

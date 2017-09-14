@@ -35,6 +35,7 @@ enum { // variable type:
 //
 typedef union  TValue     TValue;
 typedef struct TVar       TVar;
+typedef struct DEFINE     DEFINE;
 
 union TValue {
     long    l;  //: type long integer
@@ -47,6 +48,11 @@ struct TVar {
     int     type;
     TValue  value;
     void    *info;  // any information ... struct type use this
+};
+struct DEFINE {
+    char    *name;
+    int     value;
+    DEFINE  *next;
 };
 
 //-----------------------------------------------

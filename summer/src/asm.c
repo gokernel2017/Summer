@@ -528,3 +528,8 @@ void asm_mov_var_reg (ASM *a, void *var, int reg) { // move: variable to %regist
         asm_get_addr (a, var);
     }
 }
+void asm_push_argument (ASM *a, char arg) {
+//    stack++;
+    g3(a,0x8b,0x45,(char)arg); // 8b 45 08     mov    8(%ebp),%eax
+    g(a,0x50);                 // 50           push   %eax
+}

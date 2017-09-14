@@ -70,7 +70,8 @@ enum {
     OP_PRINTC,
 
     OP_CALL,      // call a C Function
-    OP_CALLVM     // call a VM Function
+    OP_CALLVM,    // call a VM Function
+    OP_PUSHARG
 };
 
 //-----------------------------------------------
@@ -85,6 +86,7 @@ struct ASM {
     UCHAR     *p;
     UCHAR     *code;
     int       ip;
+    TValue    arg [10]; // used functions get argument
     ASM_label *label;
     ASM_jump  *jump;
 };
@@ -138,6 +140,7 @@ extern void vme_jg          (ASM *vm, char *name);
 
 extern void asm_call        (ASM *vm, void *func, UCHAR argc);
 extern void asm_callvm      (ASM *vm, void *func, UCHAR argc);
+extern void vme_pusharg     (ASM *vm, UCHAR i);
 extern void vme_argc        (ASM *vm, UCHAR c);
 
 extern void asm_reset       (ASM *vm);

@@ -24,7 +24,6 @@
 //-------------------------------------------------------------------
 //
 #include "summer.h"
-#include "config.h"
 
 #define STACK_SIZE    1024
 
@@ -83,6 +82,93 @@ case OP_PRINT_EAX: {
     }
     } continue;
 
+case OP_MOV_EAX_VAR: {
+    UCHAR i = (UCHAR)a->code[a->ip++];
+    Gvar[i].value = eax;
+    } continue;
+
+case OP_PUSH_STRING: {
+    char *s = *(void**)(a->code+a->ip);
+    a->ip += sizeof(void*);
+    sp++;
+    sp->s = s;
+    } continue;
+
+//
+// call a C Function
+//
+case OP_CALL:
+    {
+    int (*func)() = *(void**)(a->code+a->ip);
+    float (*func_float)() = *(void**)(a->code+a->ip);
+    a->ip += sizeof(void*);
+    UCHAR arg_count = (UCHAR)(a->code[a->ip++]);
+    UCHAR return_type = (UCHAR)(a->code[a->ip++]);
+
+    switch (arg_count) {
+    case 0: // no argument
+        if (return_type == TYPE_NO_RETURN) // 0 | no return
+            func ();
+        else if (return_type == TYPE_FLOAT)
+            eax.f = func_float ();
+        else
+            eax.i = func ();
+        break; //: case 0:
+
+    case 1: // 1 argument
+        if (return_type == TYPE_NO_RETURN) // 0 | no return
+            func (sp[0]);
+        else if (return_type == TYPE_FLOAT)
+            eax.f = func_float (sp[0]);
+        else
+            eax.i = func (sp[0]);
+        sp--;
+        break; //: case 1:
+
+    case 2: // 2 arguents
+        if (return_type == TYPE_NO_RETURN) // 0 | no return
+            func (sp[-1], sp[0]);
+        else if (return_type == TYPE_FLOAT)
+            eax.f = func_float (sp[-1], sp[0]);
+        else
+            eax.i = func (sp[-1], sp[0]);
+        sp -= 2;
+        break; //: case 2:
+
+    case 3: // 3 arguents
+        if (return_type == TYPE_NO_RETURN) // 0 | no return
+            func (sp[-2], sp[-1], sp[0]);
+        else if (return_type == TYPE_FLOAT)
+            eax.f = func_float (sp[-2], sp[-1], sp[0]);
+        else
+            eax.i = func (sp[-2], sp[-1], sp[0]);
+        sp -= 3;
+        break; //: case 3:
+
+    case 4: // 4 arguents
+        if (return_type == TYPE_NO_RETURN) // 0 | no return
+            func (sp[-3], sp[-2], sp[-1], sp[0]);
+        else if (return_type == TYPE_FLOAT)
+            eax.f = func_float (sp[-3], sp[-2], sp[-1], sp[0]);
+        else
+            eax.i = func (sp[-3], sp[-2], sp[-1], sp[0]);
+        sp -= 4;
+        break; //: case 4:
+
+    case 5: // 5 arguents
+        if (return_type == TYPE_NO_RETURN) // 0 | no return
+            func (sp[-4], sp[-3], sp[-2], sp[-1], sp[0]);
+        else if (return_type == TYPE_FLOAT)
+            eax.f = func_float (sp[-4], sp[-3], sp[-2], sp[-1], sp[0]);
+        else
+            eax.i = func (sp[-4], sp[-3], sp[-2], sp[-1], sp[0]);
+        sp -= 5;
+        break; //: case 5:
+
+    }//: switch (arg_count)
+
+    } continue; //: case OP_CALL:
+
 case OP_HALT: // size: 1
     a->ip = 0;
     //printf ("OP_HALT: >>>>>>> (sp - stack) = %d\n", (int)(sp - stack));
@@ -136,19 +222,12 @@ void asm_reset (ASM *a) {
 }
 
 void asm_begin (ASM *a) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("----------------------\n");
-#endif
 }
 
 void asm_end (ASM *a) {
     ASM_label *label = a->label;
 
     emit_halt(a);
-
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("----------------------\n");
-#endif
 
     //-----------------------
     // change jump:
@@ -162,9 +241,7 @@ void asm_end (ASM *a) {
             if (!strcmp(label->name, jump->name)) {
 
                 *(unsigned short*)(a->code+jump->pos) = label->pos;
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d = '%s'\n", label->pos, label->name);
-#endif
+
             }
             jump = jump->next;
         }
@@ -176,73 +253,58 @@ void asm_end (ASM *a) {
 //-------------------------------------------------------------------
 //
 void emit_push_int (ASM *a, int i) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d  push_int      %d\n", (int)(a->p-a->code), i);
-#endif
     *a->p++ = OP_PUSH_INT;
     *(int*)a->p = i;
     a->p += sizeof(int);
 }
 void emit_push_var (ASM *a, UCHAR i) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d  push_var      %s\n", (int)(a->p-a->code), Gvar[i].name);
-#endif
     *a->p++ = OP_PUSH_VAR;
     *a->p++ = i;
 }
 void emit_pop_var (ASM *a, UCHAR i) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d  pop_var       %s\n", (int)(a->p-a->code), Gvar[i].name);
-#endif
     *a->p++ = OP_POP_VAR;
     *a->p++ = i;
 }
 void emit_mul_int (ASM *a) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d  mul_int\n", (int)(a->p-a->code));
-#endif
     *a->p++ = OP_MUL_INT;
 }
 void emit_div_int (ASM *a) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d  mul_int\n", (int)(a->p-a->code));
-#endif
     *a->p++ = OP_DIV_INT;
 }
 void emit_add_int (ASM *a) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d  add_int\n", (int)(a->p-a->code));
-#endif
     *a->p++ = OP_ADD_INT;
 }
 void emit_sub_int (ASM *a) {
-    if (disasm_mode)
-        printf ("%04d  add_int\n", (int)(a->p-a->code));
     *a->p++ = OP_SUB_INT;
 }
 void emit_pop_eax (ASM *a) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d  pop_eax\n", (int)(a->p-a->code));
-#endif
     *a->p++ = OP_POP_EAX;
 }
 void emit_print_eax (ASM *a, UCHAR type) {
-#ifdef USE_DISASM
-    if (disasm_mode) {
-        if (type == TYPE_INT)
-            printf ("%04d  print_eax     TYPE_INT\n", (int)(a->p-a->code));
-        if (type == TYPE_FLOAT)
-            printf ("%04d  print_eax     TYPE_FLOAT\n", (int)(a->p-a->code));
-    }
-#endif
     *a->p++ = OP_PRINT_EAX;
     *a->p++ = type;
 }
 
+void emit_mov_eax_var (ASM *a, UCHAR index) {
+    *a->p++ = OP_MOV_EAX_VAR;
+    *a->p++ = index;
+}
+
+void emit_push_string (ASM *a, char *s) {
+    *a->p++ = OP_PUSH_STRING;
+    *(void**)a->p = s;
+    a->p += sizeof(void*);
+}
+
+void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
+    *a->p++ = OP_CALL;
+    *(void**)a->p = func;
+    a->p += sizeof(void*);
+    *a->p++ = arg_count;
+    *a->p++ = return_type;
+}
+
 void emit_halt (ASM *a) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d  halt\n", (int)(a->p-a->code));
-#endif
     *a->p++ = OP_HALT;
 }
 

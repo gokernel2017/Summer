@@ -27,6 +27,12 @@
 
 extern void Erro (char *s);
 
+static char save_token [LEXER_TOKEN_SIZE];
+static int  save_pos;
+static int  save_tok;
+static int  save_line;
+
+
 //-------------------------------------------------------------------
 //
 //   return tok number or 0.
@@ -85,7 +91,6 @@ top:
         *p = 0;
 
         if (!strcmp(l->token, "int"))       { l->tok = TOK_INT;     return TOK_INT; }
-        if (!strcmp(l->token, "disasm"))    { l->tok = TOK_DISASM;  return TOK_DISASM; }
 
         l->tok = TOK_ID;
         return TOK_ID;
@@ -176,3 +181,17 @@ void lex_set (LEXER *l, char *text, char *name) {
             strcpy (l->name, name);
     }
 }//: lex_set()
+
+void lex_save (LEXER *l) {
+    sprintf (save_token, "%s", l->token);
+    save_pos  = l->pos;
+    save_tok  = l->tok;
+    save_line = l->line;
+}
+
+void lex_restore (LEXER *l) {
+    sprintf (l->token, "%s", save_token);
+    l->pos  = save_pos;
+    l->tok  = save_tok;
+    l->line = save_line;
+}

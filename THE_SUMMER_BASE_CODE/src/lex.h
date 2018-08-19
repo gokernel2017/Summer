@@ -43,7 +43,6 @@ extern "C" {
 
 enum {
     TOK_INT = 255,
-    TOK_DISASM,
     //-----------------------
     TOK_ID,
     TOK_STRING,
@@ -65,13 +64,17 @@ struct LEXER {
     char  token [LEXER_TOKEN_SIZE];
     //
     int   pos; // text [ pos ]
-    int   line;
     int   tok;
+    int   line;
 };
 
-extern int    lex       (LEXER *lexer);
+extern int  lex         (LEXER *lexer);
 
-extern void   lex_set   (LEXER *lexer, char *text, char *name);
+extern void lex_set     (LEXER *lexer, char *text, char *name);
+
+extern void lex_save    (LEXER *l);
+
+extern void lex_restore (LEXER *l);
 
 #ifdef __cplusplus
 }

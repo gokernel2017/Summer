@@ -21,17 +21,11 @@
 //
 //   01: summer
 //
-//   02: summer -d
+//   02: summer file.s
 //
-//   03: summer file.s
+//   03: summer -s "int a=100, b=200; a = b; a;"
 //
-//   04: summer file.s -d
-//
-//   05: summer -s "int a=100, b=200; a = b; a;"
-//
-//   05: summer -s "10 * 20 + 3 * 5"
-//
-//   06: summer -s "int a=100, b=200; a = b; a;" -d
+//   04: summer -s "10 * 20 + 3 * 5"
 //
 // ----------------------------------------------
 //
@@ -54,9 +48,6 @@ int main (int argc, char **argv) {
   return -1;
 
     for (i = 0; i < argc; i++) {
-#ifdef USE_DISASM
-        if (!strcmp(argv[i], "-d")) disasm_mode = 1;
-#endif // ! DISASM
         if (!strcmp(argv[i], "-s") && argc > i+1) is_string = i+1;
     }
     // execute a string and exit:

@@ -16,11 +16,10 @@
 // FILE:
 //   summer.h
 //
-// START DATE:
-//   27/08/2017 - 08:35
+// SUMMER LANGUAGE START DATE ( 27/08/2017 - 08:35 ):
+//   rewrite: 20/07/2018 - 11:10
 //
-// E-MAIL:
-//   gokernel@hotmail.com
+// BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
 //
@@ -40,8 +39,6 @@
 //    #error "ERRO: ##########  This example suport only 32 BITS  ##########"
 #endif
 
-#include "config.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,6 +53,7 @@ extern "C" {
 
 #define STR_ERRO_SIZE         1024
 #define GVAR_SIZE             255
+#define TYPE_NO_RETURN        100
 
 enum {
     TYPE_INT = 0,
@@ -65,6 +63,11 @@ enum {
     TYPE_STRUCT,
     TYPE_PSTRUCT  // struct data *p;
 };
+enum {
+    FUNC_TYPE_NATIVE_C = 0,
+    FUNC_TYPE_COMPILED,
+    FUNC_TYPE_VM
+};
 
 //-----------------------------------------------
 //------------------  STRUCT  -------------------
@@ -72,6 +75,8 @@ enum {
 //
 typedef union  VALUE      VALUE;
 typedef struct TVar       TVar;
+typedef struct TFunc      TFunc;
+typedef struct F_STRING   F_STRING;
 
 union VALUE {
     int     i;  //: type integer
@@ -85,10 +90,23 @@ struct TVar {
     VALUE   value;
     void    *info;  // any information ... struct type use this
 };
+struct TFunc {
+    char    *name;
+    char    *proto; // prototype
+    UCHAR   *code;  // the function on JIT MODE | or VM in VM MODE
+    int     type;   // FUNC_TYPE_NATIVE_C = 0, FUNC_TYPE_COMPILED, FUNC_TYPE_VM
+    int     len;
+    TFunc   *next;
+};
+struct F_STRING {
+    char *s;
+    int   i;
+    F_STRING *next;
+}; // fixed string
+
 
 // global:
 LIBIMPORT TVar  Gvar [GVAR_SIZE];
-LIBIMPORT int   disasm_mode;
 
 //-------------------------------------------------------------------
 //---------------------------  PUBLIC API  --------------------------
@@ -102,6 +120,7 @@ LIBIMPORT ASM   * core_Init       (unsigned int size);
 LIBIMPORT void    core_Finalize   (void);
 LIBIMPORT char  * FileOpen        (const char *FileName);
 LIBIMPORT void    CreateVarInt    (char *name, int value);
+LIBIMPORT TFunc * FuncFind        (char *name);
 LIBIMPORT int     VarFind         (char *name);
 LIBIMPORT int     Parse           (LEXER *l, ASM *a, char *text, char *name);
 LIBIMPORT void    Erro            (char *s);

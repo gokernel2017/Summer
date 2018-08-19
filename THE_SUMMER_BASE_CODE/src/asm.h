@@ -30,16 +30,32 @@
 extern "C" {
 #endif
 
-#ifdef USE_JIT
+//#ifdef USE_JIT
 
 #define LIBIMPORT         extern
 #define ASM_DEFAULT_SIZE  50000
 #define UCHAR             unsigned char
 
-#define G2_MOV_EAX_EDI    0x89, 0xc7    // 89 c7   : mov   %eax,%edi
-#define G2_MOV_EAX_ESI    0x89, 0xc6    // 89 c6   : mov   %eax,%esi
+//
+// pass 5 arguments to function:
+//
+#define G2_MOV_EAX_EDI    0x89, 0xc7        // 89 c7      : mov   %eax, %edi
+#define G2_MOV_EAX_ESI    0x89, 0xc6        // 89 c6      : mov   %eax, %esi
+#define G2_MOV_EAX_EDX    0x89, 0xc2        // 89 c2      : mov   %eax, %edx
+#define G2_MOV_EAX_ECX    0x89, 0xc1        // 89 c1      : mov   %eax, %ecx
+#define G3_MOV_EAX_r8d    0x41, 0x89, 0xc0  // 41 89 c0   : mov %eax, %r8d
 
-//                g2(a,0x89,0xc7); // 89 c7   : mov   %eax,%edi
+enum {
+    EAX = 0,
+    ECX,
+    EDX,
+    EBX,
+    ESP,
+    EBP,
+    ESI,
+    EDI
+};
+
 //-----------------------------------------------
 //------------------  STRUCT  -------------------
 //-----------------------------------------------
@@ -68,6 +84,7 @@ struct ASM_jump {
     ASM_jump  *next;
 };
 
+LIBIMPORT void    Run                 (ASM *a); // back-end in file: vm.c
 LIBIMPORT int     asm_set_executable  (ASM *a, unsigned int size);
 LIBIMPORT ASM   * asm_new             (unsigned int size);
 LIBIMPORT void    asm_reset           (ASM *a);
@@ -101,8 +118,10 @@ LIBIMPORT void emit_call          (ASM *a, void *func, UCHAR arg_count, UCHAR re
 LIBIMPORT void emit_pop_eax       (ASM *a);
 LIBIMPORT void emit_movl_ESP      (ASM *a, long value, UCHAR index); // movl    $0x5dc,0x4(%esp)
 LIBIMPORT void emit_mov_eax_ESP   (ASM *a, UCHAR index); // mov    %eax,0x4(%esp)
+LIBIMPORT void emit_mov_var_reg   (ASM *a, void *var, int reg); // move: variable to %register
+LIBIMPORT void emit_mov_reg_var   (ASM *a, int reg, void *var); // move: %register to variable
 
-#endif // ! USE_JIT
+//#endif // ! USE_JIT
 
 #ifdef __cplusplus
 }

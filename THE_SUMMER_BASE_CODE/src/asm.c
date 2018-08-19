@@ -37,11 +37,9 @@
 #endif
 
 #include "asm.h"
-#include "config.h"
 
-#ifdef USE_JIT
+//#ifdef USE_JIT
 
-LIBIMPORT int     disasm_mode;
 LIBIMPORT void    Erro    (char *s);
 LIBIMPORT char  * ErroGet (void);
 
@@ -147,15 +145,6 @@ void asm_begin (ASM *a) { // 32/64 BITS OK
     a->p[3] = 0xe5;
     a->p += 4;
     #else
-#ifdef USE_DISASM
-    if (disasm_mode) {
-        int i = a->p-a->code;
-        printf ("----------------------\n");
-        printf ("%04d push  %%ebp\n", i);
-        printf ("%04d mov   %%esp, %%ebp\n", i+1);
-        printf ("%04d sub   $100, %%esp\n", i+3);
-    }
-#endif // ! DISASM
     // 55     : push  %ebp
     // 89 e5  : mov   %esp,%ebp
     //-----------------------------
@@ -177,14 +166,6 @@ void asm_end (ASM *a) { // 32/64 BITS OK
     a->p[1] = 0xc3; // c3 : retq
     a->p += 2;
     #else
-#ifdef USE_DISASM
-    if (disasm_mode) {
-        int i = a->p-a->code;
-        printf ("%04d leave\n", i);
-        printf ("%04d ret\n", i+1);
-        printf ("----------------------\n");
-    }
-#endif // ! DISASM
     a->p[0] = 0xc9; // c9 : leave
     a->p[1] = 0xc3; // c3 : ret
     a->p += 2;
@@ -238,32 +219,18 @@ void emit_push_int (ASM *a, int value) {
 // push variable on: %esp:
 //
 void emit_push_var (ASM *a, void *var) {
-    int i = a->p-a->code;
     stack++;
     #if defined(__x86_64__)
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d pushq var_name\n", i);
-#endif
     g3(a,0xff,0x34,0x25); asm_get_addr(a,var);  // ff 34 25   60 40 40 00   pushq   0x404060
     #else
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d pushl var_name\n", i);
-#endif
     g2(a,0xff,0x35); asm_get_addr(a,var);       // ff 35      60 40 40 00   pushl   0x404060
     #endif
 }
 void emit_pop_var (ASM *a, void *var) { // 32/64 BITS OK
-    int i = a->p-a->code;
     stack--;
     #if defined(__x86_64__)
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d popq var_name\n", i);
-#endif
     g3(a,0x8f,0x04,0x25); asm_get_addr(a,var);  // 8f 04 25   60 40 40 00    popq   0x404060
     #else
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d popl var_name\n", i);
-#endif
     g2(a,0x8f,0x05); asm_get_addr(a,var);       // 8f 05      60 40 40 00    popl   0x404060
     #endif
 }
@@ -300,13 +267,6 @@ void asm_sub_eax_esp (ASM *a) {
 //------------------------------------------------
 
 void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
-#ifdef USE_DISASM
-    if (disasm_mode) {
-        int i = a->p-a->code;
-        printf ("%04d mov $0x40137a, %%eax\n", i);
-        printf ("%04d call *%%eax\n", i+5);
-    }
-#endif
 //void asm_call (ASM *a, void *func) {
     // b8   7a 13 40 00       mov    $0x40137a,%eax
     // ff d0                	call   *%eax
@@ -316,17 +276,11 @@ void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
 }
 
 void emit_pop_eax (ASM *a) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d pop %%eax\n", (int)(a->p-a->code));
-#endif
     stack--;
     g(a,0x58);  // 58     pop   %eax
 }
 
 void emit_movl_ESP (ASM *a, long value, UCHAR index) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d movl $0x5dc,%d(%%esp) \n", (int)(a->p-a->code), index);
-#endif
     // c7 44 24   04   dc 05 00 00 	  movl    $0x5dc,0x4(%esp)
     g4(a,0xc7,0x44,0x24,(UCHAR)index);
     *(long*)a->p = value;
@@ -334,11 +288,45 @@ void emit_movl_ESP (ASM *a, long value, UCHAR index) {
 }
 
 void emit_mov_eax_ESP (ASM *a, UCHAR index) {
-#ifdef USE_DISASM
-    if (disasm_mode) printf ("%04d mov %%eax,%d(%%esp) \n", (int)(a->p-a->code), index);
-#endif
     g4 (a,0x89,0x44,0x24,(UCHAR)index); // 89 44 24     04    mov    %eax,0x4(%esp)
 }
 
+void emit_mov_var_reg (ASM *a, void *var, int reg) { // move: variable to %register
+    if (reg >= 0 && reg <= 7) {
+        switch (reg) {
+        case EAX: g(a,0xa1);       break; // a1       60 40 40 00   mov   0x404060, %eax
+        case ECX: g2(a,0x8b,0x0d); break;	// 8b 0d    70 40 40 00   mov   0x404070, %ecx
+        case EDX: g2(a,0x8b,0x15); break; // 8b 15    70 40 40 00   mov   0x404070, %edx
+        case EBX: g2(a,0x8b,0x1d); break; // 8b 1d    60 40 40 00   mov   0x404060, %ebx
+        default: return;
+        }
+        asm_get_addr (a, var);
+    }
+}
 
-#endif // ! USE_JIT
+void emit_mov_reg_var (ASM *a, int reg, void *var) { // move: %register to variable
+    if (reg >= 0 && reg <= 7) {
+        #if defined(__x86_64__)
+        switch (reg) {
+        case EAX: g3(a,0x89,0x04,0x25);       break; // 89 05     73 04 20 00    	mov    %eax,0x200473(%rip)        # 600ad0 <i>
+//        case ECX: g2(a,0x89,0x0d); break; // 89 0d    60 40 40 00   mov   %ecx, 0x404060
+//        case EDX: g2(a,0x89,0x15); break; // 89 15    60 40 40 00   mov   %edx, 0x404060
+//        case EBX: g2(a,0x89,0x1d); break;//  89 1d    60 40 40 00   mov   %ebx, 0x404060
+        default: return;
+        }
+        asm_get_addr(a,var);
+        #else
+        switch (reg) {
+        case EAX: g(a,0xa3);       break; // a3       10 40 40 00   mov   %eax, 0x404010
+        case ECX: g2(a,0x89,0x0d); break; // 89 0d    60 40 40 00   mov   %ecx, 0x404060
+        case EDX: g2(a,0x89,0x15); break; // 89 15    60 40 40 00   mov   %edx, 0x404060
+        case EBX: g2(a,0x89,0x1d); break;//  89 1d    60 40 40 00   mov   %ebx, 0x404060
+        default: return;
+        }
+        asm_get_addr(a,var);
+        #endif
+    }
+}
+
+
+//#endif // ! USE_JIT

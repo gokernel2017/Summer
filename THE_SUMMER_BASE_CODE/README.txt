@@ -20,7 +20,8 @@
  To test the Summer Language(LINUX), type:
    ./summer test.s
 
-
+ This version, Call Functions with max 5 arguments.
+ 
  BETA.
 
  BY: Francisco - gokernel@hotmail.com

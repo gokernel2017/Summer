@@ -11,4 +11,6 @@ This use my JIT library ( asm32 ).
 
 BETA.
 
+This version to call functions, the max arguments is 5 ...
+
 BY: Francisco - gokernel@hotmail.com

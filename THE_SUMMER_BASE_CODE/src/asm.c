@@ -40,7 +40,8 @@
 
 //#ifdef USE_JIT
 
-LIBIMPORT void    Erro    (char *s);
+//LIBIMPORT void    Erro    (char *s);
+LIBIMPORT void    Erro    (char *format, ...);
 LIBIMPORT char  * ErroGet (void);
 
 static int  stack;
@@ -304,14 +305,14 @@ void emit_mov_var_reg (ASM *a, void *var, int reg) { // move: variable to %regis
     }
 }
 
-void emit_mov_reg_var (ASM *a, int reg, void *var) { // move: %register to variable
+void emit_mov_reg_var (ASM *a, int reg, void *var) { // 32/64 BITS OK - move: %register to variable
     if (reg >= 0 && reg <= 7) {
         #if defined(__x86_64__)
         switch (reg) {
-        case EAX: g3(a,0x89,0x04,0x25);       break; // 89 05     73 04 20 00    	mov    %eax,0x200473(%rip)        # 600ad0 <i>
-//        case ECX: g2(a,0x89,0x0d); break; // 89 0d    60 40 40 00   mov   %ecx, 0x404060
-//        case EDX: g2(a,0x89,0x15); break; // 89 15    60 40 40 00   mov   %edx, 0x404060
-//        case EBX: g2(a,0x89,0x1d); break;//  89 1d    60 40 40 00   mov   %ebx, 0x404060
+        case EAX: g3(a, 0x89, 0x04, 0x25);  break; // 89 04 25    28 0b 60 00 	mov  %eax, 0x600b28
+        case ECX: g3(a, 0x89, 0x0c, 0x25);  break; // 89 0c 25    28 0b 60 00 	mov  %ecx, 0x600b28
+        case EDX: g3(a, 0x89, 0x14, 0x25);  break; // 89 14 25    28 0b 60 00 	mov  %edx, 0x600b28
+        case EBX: g3(a, 0x89, 0x1c, 0x25);  break; // 89 1c 25    28 0b 60 00 	mov  %ebx, 0x600b28
         default: return;
         }
         asm_get_addr(a,var);

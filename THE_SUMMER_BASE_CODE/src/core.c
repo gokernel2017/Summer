@@ -203,49 +203,16 @@ void execute_call (LEXER *l, ASM *a, TFunc *func) {
 
         while (lex(l)) {
 
-            if (l->tok==TOK_STRING) {
-                F_STRING *s = fs_new (l->token);
-                if (s) {
-                    #ifdef USE_VM
-                    emit_push_string (a, s->s);
-                    #endif
-
-                    #ifdef USE_JIT
-                    #if defined(__x86_64__)
-                    //---------------------------
-                    // JIT 64 bits
-                    //
-                    // bf    1c 07 40 00       	mov    $0x40071c,%edi
-                    //
-                    //-----------------------------------------------
-                    // <<<<<<<   ONLY ARGUMENT 1 IMPLEMENTED   >>>>>>
-                    //-----------------------------------------------
-                    //
-                    if (count==0) {
-                        g(a,0xbf); asm_get_addr(a,s->s);
-                    }
-                    //
-                    // <<<<<<<<<<<<<<<<<<<<<  Please Wait ... >>>>>>>
-                    #else
-                    //---------------------------
-                    // JIT 32 bits
-                    //
-                    // movl   $0x403000, 0(%esp)
-                    //
-                    emit_movl_ESP (a, (long)(s->s), pos); // pass argument 1
-                    pos += size;
-                    #endif
-                    #endif // #ifdef USE_JIT
-                    if (count++ > 15) break;
-                }
-            }//: if (l->tok==TOK_STRING)
-            else
-            if (l->tok==TOK_ID || l->tok==TOK_NUMBER || l->tok=='(') {
+            if (l->tok==TOK_ID || l->tok==TOK_NUMBER || l->tok==TOK_STRING || l->tok=='(') {
 
                 //
                 // The result of expression is store in the "stack".
                 //
                 expr0 (l,a);
+
+                #ifdef USE_VM
+                // ... none ...
+                #endif
 
                 #ifdef USE_JIT
 
@@ -286,6 +253,10 @@ void execute_call (LEXER *l, ASM *a, TFunc *func) {
         }
     }
 
+    if (count > 5) {
+        Erro ("%s:%d: - Call Function(%s) the max arguments is: 5\n", l->name, l->line, func->name);
+  return;
+    }
     if (func->proto) {
         if (func->proto[0] == '0') return_type = TYPE_NO_RETURN;
         if (func->proto[0] == 'f') return_type = TYPE_FLOAT;
@@ -377,7 +348,8 @@ static void expression (LEXER *l, ASM *a) {
             //
             if (main_variable_type == TYPE_INT) {
                 // argument 1:
-                //b8    00 20 40 00       	mov    $0x402000,%eax
+                // this is a constans :
+                // b8    00 20 40 00       	mov    $0x402000,%eax
                 g(a,0xb8); asm_get_addr(a,"%d\n");
                 g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
 
@@ -406,11 +378,8 @@ static void expression (LEXER *l, ASM *a) {
             #endif //: #ifdef USE_JIT
         }//: if (expr0(l,a) == -1)
 
-    } else {
-        char buf[100];
-        sprintf (buf, "EXPRESSION ERRO LINE(%d) - Ilegar Word (%s)\n", l->line, l->token);
-        Erro (buf);
     }
+    else Erro ("%s: Expression ERRO(%d) - Ilegar Word (%s)\n", l->name, l->line, l->token);
 }
 static int expr0 (LEXER *l, ASM *a) {
     if (l->tok == TOK_ID) {
@@ -486,6 +455,22 @@ static void expr3 (LEXER *l, ASM *a) { // '('
     else atom(l,a); // atom:
 }
 static void atom (LEXER *l, ASM *a) { // expres
+
+    if (l->tok==TOK_STRING) {
+        F_STRING *s = fs_new (l->token);
+        if (s) {
+            #ifdef USE_VM
+            emit_push_string (a, s->s);
+            #endif
+            #ifdef USE_JIT
+            // this is a constans :
+            // 68    00 20 40 00       	push   $0x402000
+            //
+            g(a, 0x68); asm_get_addr(a,s->s);
+            #endif
+        }
+  return;
+    }
     if (l->tok==TOK_ID) {
         int i;
 
@@ -501,11 +486,8 @@ static void atom (LEXER *l, ASM *a) { // expres
 
             lex(l);
 
-        } else {
-            char buf[255];
-            sprintf(buf, "ERRO LINE(%d ATOM()): Var Not Found '%s'", l->line, l->token);
-            Erro (buf);
         }
+        else Erro ("%s: %d: - Var Not Found '%s'", l->name, l->line, l->token);
     }
     else if (l->tok==TOK_NUMBER) {
         if (strchr(l->token, '.'))
@@ -519,7 +501,7 @@ static void atom (LEXER *l, ASM *a) { // expres
 
         lex(l);
     }
-    else { Erro("Expression"); printf ("LINE: %d token(%s)\n", l->line, l->token); }
+    else Erro("%s: %d Expression atom - Ilegal Word (%s)\n", l->line, l->token);
 
 }//: atom ()
 
@@ -633,6 +615,8 @@ void lib_info (int arg) {
                     if (*s=='i') printf ("int");
                     else
                     if (*s=='f') printf ("float");
+                    else
+                    if (*s=='s') printf ("char *");
                     s++;
                     if(*s) printf (", ");
                 }
@@ -683,10 +667,18 @@ void lib_printf (char *format, ...) {
 }
 
 
-void Erro (char *s) {
+//void Erro (char *s) {
+void Erro (char *format, ...) {
+    char msg[1024] = { 0 };
+    va_list ap;
+
+    va_start (ap,format);
+    vsprintf (msg, format, ap);
+    va_end (ap);
+
     erro++;
-    if ((strlen(strErro) + strlen(s)) < STR_ERRO_SIZE)
-        strcat (strErro, s);
+    if ((strlen(strErro) + strlen(msg)) < STR_ERRO_SIZE)
+        strcat (strErro, msg);
 }
 
 char *ErroGet (void) {

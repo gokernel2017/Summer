@@ -1,4 +1,11 @@
-
+//-------------------------------------------------------------------
+//
+// SUMMER LANGUAGE:
+//
+// Simple test.
+//
+//-------------------------------------------------------------------
+//
 int i, a = 10, b = 20, c = 3, d = 5;
 
   i = a * b + c * d;
@@ -10,3 +17,5 @@ int i, a = 10, b = 20, c = 3, d = 5;
   i; // display: 70
 
   printf ("TEMP PRINTF >>>> Value i+10: %d\n", i+10);
+
+  info (2); // display the list of builtin Functions:

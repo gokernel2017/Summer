@@ -123,7 +123,8 @@ LIBIMPORT void    CreateVarInt    (char *name, int value);
 LIBIMPORT TFunc * FuncFind        (char *name);
 LIBIMPORT int     VarFind         (char *name);
 LIBIMPORT int     Parse           (LEXER *l, ASM *a, char *text, char *name);
-LIBIMPORT void    Erro            (char *s);
+//LIBIMPORT void    Erro            (char *s);
+LIBIMPORT void    Erro            (char *format, ...);
 LIBIMPORT char  * ErroGet         (void);
 LIBIMPORT void    ErroReset       (void);
 

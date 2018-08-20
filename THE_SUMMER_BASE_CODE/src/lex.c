@@ -25,7 +25,10 @@
 //
 #include "lex.h"
 
-extern void Erro (char *s);
+#define LIBIMPORT extern
+
+//extern void Erro (char *s);
+LIBIMPORT void Erro (char *format, ...);
 
 static char save_token [LEXER_TOKEN_SIZE];
 static int  save_pos;

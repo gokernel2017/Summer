@@ -30,8 +30,6 @@
 extern "C" {
 #endif
 
-//#ifdef USE_JIT
-
 #define LIBIMPORT         extern
 #define ASM_DEFAULT_SIZE  50000
 #define UCHAR             unsigned char
@@ -119,9 +117,7 @@ LIBIMPORT void emit_pop_eax       (ASM *a);
 LIBIMPORT void emit_movl_ESP      (ASM *a, long value, UCHAR index); // movl    $0x5dc,0x4(%esp)
 LIBIMPORT void emit_mov_eax_ESP   (ASM *a, UCHAR index); // mov    %eax,0x4(%esp)
 LIBIMPORT void emit_mov_var_reg   (ASM *a, void *var, int reg); // move: variable to %register
-LIBIMPORT void emit_mov_reg_var   (ASM *a, int reg, void *var); // move: %register to variable
-
-//#endif // ! USE_JIT
+LIBIMPORT void emit_mov_reg_var   (ASM *a, int reg, void *var); // 32/64 BITS OK - move: %register to variable
 
 #ifdef __cplusplus
 }

@@ -93,9 +93,10 @@ top:
         }
         *p = 0;
 
-        if (!strcmp(l->token, "int"))     { l->tok = TOK_INT;     return TOK_INT; }
-        if (!strcmp(l->token, "module"))  { l->tok = TOK_MODULE;  return TOK_MODULE; }
-        if (!strcmp(l->token, "import"))  { l->tok = TOK_IMPORT;  return TOK_IMPORT; }
+        if (!strcmp(l->token, "int"))       { l->tok = TOK_INT;       return TOK_INT; }
+        if (!strcmp(l->token, "module"))    { l->tok = TOK_MODULE;    return TOK_MODULE; }
+        if (!strcmp(l->token, "import"))    { l->tok = TOK_IMPORT;    return TOK_IMPORT; }
+        if (!strcmp(l->token, "function"))  { l->tok = TOK_FUNCTION;  return TOK_FUNCTION; }
 
         l->tok = TOK_ID;
         return TOK_ID;

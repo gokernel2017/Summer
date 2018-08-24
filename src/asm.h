@@ -97,6 +97,7 @@ struct ASM_jump {
 
 LIBIMPORT void    Run                 (ASM *a); // back-end in file: vm.c
 LIBIMPORT int     asm_set_executable  (ASM *a, unsigned int size);
+LIBIMPORT int     set_executable      (void *ptr, unsigned int size);
 LIBIMPORT ASM   * asm_new             (unsigned int size);
 LIBIMPORT void    asm_reset           (ASM *a);
 LIBIMPORT void    asm_begin           (ASM *a); // 32/64 BITS OK

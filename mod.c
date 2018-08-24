@@ -36,4 +36,3 @@ LLIBIMPORT void mod_hello (void) {
     printf ("\nHello World - From module.function(mod_hello) ...\n\n");
 
 }
-

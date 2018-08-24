@@ -62,6 +62,7 @@ enum {
 
     OP_PUSH_STRING,
 
+    OP_CALL_VM,
     OP_CALL,
 
     OP_HALT
@@ -104,6 +105,7 @@ LIBIMPORT ASM   * asm_new           (unsigned int size);
 LIBIMPORT void    asm_reset         (ASM *a);
 LIBIMPORT void    asm_begin         (ASM *a);
 LIBIMPORT void    asm_end           (ASM *a);
+LIBIMPORT int     asm_get_len       (ASM *a);
 // emit:
 LIBIMPORT void    emit_push_int     (ASM *a, int i);
 LIBIMPORT void    emit_push_var     (ASM *a, UCHAR i);

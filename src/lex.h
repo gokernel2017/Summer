@@ -45,6 +45,7 @@ enum {
     TOK_INT = 255,
     TOK_MODULE,
     TOK_IMPORT,
+    TOK_FUNCTION,
     //-----------------------
     TOK_ID,
     TOK_STRING,

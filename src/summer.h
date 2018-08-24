@@ -110,6 +110,10 @@ struct MODULE {
     TFunc   *func;
     MODULE  *next;
 };
+typedef struct {
+    char  type[20]; // "int", "float", "data_struct"
+    char  name[20];
+}ARG;
 
 
 // global:
@@ -130,6 +134,8 @@ LIBIMPORT char  * FileOpen        (const char *FileName);
 LIBIMPORT void    CreateVarInt    (char *name, int value);
 LIBIMPORT TFunc * FuncFind        (char *name);
 LIBIMPORT int     VarFind         (char *name);
+LIBIMPORT TFunc * ModuleFind      (char *LibName, char *FuncName);
+LIBIMPORT int     ModuleIsLib     (char *LibName); // rwturn:1 or 0
 LIBIMPORT int     Parse           (LEXER *l, ASM *a, char *text, char *name);
 //LIBIMPORT void    Erro            (char *s);
 LIBIMPORT void    Erro            (char *format, ...);

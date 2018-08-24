@@ -88,7 +88,7 @@ void asm_reset (ASM *a) {
     a->jump  = NULL;
 }
 
-static int set_executable (void *ptr, unsigned int size) {
+int set_executable (void *ptr, unsigned int size) {
 
     if (ErroGet()) return 1;
 

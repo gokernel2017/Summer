@@ -130,6 +130,7 @@ LIBIMPORT void    emit_jump_jmp       (ASM *a, char *name);
 LIBIMPORT void    emit_jump_je        (ASM *a, char *name);
 LIBIMPORT void    emit_jump_jne       (ASM *a, char *name);
 LIBIMPORT void    emit_jump_jle       (ASM *a, char *name);
+LIBIMPORT void    emit_jump_jge       (ASM *a, char *name);
 //
 LIBIMPORT void    emit_push_int       (ASM *a, int value);
 LIBIMPORT void    emit_push_var       (ASM *a, void *var);

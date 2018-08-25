@@ -251,6 +251,26 @@ static void asm_change_jump (ASM *a) {
                     }
                     break;
 
+
+                case ASM_JUMP_JNE:
+                    {
+                    int r = label_pos - jump_pos - 2;
+
+                    if (r == (char)r) { // 2 bytes
+                        // 75 08                	 jne     4012b1 < _code + number >
+                        //
+                        *(char*)(a->code+jump_pos) = 0x75;
+                        *(char*)(a->code+jump_pos+1) = r;
+                    } else {
+                        // 0f 85    85 ed bf ff   jne    401293 < _code + number >
+                        //
+                        *(char*)(a->code+jump_pos) = 0x0f;
+                        *(char*)(a->code+jump_pos+1) = 0x85;
+                        *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
+                    }
+                    }
+                    break;
+
                 }//: switch (jump->type)
 
             }//: if (!strcmp(label->name, jump->name))
@@ -398,7 +418,9 @@ void emit_jump_jne (ASM *a, char *name) {
 void emit_jump_jle (ASM *a, char *name) {
     asm_conditional_jump (a, name, ASM_JUMP_JLE);
 }
-
+void emit_jump_jge (ASM *a, char *name) {
+    asm_conditional_jump (a, name, ASM_JUMP_JGE);
+}
 
 // push number on: %esp:
 //

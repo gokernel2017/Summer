@@ -316,12 +316,8 @@ static void word_if (LEXER *l, ASM *a) {
         }
 
         #ifdef USE_JIT
-        if (l->tok == ')' || l->tok == TOK_AND_AND) emit_pop_eax(a);  // 58     pop   %eax
-        else                                        g (a,0x5a);       // 5a     pop   %edx
-        #endif
-        #ifdef USE_VM
-//        if (tok == ')' || tok == TOK_AND_AND) vme_popvar (a, VAR_IF_EAX); // emul: pop %EAX
-//        else                                  vme_popvar (a, VAR_IF_EDX); // emul: pop %EDX
+        if (l->tok == ')' || l->tok == TOK_AND_AND) g (a,0x58); // 58     pop   %eax
+        else                                        g (a,0x5a); // 5a     pop   %edx
         #endif
 
         switch (l->tok) {
@@ -334,14 +330,12 @@ static void word_if (LEXER *l, ASM *a) {
             #ifdef USE_JIT
             g2(a,0x85,0xc0); // 85 c0    test   %eax,%eax
             #endif
-
             if (is_negative == 0) emit_jump_je (a,array[if_count]);
             else                  emit_jump_jne (a,array[if_count]);
             break;
 
         case '>':
             lex(l); expr0(l,a);
-
             #ifdef USE_VM
             emit_cmp_int (a);
             #endif
@@ -349,17 +343,20 @@ static void word_if (LEXER *l, ASM *a) {
             emit_pop_eax(a);
             emit_cmp_eax_edx(a);
             #endif
-
             emit_jump_jle (a,array[if_count]);
             break;
-/*
         case '<':
             lex(l); expr0(l,a);
-            asm_pop_eax(a);     // 58     : pop   %eax
-            asm_cmp_eax_edx(a); // 39 c2  : cmp   %eax,%edx
-            asm_jge (a,array[if_count]);
+            #ifdef USE_VM
+            emit_cmp_int (a);
+            #endif
+            #ifdef USE_JIT
+            emit_pop_eax(a);     // 58     : pop   %eax
+            emit_cmp_eax_edx(a); // 39 c2  : cmp   %eax,%edx
+            #endif
+            emit_jump_jge (a,array[if_count]);
             break;
-
+/*
         case TOK_EQUAL_EQUAL: // ==
             lex(l); expr0(l,a); / * asm_pop_eax(a); // 58     : pop   %eax
             asm_cmp_eax_edx(a);                // 39 c2  : cmp   %eax,%edx

@@ -145,6 +145,7 @@ LIBIMPORT void    emit_jump_jmp     (ASM *a, char *name);
 LIBIMPORT void    emit_jump_je      (ASM *a, char *name);
 LIBIMPORT void    emit_jump_jne     (ASM *a, char *name);
 LIBIMPORT void    emit_jump_jle     (ASM *a, char *name);
+LIBIMPORT void    emit_jump_jge     (ASM *a, char *name);
 //
 LIBIMPORT void    emit_halt         (ASM *a);
 

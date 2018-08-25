@@ -506,12 +506,12 @@ void emit_jump_je (ASM *a, char *name) {
 void emit_jump_jne (ASM *a, char *name) {
     conditional_jump (a, name, OP_JUMP_JNE);
 }
-
 void emit_jump_jle (ASM *a, char *name) {
     conditional_jump (a, name, OP_JUMP_JLE);
 }
-
-
+void emit_jump_jge (ASM *a, char *name) {
+    conditional_jump (a, name, OP_JUMP_JGE);
+}
 
 void emit_halt (ASM *a) {
     *a->p++ = OP_HALT;

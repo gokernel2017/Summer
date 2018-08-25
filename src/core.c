@@ -22,7 +22,7 @@
 // BY:  Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
-//
+// FILE SIZE: 37.699
 #include "summer.h"
 #include <stdarg.h>
 
@@ -38,9 +38,14 @@ struct DATA { // test SDL_Surface ( w, h )
 //-----------------------------------------------
 //
 static void   word_int      (LEXER *l, ASM *a);
+static void   word_if       (LEXER *l, ASM *a);
+static void   word_for      (LEXER *l, ASM *a);
+static void   word_break    (LEXER *l, ASM *a);
 static void   word_module   (LEXER *l, ASM *a);
 static void   word_import   (LEXER *l, ASM *a);
 static void   word_function (LEXER *l, ASM *a);
+//
+static void   word_IFDEF    (LEXER *l, ASM *a);
 //
 static void   expression    (LEXER *l, ASM *a);
 //--------------  Expression:  --------------
@@ -53,7 +58,8 @@ static void   atom          (LEXER *l, ASM *a);
 static void   do_block      (LEXER *l, ASM *a);
 static int    stmt          (LEXER *l, ASM *a);
 static int    see           (LEXER *l);
-static void   module_add    (char *module_name, char *func_name, char *proto, UCHAR *code);
+static void   core_ModuleAdd(char *module_name, char *func_name, char *proto, UCHAR *code);
+static void   core_DefineAdd(char *name, int value);
 F_STRING    * fs_new        (char *s);
 // stdlib:
 void  lib_info    (int arg);
@@ -65,25 +71,26 @@ TFunc *lib_get_func (char *name);
 
 struct DATA *new_data (int x, int y, int w, int h);
 void display (struct DATA *data);
-void disasm (UCHAR *code);
 
 //-----------------------------------------------
 //------------------  VARIABLES  ----------------
 //-----------------------------------------------
 //
 TVar              Gvar [GVAR_SIZE]; // global:
-int               gvar_len;
 //
 static MODULE   * Gmodule = NULL; // ... console.log(); ...
 static TFunc    * Gfunc = NULL;  // store the user functions
+static DEFINE   * Gdefine = NULL;
 static ASM      * asm_function;
-static char       strErro [STR_ERRO_SIZE];
-static char       func_name [100];
-static char       array_break [20][20];   // used to word break
 static ARG        argument [20];
 static F_STRING * fs = NULL;
 
-//
+static char
+    strErro     [STR_ERRO_SIZE],
+    func_name   [100],
+    array_break [20][20]   // used to word break
+    ;
+
 static int
     erro,
     loop_level,
@@ -109,8 +116,6 @@ static TFunc stdlib[]={
   { "new_data",   "piiii",  (UCHAR*)new_data,       0,    0,    NULL },
   { "display",    "0p",     (UCHAR*)display,        0,    0,    NULL },
 
-  { "disasm",     "0s",     (UCHAR*)disasm,        0,    0,    NULL },
-
   { NULL,         NULL,     NULL,                   0,    0,    NULL }
 };
 
@@ -131,16 +136,22 @@ ASM * core_Init (unsigned int size) {
         if ((a            = asm_new (size))==NULL) return NULL;
         if ((asm_function = asm_new (size))==NULL) return NULL;
 
-        module_add ("console", "log", "0s", (UCHAR*)lib_printf);
-/*
-        module_add ("console", "data", "0s", (UCHAR*)lib_log);
-        module_add ("console", "type", "0s", (UCHAR*)lib_log);
+        core_ModuleAdd ("console", "log", "0s", (UCHAR*)lib_printf);
 
-        module_add ("sdl", "SDL_Init", "0s", (UCHAR*)lib_log);
-        module_add ("sdl", "SDL_Quit", "0s", (UCHAR*)lib_log);
-        module_add ("sdl", "SDL_Sleep", "0s", (UCHAR*)lib_log);
-*/
-        gvar_len = 12345;
+        #ifdef USE_JIT
+        core_DefineAdd ("USE_JIT", 1);
+        #endif
+        #ifdef USE_VM
+        core_DefineAdd ("USE_VM", 2);
+        #endif
+
+        #ifdef WIN32
+        core_DefineAdd("WIN32", 1);
+        #endif
+        #ifdef __linux__
+        core_DefineAdd("__linux__", 2);
+        #endif
+
         return a;
     }
     return NULL;
@@ -277,7 +288,178 @@ static void word_int (LEXER *l, ASM *a) {
         if (l->tok == ';') break;
     }
     if (l->tok != ';') Erro ("ERRO: The word(float) need the char(;) on the end\n");
+
+}//: word_int ()
+
+static void word_if (LEXER *l, ASM *a) {
+    //**** to "push/pop"
+    static char array[20][20];
+    static int if_count_total = 0;
+    static int if_count = 0;
+    int is_negative;
+
+    if (lex(l) !='(') { Erro ("ERRO SINTAX (if) need char: '('\n"); return; }
+
+    if_count++;
+    sprintf (array[if_count], "0_IF%d", if_count_total++);
+
+    while (!erro && lex(l)) { // pass arguments: if (a > b) { ... }
+        is_negative = 0;
+
+        if (l->tok == '!') { is_negative = 1; lex(l); }
+
+        expr0(l,a);
+
+        if (erro) {
+            Erro ("<<<<<<<<<<  if erro >>>>>>>>>>>>>\n");
+            return;
+        }
+
+        #ifdef USE_JIT
+        if (l->tok == ')' || l->tok == TOK_AND_AND) emit_pop_eax(a);  // 58     pop   %eax
+        else                                        g (a,0x5a);       // 5a     pop   %edx
+        #endif
+        #ifdef USE_VM
+//        if (tok == ')' || tok == TOK_AND_AND) vme_popvar (a, VAR_IF_EAX); // emul: pop %EAX
+//        else                                  vme_popvar (a, VAR_IF_EDX); // emul: pop %EDX
+        #endif
+
+        switch (l->tok) {
+        case ')': // if (a) { ... }
+        case TOK_AND_AND:
+            #ifdef USE_VM
+            emit_push_int (a, 0); // ! to compare if zero
+            emit_cmp_int (a);
+            #endif
+            #ifdef USE_JIT
+            g2(a,0x85,0xc0); // 85 c0    test   %eax,%eax
+            #endif
+
+            if (is_negative == 0) emit_jump_je (a,array[if_count]);
+            else                  emit_jump_jne (a,array[if_count]);
+            break;
+
+        case '>':
+            lex(l); expr0(l,a);
+
+            #ifdef USE_VM
+            emit_cmp_int (a);
+            #endif
+            #ifdef USE_JIT
+            emit_pop_eax(a);
+            emit_cmp_eax_edx(a);
+            #endif
+
+            emit_jump_jle (a,array[if_count]);
+            break;
+/*
+        case '<':
+            lex(l); expr0(l,a);
+            asm_pop_eax(a);     // 58     : pop   %eax
+            asm_cmp_eax_edx(a); // 39 c2  : cmp   %eax,%edx
+            asm_jge (a,array[if_count]);
+            break;
+
+        case TOK_EQUAL_EQUAL: // ==
+            lex(l); expr0(l,a); / * asm_pop_eax(a); // 58     : pop   %eax
+            asm_cmp_eax_edx(a);                // 39 c2  : cmp   %eax,%edx
+            asm_jne(a,array[if_count]);
+            break;
+
+        case TOK_NOT_EQUAL: // !=
+            tok=lex(); expr0(a); asm_pop_eax(a); // 58     : pop   %eax
+            asm_cmp_eax_edx(a);                 // 39 c2  : cmp   %eax,%edx
+            asm_je (a,array[if_count]);
+            break;
+*/
+        }//: switch(tok)
+
+        if (l->tok==')') break;
+    }
+    if (see(l)=='{') stmt (l,a); else Erro ("word(if) need start block: '{'\n");
+
+    asm_label (a, array[if_count]);
+    if_count--;
+
+}// word_if ()
+
+//
+// for (;;) { ... }
+// for (i = 0; i < 100; i++) { ... }
+//
+static void word_for (LEXER *l, ASM *a) {
+    //####### to "push/pop"
+    //
+    static char array[20][20];
+    static int for_count_total = 0;
+    static int for_count = 0;
+
+    if (lex(l) != '(') {
+        Erro ("%s: %d: ERRO FOR, dont found char: '('", l->name, l->line);
+        return;
+    }
+    lex (l);
+
+    // for (;;) { ... }
+    //
+    if (l->tok == ';' && lex(l) == ';') {
+        if (lex(l) != ')') {
+            Erro ("ERRO FOR, dont found char: ')'");
+            return;
+        }
+        if (see(l) != '{') { // ! check block '{'
+            Erro ("ERRO FOR, dont found char: '{'");
+            return;
+        }
+
+loop_level++;  // <<<<<<<<<<  ! PUSH  >>>>>>>>>>
+
+        for_count++;
+        for_count_total++;
+        sprintf (array[for_count], "_FOR_%d", for_count_total);
+        sprintf (array_break[loop_level], "_FOR_END%d", for_count_total); // used for break
+        asm_label(a, array[for_count]);
+
+        stmt (l,a); //<<<<<<<<<<  block  >>>>>>>>>>
+
+        emit_jump_jmp (a, array[for_count]);
+
+        asm_label (a, array_break[loop_level]); // used to break
+        for_count--;
+
+loop_level--;  // <<<<<<<<<<  ! POP  >>>>>>>>>>
+    }
+
+}//: word_for ()
+
+static void word_break (LEXER *l, ASM *a) {
+    if (loop_level) {
+        emit_jump_jmp (a, array_break[loop_level]);
+    }
+    else Erro ("%s: %d: word 'break' need a loop", l->name, l->line);
 }
+
+static void word_IFDEF (LEXER *l, ASM *a) {
+    char text[100];
+    int _line_;
+    DEFINE *o = Gdefine;
+
+    lex(l);
+    strcpy (text, l->token);
+    _line_ = l->line;
+
+    while (o) { // ! if exist
+        if (!strcmp(o->name, l->token)) return;
+        o = o->next;
+    }
+    while (lex(l) && l->tok != TOK_ENDIF) { } // ! execute not defined
+
+    if (l->tok != TOK_ENDIF) {
+        Erro ("%s: %d: ERRO LINE %d - ENDIF(%s) not found\n", l->name, l->line, _line_, text);
+//        asm_Erro (buf);
+    }
+}
+
 
 //
 // library ("SDL", "sdl");
@@ -329,7 +511,7 @@ static void word_module (LEXER *l, ASM *a) {
         // add on top
         mod->next = Gmodule;
         Gmodule = mod;
-        printf ("------------ LOADED LIBRARY----------------(%s)\n", FileName);
+        printf ("Module Loaded: '%s'\n", FileName);
     } else {
         //Erro("%s: %d: File Not Found: '%s'\n", l->name, l->line, FileName);
         printf ("%s: %d: File Not Found: '%s'\n", l->name, l->line, FileName);
@@ -547,8 +729,6 @@ static void word_function (LEXER *l, ASM *a) {
         vm->code[func->len+1] = 0;
         vm->code[func->len+2] = 0;
 
-//printf ("FUNCAO SIZE: %d\n", func->len);
-
         //-------------------------------------------
         // HACKING ... ;)
         // Resolve Recursive:
@@ -557,8 +737,7 @@ static void word_function (LEXER *l, ASM *a) {
         if (is_recursive)
         for (i=0;i<func->len;i++) {
             if (vm->code[i]==OP_CALL && *(void**)(vm->code+i+1) == func_null) {
-printf ("FUNCAO POSITION: %d\n", i);
-                vm->code[i] = OP_CALL_VM;      //<<<<<<<  change here  >>>>>>>
+                vm->code[i] = OP_CALL_VM;     //<<<<<<<  change here  >>>>>>>
                 *(void**)(vm->code+i+1) = vm; //<<<<<<<  change here  >>>>>>>
                 i += 5;
             }
@@ -577,7 +756,8 @@ printf ("FUNCAO POSITION: %d\n", i);
     Gfunc = func;
 
     is_function = is_recursive = argument_count = *func_name = 0;
-}
+
+}//:word_function ()
 
 //
 // function_name (a, b, c + d);
@@ -661,7 +841,9 @@ void execute_call (LEXER *l, ASM *a, TFunc *func) {
         //
         // here: fi->code ==  ASM*
         //
-        // emit_call_vm (a, (ASM*)(func->code), (UCHAR)count, return_type);
+        #ifdef USE_VM
+        emit_call_vm (a, (ASM*)(func->code), (UCHAR)count, return_type);
+        #endif
     } else {
         emit_call (a, (void*)func->code, (UCHAR)count, return_type);
     }
@@ -957,7 +1139,6 @@ static void atom (LEXER *l, ASM *a) { // expres
 
 
 void do_block (LEXER *l, ASM *a) {
-
     while (!erro && l->tok && l->tok != '}') {
         stmt (l,a);
     }
@@ -970,17 +1151,26 @@ static int stmt (LEXER *l, ASM *a) {
 
     switch (l->tok) {
     case '{':
+        l->level++;
         //----------------------------------------------------
         do_block (l,a); //<<<<<<<<<<  no recursive  >>>>>>>>>>
         //----------------------------------------------------
         return 1;
     case TOK_INT:       word_int      (l,a); return 1;
+    case TOK_IF:        word_if       (l,a); return 1;
+    case TOK_FOR:       word_for      (l,a); return 1;
+    case TOK_BREAK:     word_break    (l,a); return 1;
     case TOK_MODULE:    word_module   (l,a); return 1;
     case TOK_IMPORT:    word_import   (l,a); return 1;
     case TOK_FUNCTION:  word_function (l,a); return 1;
+    //
+    case TOK_IFDEF:     word_IFDEF    (l,a); return 1;
+    //
     default:            expression    (l,a); return 1;
+    case '}': l->level--; return 1;
     case ';':
-    case '}':
+    case '#':
+    case TOK_ENDIF:
         return 1;
     case 0: return 0;
     }
@@ -1021,7 +1211,7 @@ F_STRING *fs_new (char *s) {
     return n;
 }
 
-void module_add (char *module_name, char *func_name, char *proto, UCHAR *code) {
+void core_ModuleAdd (char *module_name, char *func_name, char *proto, UCHAR *code) {
     MODULE *mod, *p = Gmodule;
     TFunc *func;
 
@@ -1067,6 +1257,20 @@ void module_add (char *module_name, char *func_name, char *proto, UCHAR *code) {
         }
     }
 }
+void core_DefineAdd (char *name, int value) {
+    DEFINE *o = Gdefine, *n;
+    while (o) {
+        if (!strcmp(o->name, name)) return;
+        o = o->next;
+    }
+    if ((n = (DEFINE*)malloc(sizeof(DEFINE)))==NULL) return;
+    n->name = strdup(name);
+    n->value = value;
+    // add on top
+    n->next = Gdefine;
+    Gdefine = n;
+}
+
 
 int Parse (LEXER *l, ASM *a, char *text, char *name) {
     lex_set (l, text, name);
@@ -1077,6 +1281,9 @@ int Parse (LEXER *l, ASM *a, char *text, char *name) {
         // ... compiling ...
     }
     asm_end (a);
+    if (l->level) { // { ... }
+        Erro ("ERRO: LEXER->level { ... }: %d\n", l->level);
+    }
     return erro;
 }
 
@@ -1128,6 +1335,13 @@ void lib_info (int arg) {
             }
             fi++;
         }
+        fi = Gfunc;
+        while(fi){
+            if(fi->proto) printf ("%s ", fi->proto);
+            printf ("%s\n", fi->name);
+            fi = fi->next;
+        }
+
         }
         break;
 
@@ -1223,14 +1437,5 @@ void display (struct DATA *data) {
     printf ("data->w: %d\n", data->w);
     printf ("data->h: %d\n", data->h);
     printf ("------------------------------------------------\n");
-}
-
-void disasm (UCHAR *code) {
-
-printf ("\nFunction DISASM\n");
-
-    if (code) {
-        printf ("code[0]: 0x%x\n", (UCHAR)code[0]);
-    }
 }
 

@@ -39,11 +39,11 @@
 */
 #include "asm.h"
 
-//#ifdef USE_JIT
 
-//LIBIMPORT void    Erro    (char *s);
 LIBIMPORT void    Erro    (char *format, ...);
 LIBIMPORT char  * ErroGet (void);
+
+static void asm_change_jump (ASM *a);
 
 static int  stack;
 
@@ -131,6 +131,140 @@ int asm_get_len (ASM *a) {
     return (a->p - a->code);
 }
 
+void asm_label (ASM *a, char *name) {
+    if (name) {
+        ASM_label *lab;
+        ASM_label *l = a->label;
+
+        // find if exist:
+        while (l) {
+            if (!strcmp(l->name, name)) {
+                printf ("Label Exist: '%s'\n", l->name);
+                return;
+            }
+            l = l->next;
+        }
+
+        if ((lab = (ASM_label*)malloc (sizeof(ASM_label))) != NULL) {
+
+            lab->name = strdup (name);
+            lab->pos  = (a->p - a->code); // the index
+
+            // add on top:
+            lab->next = a->label;
+            a->label = lab;
+        }
+    }
+}
+
+static void asm_change_jump (ASM *a) {
+    ASM_label *label = a->label;
+
+    while (label) {
+
+        ASM_jump  *jump  = a->jump;
+
+        while (jump) {
+
+            if (!strcmp(label->name, jump->name)) {
+                int jump_pos  = jump->pos;
+                int label_pos = label->pos;
+
+                switch (jump->type) {
+                case ASM_JUMP_JMP:
+                    {
+                    *(UCHAR*)(a->code+jump_pos-1) = 0xe9; // OPCODE ( jmp )
+                    *(int*)(a->code+jump_pos) = (int)(label_pos - jump_pos - 4);
+                    }
+                    break;
+
+                case ASM_JUMP_JG:
+                    {
+                    int r = label_pos - jump_pos - 2;
+
+                    if (r == (char)r) { // 2 bytes
+                        // 7f 08                	 jg     4012b1 < _code + number >
+                        //
+                        *(UCHAR*)(a->code+jump_pos) = 0x7f;
+                        *(UCHAR*)(a->code+jump_pos+1) = r;
+                    } else { // 6 bytes
+                        // 0f 8f    bb 00 00 00     jg     4013a7 < _code + number >
+                        //
+                        *(UCHAR*)(a->code+jump_pos) = 0x0f;
+                        *(UCHAR*)(a->code+jump_pos+1) = 0x8f;
+                        *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
+                    }
+                    }
+                    break;//: case ASM_JUMP_JG:
+
+                case ASM_JUMP_JGE:
+                    {
+                    int r = label_pos - jump_pos - 2;
+                    if (r == (char)r) { // 2 bytes
+                        // 7d 06                	jge    40165f < code + number>
+                        //
+                        *(UCHAR*)(a->code+jump_pos) = 0x7d;
+                        *(UCHAR*)(a->code+jump_pos+1) = r;
+                    } else {
+                        // 0f 8d   d3 00 00 00    	jge    401733 < code+ number>
+                        //
+                        *(UCHAR*)(a->code+jump_pos) = 0x0f;
+                        *(UCHAR*)(a->code+jump_pos+1) = 0x8d;
+                        *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
+                    }
+                    }
+                    break;//: case JUMP_TYPE_JGE:
+
+                case ASM_JUMP_JLE:
+                    {
+                    int r = label_pos - jump_pos - 2;
+                    if (r == (char)r) { // 2 bytes
+                        // 7e 06                	jle    40165a < code + number >
+                        //
+                        *(UCHAR*)(a->code+jump_pos) = 0x7e;
+                        *(UCHAR*)(a->code+jump_pos+1) = r;
+                    } else {
+                        // 0f 8e    d3 00 00 00    	jle    401733 < code + number >
+                        //
+                        *(UCHAR*)(a->code+jump_pos) = 0x0f;
+                        *(UCHAR*)(a->code+jump_pos+1) = 0x8e;
+                        *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
+                    }
+                    } break;//: case JUMP_JUMP_JLE: {
+
+
+                case ASM_JUMP_JE:
+                    {
+                    int r = label_pos - jump_pos - 2;
+                    if (r == (char)r) { // 2 bytes
+                        //  40129a:	74 02     je    40129e <_my_loop+0xe>
+                        //
+                        *(char*)(a->code+jump_pos) = 0x74;
+                        *(char*)(a->code+jump_pos+1) = r;
+                    } else {
+                        // 4012a2:	0f 84    96 00 00 00    je   40133e <_my_loop+0xa9>
+                        //
+                        *(char*)(a->code+jump_pos) = 0x0f;
+                        *(char*)(a->code+jump_pos+1) = 0x84;
+                        *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
+                    }
+                    }
+                    break;
+
+                }//: switch (jump->type)
+
+            }//: if (!strcmp(label->name, jump->name))
+
+            jump = jump->next;
+
+        }//: while (jump)
+
+        label = label->next;
+
+    }//: while (label)
+
+}//: asm_change_jump ()
+
 
 //-------------------------------------------------------------------
 //--------------------------  GEN / EMIT  ---------------------------
@@ -176,7 +310,7 @@ void asm_end (ASM *a) { // 32/64 BITS OK
         Erro ("ASM ERRO: code > size\n");
         return;
     }
-//    asm_change_jump (a);
+    asm_change_jump (a);
 }
 
 void g (ASM *a, UCHAR c) {
@@ -200,6 +334,71 @@ void g4 (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3, UCHAR c4) {
     a->p[3] = c4;
     a->p += 4;
 }
+void emit_jump_jmp (ASM *a, char *name) {
+    ASM_jump *jump;
+
+    if (name && (jump = (ASM_jump*)malloc (sizeof(ASM_jump))) != NULL) {
+
+        g(a,OP_NOP); // change this in ( asm_change_jump ) to OPCODE: 0xe9
+
+        jump->name = strdup (name);
+        jump->pos  = (a->p - a->code); // the index
+        jump->type = ASM_JUMP_JMP;
+
+        // add on top:
+        jump->next = a->jump;
+        a->jump = jump;
+
+        // to change ...
+        g(a,OP_NOP); g(a,OP_NOP); g(a,OP_NOP); g(a,OP_NOP);
+    }
+}
+//-------------------------------------------------------------------
+// THANKS TO:
+//
+//   Fabrice Bellard: www.bellard.org
+//
+// CODE BASED:
+// -------------------------------
+//   LIB:  tcc-0.9.25
+//   FILE: i386-gen.c
+//   FUNC: void gjmp_addr (int a);
+//   LINE: 568
+// -------------------------------
+//
+// generate a jump to a fixed address
+//
+// NOTE: This jump is in the code[index]
+//
+//-------------------------------------------------------------------
+//
+static void asm_conditional_jump (ASM *a, char *name, int type) {
+    ASM_jump *jump;
+
+    if (name && (jump = (ASM_jump*)malloc (sizeof(ASM_jump))) != NULL) {
+        jump->name = strdup (name);
+        jump->pos  = (a->p - a->code); // the index
+        jump->type = type;
+
+        // add on top:
+        jump->next = a->jump;
+        a->jump = jump;
+
+        // to change ...
+        g(a,OP_NOP); g(a,OP_NOP);
+        g(a,OP_NOP); g(a,OP_NOP); g(a,OP_NOP); g(a,OP_NOP);
+    }
+}
+void emit_jump_je (ASM *a, char *name) {
+    asm_conditional_jump (a, name, ASM_JUMP_JE);
+}
+void emit_jump_jne (ASM *a, char *name) {
+    asm_conditional_jump (a, name, ASM_JUMP_JNE);
+}
+void emit_jump_jle (ASM *a, char *name) {
+    asm_conditional_jump (a, name, ASM_JUMP_JLE);
+}
+
 
 // push number on: %esp:
 //
@@ -330,5 +529,6 @@ void emit_mov_reg_var (ASM *a, int reg, void *var) { // 32/64 BITS OK - move: %r
     }
 }
 
+void emit_cmp_eax_edx (ASM *a) { g2(a,0x39,0xc2); }  // 39 c2  : cmp   %eax,%edx
 
 //#endif // ! USE_JIT

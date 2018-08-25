@@ -6,8 +6,12 @@
 //
 int data = 500;
 
-module ("libSDL", "sdl"); // in Linux:    "libSDL.so"
-module ("SDL",    "sdl"); // in Windows:  "SDL.dll"
+#ifdef WIN32
+    module ("SDL",    "sdl"); // in Windows:  "SDL.dll"
+#endif
+#ifdef __linux__
+    module ("libSDL", "sdl"); // in Linux:    "libSDL.so"
+#endif
 
 import  ("sdl", "SDL_Init",   "0i");
 import  ("sdl", "SDL_SetVideoMode", "iiiii");

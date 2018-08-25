@@ -43,6 +43,9 @@ extern "C" {
 
 enum {
     TOK_INT = 255,
+    TOK_IF,
+    TOK_FOR,
+    TOK_BREAK,
     TOK_MODULE,
     TOK_IMPORT,
     TOK_FUNCTION,
@@ -50,7 +53,10 @@ enum {
     TOK_ID,
     TOK_STRING,
     TOK_NUMBER,
-    //-------------
+    //-----------------------
+    TOK_IFDEF,
+    TOK_ENDIF,
+    //-----------------------
     TOK_PLUS_PLUS,    // ++
     TOK_MINUS_MINUS,  // --
     TOK_EQUAL_EQUAL,  // ==
@@ -69,6 +75,7 @@ struct LEXER {
     int   pos; // text [ pos ]
     int   tok;
     int   line;
+    int   level; // in: '{' level++; | in '}' level--;
 };
 
 extern int  lex         (LEXER *lexer);

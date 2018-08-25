@@ -73,18 +73,21 @@ enum {
 //------------------  STRUCT  -------------------
 //-----------------------------------------------
 //
-typedef union  VALUE      VALUE;
+//typedef union  VALUE      VALUE;
 typedef struct TVar       TVar;
 typedef struct TFunc      TFunc;
 typedef struct F_STRING   F_STRING;
 typedef struct MODULE     MODULE;
+typedef struct DEFINE     DEFINE;
 
+/*
 union VALUE {
     int     i;  //: type integer
     float   f;  //: type float
     char    *s; //: type pointer of char
     void    *p; //: type pointer
 };
+*/
 struct TVar {
     char    *name;
     int     type;
@@ -114,7 +117,11 @@ typedef struct {
     char  type[20]; // "int", "float", "data_struct"
     char  name[20];
 }ARG;
-
+struct DEFINE {
+    char    *name;
+    int     value;
+    DEFINE  *next;
+};
 
 // global:
 LIBIMPORT TVar  Gvar [GVAR_SIZE];

@@ -30,8 +30,14 @@
 static VALUE    stack [STACK_SIZE];
 static VALUE  * sp = stack;
 static VALUE    eax;
+static int      callvm_stage2_position = 0;
+static int      flag;
 
 void Run (ASM *a) {
+    vm_run (a);
+}
+
+void callvm (ASM *a) {
     vm_run (a);
 }
 
@@ -69,6 +75,60 @@ case OP_DIV_INT: sp[-1].i /= sp[0].i; sp--; continue; // size: 1
 case OP_ADD_INT: sp[-1].i += sp[0].i; sp--; continue; // size: 1
 case OP_SUB_INT: sp[-1].i -= sp[0].i; sp--; continue; // size: 1
 
+case OP_CMP_INT:
+    sp--;
+    flag = (int)(sp[0].i - sp[1].i);
+    sp--;
+    continue;
+//
+// simple_language_0.9.0
+//
+case OP_JUMP_JMP:
+    a->ip = *(unsigned short*)(a->code+a->ip);
+    continue;
+
+case OP_JUMP_JE: // !=
+    if (!flag)
+        a->ip = *(unsigned short*)(a->code+a->ip);
+    else
+        a->ip += sizeof(unsigned short);
+    continue;
+
+case OP_JUMP_JNE: // ==
+    if (flag)
+        a->ip = *(unsigned short*)(a->code+a->ip);
+    else
+        a->ip += sizeof(unsigned short);
+    continue;
+
+case OP_JUMP_JGE: // =<
+    if (flag >= 0)
+        a->ip = *(unsigned short*)(a->code+a->ip);
+    else
+        a->ip += sizeof(unsigned short);
+    continue;
+
+case OP_JUMP_JLE: // >=
+    if (flag <= 0)
+        a->ip = *(unsigned short*)(a->code+a->ip);
+    else
+        a->ip += sizeof(unsigned short);
+    continue;
+
+case OP_JUMP_JG:
+    if (flag > 0)
+        a->ip = *(unsigned short*)(a->code+a->ip);
+    else
+        a->ip += sizeof(unsigned short);
+    continue;
+
+case OP_JUMP_JL:
+    if (flag < 0)
+        a->ip = *(unsigned short*)(a->code+a->ip);
+    else
+        a->ip += sizeof(unsigned short);
+    continue;
+
 case OP_POP_EAX:
     eax = sp[0];
     sp--;
@@ -93,6 +153,60 @@ case OP_PUSH_STRING: {
     sp++;
     sp->s = s;
     } continue;
+
+// call a VM Function
+//
+case OP_CALL_VM: {
+    ASM *local = *(void**)(a->code+a->ip);
+    a->ip += sizeof(void*);
+    UCHAR arg_count = (UCHAR)(a->code[a->ip++]); //printf ("CALL ARG_COUNT = %d\n", arg_count);
+    UCHAR return_type = (UCHAR)(a->code[a->ip++]);
+
+    switch(arg_count){
+    case 1: local->arg[0] = sp[0]; sp--; break;
+    case 2:
+        local->arg[0] = sp[-1];
+        local->arg[1] = sp[0];
+        sp -= 2;
+        break;
+    case 3:
+        local->arg[0] = sp[-2];
+        local->arg[1] = sp[-1];
+        local->arg[2] = sp[0];
+        sp -= 3;
+        break;
+    case 4:
+        local->arg[0] = sp[-3];
+        local->arg[1] = sp[-2];
+        local->arg[2] = sp[-1];
+        local->arg[3] = sp[0];
+        sp -= 4;
+        break;
+    }//: switch(arg_count)
+
+    if (local == a) {
+
+        //-----------------------------------------------------------
+        //
+        // here is position the next opcode BEFORE of recursive function.
+        //
+        //-----------------------------------------------------------
+        //
+        callvm_stage2_position = local->ip;
+        a->ip = 0;
+        //printf ("Todo antes da FUNCAO pos(%d) RECURSIVA CODE: %d\n", callvm_stage2_position, local->code[callvm_stage2_position]);
+    } else {
+        //printf ("PRIMEIRA VEZ EXECUTANDO\n");
+        callvm_stage2_position = 0;
+        local->ip = 0;
+    }
+
+    callvm (local);
+
+    local->ip = callvm_stage2_position;
+    //local->ip = a->ip - 5;
+
+    } continue; //: case OP_CALL_VM:
 
 //
 // call a C Function
@@ -253,6 +367,31 @@ int asm_get_len (ASM *a) {
     return (a->p - a->code);
 }
 
+void asm_label (ASM *a, char *name) {
+    if (name) {
+        ASM_label *lab;
+        ASM_label *l = a->label;
+
+        // find if exist:
+        while (l) {
+            if (!strcmp(l->name, name)) {
+                printf ("Label Exist: '%s'\n", l->name);
+                return;
+            }
+            l = l->next;
+        }
+
+        if ((lab = (ASM_label*)malloc(sizeof(ASM_label))) != NULL) {
+            lab->name = strdup (name);
+            lab->pos  = (a->p - a->code); // the index
+
+            // add on top:
+            lab->next = a->label;
+            a->label = lab;
+        }
+    }
+}
+
 //-------------------------------------------------------------------
 //------------------------------  EMIT  -----------------------------
 //-------------------------------------------------------------------
@@ -301,6 +440,14 @@ void emit_push_string (ASM *a, char *s) {
     a->p += sizeof(void*);
 }
 
+void emit_call_vm (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
+    *a->p++ = OP_CALL_VM;
+    *(void**)a->p = func;
+    a->p += sizeof(void*);
+    *a->p++ = arg_count;
+    *a->p++ = return_type;
+}
+
 void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
     *a->p++ = OP_CALL;
     *(void**)a->p = func;
@@ -308,6 +455,63 @@ void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
     *a->p++ = arg_count;
     *a->p++ = return_type;
 }
+
+void emit_cmp_int (ASM *a) {
+    *a->p++ = OP_CMP_INT;
+}
+
+void emit_jump_jmp (ASM *a, char *name) {
+    ASM_jump *jump;
+
+    if (name && (jump = (ASM_jump*)malloc (sizeof(ASM_jump))) != NULL) {
+
+        *a->p++ = OP_JUMP_JMP;
+
+        jump->name = strdup (name);
+        jump->pos  = (a->p - a->code); // the index
+
+        // add on top:
+        jump->next = a->jump;
+        a->jump = jump;
+
+        // to change ...
+        *(unsigned short*)a->p = (jump->pos+2); // the index
+        a->p += sizeof(unsigned short);
+    }
+}
+
+
+static void conditional_jump (ASM *vm, char *name, UCHAR type) {
+    ASM_jump *jump;
+
+    if (name && (jump = (ASM_jump*)malloc (sizeof(ASM_jump))) != NULL) {
+
+        *vm->p++ = type;
+
+        jump->name = strdup (name);
+        jump->pos  = (vm->p - vm->code); // the index
+
+        // add on top:
+        jump->next = vm->jump;
+        vm->jump = jump;
+
+        // to change ...
+        *(unsigned short*)vm->p = (jump->pos+2); // the index
+        vm->p += sizeof(unsigned short);
+    }
+}
+void emit_jump_je (ASM *a, char *name) {
+    conditional_jump (a, name, OP_JUMP_JE);
+}
+void emit_jump_jne (ASM *a, char *name) {
+    conditional_jump (a, name, OP_JUMP_JNE);
+}
+
+void emit_jump_jle (ASM *a, char *name) {
+    conditional_jump (a, name, OP_JUMP_JLE);
+}
+
+
 
 void emit_halt (ASM *a) {
     *a->p++ = OP_HALT;

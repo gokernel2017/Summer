@@ -27,7 +27,6 @@
 
 #define LIBIMPORT extern
 
-//extern void Erro (char *s);
 LIBIMPORT void Erro (char *format, ...);
 
 static char save_token [LEXER_TOKEN_SIZE];
@@ -94,9 +93,15 @@ top:
         *p = 0;
 
         if (!strcmp(l->token, "int"))       { l->tok = TOK_INT;       return TOK_INT; }
+        if (!strcmp(l->token, "if"))        { l->tok = TOK_IF;        return TOK_IF; }
+        if (!strcmp(l->token, "for"))       { l->tok = TOK_FOR;       return TOK_FOR; }
+        if (!strcmp(l->token, "break"))     { l->tok = TOK_BREAK;     return TOK_BREAK; }
         if (!strcmp(l->token, "module"))    { l->tok = TOK_MODULE;    return TOK_MODULE; }
         if (!strcmp(l->token, "import"))    { l->tok = TOK_IMPORT;    return TOK_IMPORT; }
         if (!strcmp(l->token, "function"))  { l->tok = TOK_FUNCTION;  return TOK_FUNCTION; }
+        //
+        if (!strcmp(l->token, "ifdef"))     { l->tok = TOK_IFDEF;     return TOK_IFDEF; }
+        if (!strcmp(l->token, "endif"))     { l->tok = TOK_ENDIF;     return TOK_ENDIF; }
 
         l->tok = TOK_ID;
         return TOK_ID;
@@ -169,11 +174,11 @@ top:
         return TOK_AND_AND;
     }
 
-
     *p++ = c;
     *p = 0;
     l->pos++;
     l->tok = c;
+
     return c;
 
 }//: lex()
@@ -182,6 +187,7 @@ void lex_set (LEXER *l, char *text, char *name) {
     if (l && text) {
         l->pos = 0;
         l->line = 1;
+        l->level = 0;
         l->text = text;
         if (name)
             strcpy (l->name, name);

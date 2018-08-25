@@ -26,6 +26,8 @@
 #ifndef _ASM_H_
 #define _ASM_H_
 
+#include "def.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -46,6 +48,7 @@ extern "C" {
 #define LIBIMPORT         extern
 #define ASM_DEFAULT_SIZE  50000
 #define UCHAR             unsigned char
+#define OP_NOP            0x90
 
 //
 // pass 5 arguments to function:
@@ -66,6 +69,16 @@ enum {
     ESI,
     EDI
 };
+enum { // jump type for change the labels
+    ASM_JUMP_JMP = 1,
+    ASM_JUMP_JNE,
+    ASM_JUMP_JLE,
+    ASM_JUMP_JGE,
+    ASM_JUMP_JG,
+    ASM_JUMP_JE,
+    ASM_JUMP_JL,
+    ASM_JUMP_LOOP
+};
 
 //-----------------------------------------------
 //------------------  STRUCT  -------------------
@@ -81,7 +94,9 @@ struct ASM {
     ASM_label *label;
     ASM_jump  *jump;
     int       size;
-    int       ip; // not used
+    int       ip;       // not used
+    //-------------------------------------------
+    VALUE     arg [10]; // not used
 };
 struct ASM_label {
     char      *name;
@@ -104,11 +119,18 @@ LIBIMPORT void    asm_begin           (ASM *a); // 32/64 BITS OK
 LIBIMPORT void    asm_end             (ASM *a); // 32/64 BITS OK
 LIBIMPORT int     asm_get_len         (ASM *a);
 LIBIMPORT void    asm_get_addr        (ASM *a, void *ptr); // 32/64 BITS OK
+LIBIMPORT void    asm_label           (ASM *a, char *name);
 // gen/emit:
 LIBIMPORT void    g                   (ASM *a, UCHAR c);
 LIBIMPORT void    g2                  (ASM *a, UCHAR c1, UCHAR c2);
 LIBIMPORT void    g3                  (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3);
 LIBIMPORT void    g4                  (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3, UCHAR c4);
+//
+LIBIMPORT void    emit_jump_jmp       (ASM *a, char *name);
+LIBIMPORT void    emit_jump_je        (ASM *a, char *name);
+LIBIMPORT void    emit_jump_jne       (ASM *a, char *name);
+LIBIMPORT void    emit_jump_jle       (ASM *a, char *name);
+//
 LIBIMPORT void    emit_push_int       (ASM *a, int value);
 LIBIMPORT void    emit_push_var       (ASM *a, void *var);
 LIBIMPORT void    emit_pop_var        (ASM *a, void *var);
@@ -132,6 +154,7 @@ LIBIMPORT void emit_movl_ESP      (ASM *a, long value, UCHAR index); // movl    
 LIBIMPORT void emit_mov_eax_ESP   (ASM *a, UCHAR index); // mov    %eax,0x4(%esp)
 LIBIMPORT void emit_mov_var_reg   (ASM *a, void *var, int reg); // move: variable to %register
 LIBIMPORT void emit_mov_reg_var   (ASM *a, int reg, void *var); // 32/64 BITS OK - move: %register to variable
+LIBIMPORT void emit_cmp_eax_edx   (ASM *a);
 
 #ifdef __cplusplus
 }

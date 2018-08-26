@@ -25,9 +25,6 @@
 //
 #include "summer.h"
 
-LIBIMPORT void    Erro    (char *format, ...);
-LIBIMPORT char  * ErroGet (void);
-
 static void asm_change_jump (ASM *a);
 
 static int  stack;
@@ -286,6 +283,11 @@ void asm_begin (ASM *a) { // 32/64 BITS OK
     a->p[3] = 0xe5;
     a->p += 4;
     #else
+#ifdef USE_COMPILER
+write_asm("push\t%ebp");
+write_asm("mov\t%esp, %ebp");
+write_asm("sub\t$100, %esp");
+#endif
     // 55     : push  %ebp
     // 89 e5  : mov   %esp,%ebp
     //-----------------------------
@@ -307,6 +309,10 @@ void asm_end (ASM *a) { // 32/64 BITS OK
     a->p[1] = 0xc3; // c3 : retq
     a->p += 2;
     #else
+#ifdef USE_COMPILER
+write_asm("leave");
+write_asm("ret");
+#endif
     a->p[0] = 0xc9; // c9 : leave
     a->p[1] = 0xc3; // c3 : ret
     a->p += 2;
@@ -410,6 +416,11 @@ void emit_jump_jge (ASM *a, char *name) {
 // push number on: %esp:
 //
 void emit_push_int (ASM *a, int value) {
+#ifdef USE_COMPILER
+if(compiler_mode && is_function){
+printf("push\t$%d\n",value);
+}
+#endif
     stack++;
     if (value == (char)value) {
         g(a,0x6a);  // 6a   64    push   $0x64
@@ -435,6 +446,12 @@ void emit_push_var (ASM *a, void *var) {
     #endif
 }
 void emit_pop_var (ASM *a, void *var) { // 32/64 BITS OK
+#ifdef USE_COMPILER
+if(compiler_mode && is_function){
+printf("pop\tvar_name\n");
+}
+#endif
+
     stack--;
     #if defined(__x86_64__)
     g3(a,0x8f,0x04,0x25); asm_get_addr(a,var);  // 8f 04 25   60 40 40 00    popq   0x404060

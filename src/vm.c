@@ -185,6 +185,15 @@ case OP_CALL_VM: {
         local->arg[3] = sp[0];
         sp -= 4;
         break;
+    case 5:
+        local->arg[0] = sp[-4];
+        local->arg[1] = sp[-3];
+        local->arg[2] = sp[-2];
+        local->arg[3] = sp[-1];
+        local->arg[4] = sp[0];
+        sp -= 5;
+        break;
+
     }//: switch(arg_count)
 
     if (local == a) {

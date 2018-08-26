@@ -22,7 +22,7 @@ function hello () {
 
   for (;;) {
 
-      if (i > 30) {
+      if (i > 20) {
           break;
       }
 

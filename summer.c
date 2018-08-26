@@ -1,28 +1,3 @@
-/*
-  JavaScript Object:
-
-var person = {
-    firstName: "John",
-    lastName : "Doe",
-    id       : 5566,
-    fullName : function() {
-        return this.firstName + " " + this.lastName;
-    }
-};
-
-name = person.fullName();
-
-
-const myObj = {
-    name: 'Freddy'
-    greet: function() {
-      console.log(`hello my name is ${this.name}`);
-    }
-  };
-  myObj.greet();
-
-*/
-
 //-------------------------------------------------------------------
 //
 // TANKS TO:
@@ -63,18 +38,30 @@ const myObj = {
 //
 #include "src/summer.h"
 
+LIBIMPORT int asm_set_executable (ASM *a, unsigned int size);
+
 int main (int argc, char **argv) {
     char  *text;
     ASM   *a;
     LEXER l;
     int i, is_string=0;
 
+    for (i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "-s") && argc > i+1) is_string = i+1;
+        if (!strcmp(argv[i], "-asm")) compiler_mode = 1;
+        if (!strcmp(argv[i], "-h")) {
+            printf ("Summer Language Help:\n");
+            printf ("OPTIONS:\n");
+            printf ("  -h   : Display this help.\n");
+            printf ("  -s   : Run a 'string' program.\n");
+            printf ("  -asm : JIT MODE - Compiler the code to Assembly ( AT&T Syntax ) x86 32 bits.\n");
+      return 0;
+        }
+    }
+
     if ((a = core_Init (ASM_DEFAULT_SIZE)) == NULL)
   return -1;
 
-    for (i = 0; i < argc; i++) {
-        if (!strcmp(argv[i], "-s") && argc > i+1) is_string = i+1;
-    }
     // execute a string and exit:
     //
     // summer -s "int a=100, b=200; a=b; a;"
@@ -102,12 +89,14 @@ int main (int argc, char **argv) {
 
             #ifdef USE_JIT
             if (asm_set_executable(a, asm_get_len(a)) == 0) {
-                Run (a);
+                if (!compiler_mode)
+                    Run (a);
             }
             else printf ("ERRO:\n%s\n", ErroGet());
             #endif
             #ifdef USE_VM
-            Run (a);
+            if (!compiler_mode)
+                Run (a);
             #endif
 //            lib_info (1);
 

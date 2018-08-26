@@ -77,6 +77,8 @@ void display (struct DATA *data);
 //-----------------------------------------------
 //
 TVar              Gvar [GVAR_SIZE]; // global:
+int               compiler_mode;    // The Compiler: Write Assembly with AT&T syntax:
+int               is_function;
 //
 static MODULE   * Gmodule = NULL; // ... console.log(); ...
 static TFunc    * Gfunc = NULL;  // store the user functions
@@ -94,7 +96,6 @@ static char
 static int
     erro,
     loop_level,
-    is_function,
     is_recursive,
     main_variable_type,
     var_type,
@@ -158,6 +159,7 @@ ASM * core_Init (unsigned int size) {
 }
 
 void core_Finalize (void) {
+/*
     MODULE *p = Gmodule;
     while (p) {
         TFunc *f = p->func;
@@ -168,6 +170,7 @@ void core_Finalize (void) {
         }
         p = p->next;
     }
+*/
 }
 
 char * FileOpen (const char *FileName) {
@@ -651,8 +654,12 @@ static void word_function (LEXER *l, ASM *a) {
     local_count = 0;
     strcpy (func_name, name);
 
-    // compiling to buffer ( f ):
-    //
+
+#ifdef USE_COMPILER
+if(compiler_mode){
+printf(".globl %s\n%s:\n", name, name);
+}
+#endif
     // compiling to buffer ( f ):
     //
     asm_reset (asm_function);
@@ -666,6 +673,13 @@ static void word_function (LEXER *l, ASM *a) {
     int len = asm_get_len (asm_function);
 
 #ifdef USE_JIT
+
+#ifdef USE_COMPILER
+if(compiler_mode){
+printf("; '%s' len: %d\n", name, len);
+}
+#endif
+
     // new function:
     //
     func = (TFunc*) malloc (sizeof(TFunc));
@@ -1289,6 +1303,12 @@ int Parse (LEXER *l, ASM *a, char *text, char *name) {
     }
     return erro;
 }
+
+void write_asm (char *s) {
+    if (compiler_mode && is_function)
+        printf("%s\n", s);
+}
+
 
 void lib_log (char *s) {
     printf ("%s\n", s);

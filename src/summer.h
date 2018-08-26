@@ -22,7 +22,7 @@
 // BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
-//
+// FILE SIZE: 9.796
 #ifndef _SUMMER_H_
 #define _SUMMER_H_
 
@@ -40,6 +40,7 @@
 #endif
 
 #include "lex.h"
+#include "config.h"
 
 #if defined(__x86_64__)
 //    #error "ERRO: ##########  This example suport only 32 BITS  ##########"
@@ -57,7 +58,7 @@ extern "C" {
 #define SUMMER_VERSION_SUB    1
 #define SUMMER_VERSION_PATCH  0
 //
-#define LIBIMPORT             extern
+//#define LIBIMPORT             extern
 //
 #define ASM_DEFAULT_SIZE      50000
 #define UCHAR                 unsigned char
@@ -239,38 +240,41 @@ struct DEFINE {
 
 // global:
 LIBIMPORT TVar  Gvar [GVAR_SIZE];
-LIBIMPORT int   gvar_len;
+LIBIMPORT int   compiler_mode;    // The Compiler: Write Assembly with AT&T Syntax:
+LIBIMPORT int   is_function;
 
 //-------------------------------------------------------------------
 //---------------------------  PUBLIC API  --------------------------
 //-------------------------------------------------------------------
 //
-LIBIMPORT void    Run                 (ASM *a); // back-end in file: asm.c | vm.c
+LIBIMPORT void    Run               (ASM *a); // back-end in file: asm.c | vm.c
 //
 // FILE: "core.c"
 //
-LIBIMPORT ASM   * core_Init       (unsigned int size);
-LIBIMPORT void    core_Finalize   (void);
-LIBIMPORT char  * FileOpen        (const char *FileName);
-LIBIMPORT void    CreateVarInt    (char *name, int value);
-LIBIMPORT TFunc * FuncFind        (char *name);
-LIBIMPORT int     VarFind         (char *name);
-LIBIMPORT TFunc * ModuleFind      (char *LibName, char *FuncName);
-LIBIMPORT int     ModuleIsLib     (char *LibName); // rwturn:1 or 0
-LIBIMPORT int     Parse           (LEXER *l, ASM *a, char *text, char *name);
-//LIBIMPORT void    Erro            (char *s);
-LIBIMPORT void    Erro            (char *format, ...);
-LIBIMPORT char  * ErroGet         (void);
-LIBIMPORT void    ErroReset       (void);
+LIBIMPORT ASM   * core_Init         (unsigned int size);
+LIBIMPORT void    core_Finalize     (void);
+LIBIMPORT char  * FileOpen          (const char *FileName);
+LIBIMPORT void    CreateVarInt      (char *name, int value);
+LIBIMPORT TFunc * FuncFind          (char *name);
+LIBIMPORT int     VarFind           (char *name);
+LIBIMPORT TFunc * ModuleFind        (char *LibName, char *FuncName);
+LIBIMPORT int     ModuleIsLib       (char *LibName); // rwturn:1 or 0
+LIBIMPORT int     Parse             (LEXER *l, ASM *a, char *text, char *name);
+//
+LIBIMPORT void    Erro              (char *format, ...);
+LIBIMPORT char  * ErroGet           (void);
+LIBIMPORT void    ErroReset         (void);
+#ifdef USE_COMPILER
+LIBIMPORT void    write_asm         (char *s);
+#endif
 //
 //-------------------------------------------------------------------
 // BACK-END in file: asm.c | vm.c
 //-------------------------------------------------------------------
 //
 #ifdef USE_JIT
-LIBIMPORT int     asm_set_executable  (ASM *a, unsigned int size);
-LIBIMPORT int     set_executable      (void *ptr, unsigned int size);
-LIBIMPORT void    asm_get_addr        (ASM *a, void *ptr); // 32/64 BITS OK
+LIBIMPORT int     set_executable    (void *ptr, unsigned int size);
+LIBIMPORT void    asm_get_addr      (ASM *a, void *ptr); // 32/64 BITS OK
 //-----------------------------------------------
 // int expression math:
 //-----------------------------------------------
@@ -278,61 +282,60 @@ LIBIMPORT void    asm_get_addr        (ASM *a, void *ptr); // 32/64 BITS OK
 #define emit_div_int  asm_idivl_eax_esp
 #define emit_add_int  asm_add_eax_esp
 #define emit_sub_int  asm_sub_eax_esp
-LIBIMPORT void    asm_imul_eax_esp    (ASM *a);
-LIBIMPORT void    asm_idivl_eax_esp   (ASM *a);
-LIBIMPORT void    asm_add_eax_esp     (ASM *a);
-LIBIMPORT void    asm_sub_eax_esp     (ASM *a);
-LIBIMPORT void    g                   (ASM *a, UCHAR c);
-LIBIMPORT void    g2                  (ASM *a, UCHAR c1, UCHAR c2);
-LIBIMPORT void    g3                  (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3);
-LIBIMPORT void    g4                  (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3, UCHAR c4);
+LIBIMPORT void    asm_imul_eax_esp  (ASM *a);
+LIBIMPORT void    asm_idivl_eax_esp (ASM *a);
+LIBIMPORT void    asm_add_eax_esp   (ASM *a);
+LIBIMPORT void    asm_sub_eax_esp   (ASM *a);
+LIBIMPORT void    g                 (ASM *a, UCHAR c);
+LIBIMPORT void    g2                (ASM *a, UCHAR c1, UCHAR c2);
+LIBIMPORT void    g3                (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3);
+LIBIMPORT void    g4                (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3, UCHAR c4);
 //
-LIBIMPORT void    emit_movl_ESP       (ASM *a, long value, UCHAR index); // movl    $0x5dc,0x4(%esp)
-LIBIMPORT void    emit_mov_eax_ESP    (ASM *a, UCHAR index); // mov    %eax,0x4(%esp)
-LIBIMPORT void    emit_mov_var_reg    (ASM *a, void *var, int reg); // move: variable to %register
-LIBIMPORT void    emit_mov_reg_var    (ASM *a, int reg, void *var); // 32/64 BITS OK - move: %register to variable
-LIBIMPORT void    emit_cmp_eax_edx    (ASM *a);
-LIBIMPORT void    emit_pop_var        (ASM *a, void *var);
-LIBIMPORT void    emit_push_var       (ASM *a, void *var);
+LIBIMPORT void    emit_movl_ESP     (ASM *a, long value, UCHAR index); // movl    $0x5dc,0x4(%esp)
+LIBIMPORT void    emit_mov_eax_ESP  (ASM *a, UCHAR index); // mov    %eax,0x4(%esp)
+LIBIMPORT void    emit_mov_var_reg  (ASM *a, void *var, int reg); // move: variable to %register
+LIBIMPORT void    emit_mov_reg_var  (ASM *a, int reg, void *var); // 32/64 BITS OK - move: %register to variable
+LIBIMPORT void    emit_cmp_eax_edx  (ASM *a);
+LIBIMPORT void    emit_pop_var      (ASM *a, void *var);
+LIBIMPORT void    emit_push_var     (ASM *a, void *var);
 //
 #endif // #ifdef USE_JIT
 #ifdef USE_VM
-LIBIMPORT void    emit_mul_int        (ASM *a);
-LIBIMPORT void    emit_div_int        (ASM *a);
-LIBIMPORT void    emit_add_int        (ASM *a);
-LIBIMPORT void    emit_sub_int        (ASM *a);
+LIBIMPORT void    emit_mul_int      (ASM *a);
+LIBIMPORT void    emit_div_int      (ASM *a);
+LIBIMPORT void    emit_add_int      (ASM *a);
+LIBIMPORT void    emit_sub_int      (ASM *a);
 //
-LIBIMPORT void    emit_call_vm        (ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
-LIBIMPORT void    emit_cmp_int        (ASM *a);
-LIBIMPORT void    emit_mov_eax_var    (ASM *a, UCHAR index);
-LIBIMPORT void    emit_print_eax      (ASM *a, UCHAR type);
-LIBIMPORT void    emit_pop_var        (ASM *a, UCHAR i);
-LIBIMPORT void    emit_push_var       (ASM *a, UCHAR i);
-LIBIMPORT void    emit_push_string    (ASM *a, char *s);
+LIBIMPORT void    emit_call_vm      (ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
+LIBIMPORT void    emit_cmp_int      (ASM *a);
+LIBIMPORT void    emit_mov_eax_var  (ASM *a, UCHAR index);
+LIBIMPORT void    emit_print_eax    (ASM *a, UCHAR type);
+LIBIMPORT void    emit_pop_var      (ASM *a, UCHAR i);
+LIBIMPORT void    emit_push_var     (ASM *a, UCHAR i);
+LIBIMPORT void    emit_push_string  (ASM *a, char *s);
 //
 #endif // #ifdef USE_VM
 //-------------------------------------------------------------------
 //
-LIBIMPORT ASM   * asm_new             (unsigned int size);
-LIBIMPORT void    asm_reset           (ASM *a);
-LIBIMPORT void    asm_begin           (ASM *a); // 32/64 BITS OK
-LIBIMPORT void    asm_end             (ASM *a); // 32/64 BITS OK
-LIBIMPORT int     asm_get_len         (ASM *a);
-LIBIMPORT void    asm_label           (ASM *a, char *name);
+LIBIMPORT ASM   * asm_new           (unsigned int size);
+LIBIMPORT void    asm_reset         (ASM *a);
+LIBIMPORT void    asm_begin         (ASM *a); // 32/64 BITS OK
+LIBIMPORT void    asm_end           (ASM *a); // 32/64 BITS OK
+LIBIMPORT int     asm_get_len       (ASM *a);
+LIBIMPORT void    asm_label         (ASM *a, char *name);
 //
-LIBIMPORT void    emit_call           (ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
+LIBIMPORT void    emit_call         (ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
 //
-LIBIMPORT void    emit_jump_jmp       (ASM *a, char *name);
-LIBIMPORT void    emit_jump_je        (ASM *a, char *name);
-LIBIMPORT void    emit_jump_jne       (ASM *a, char *name);
-LIBIMPORT void    emit_jump_jle       (ASM *a, char *name);
-LIBIMPORT void    emit_jump_jge       (ASM *a, char *name);
+LIBIMPORT void    emit_jump_jmp     (ASM *a, char *name);
+LIBIMPORT void    emit_jump_je      (ASM *a, char *name);
+LIBIMPORT void    emit_jump_jne     (ASM *a, char *name);
+LIBIMPORT void    emit_jump_jle     (ASM *a, char *name);
+LIBIMPORT void    emit_jump_jge     (ASM *a, char *name);
 //
-LIBIMPORT void    emit_push_int       (ASM *a, int value);
-LIBIMPORT void    emit_pop_eax        (ASM *a);
+LIBIMPORT void    emit_push_int     (ASM *a, int value);
+LIBIMPORT void    emit_pop_eax      (ASM *a);
 
 #ifdef __cplusplus
 }
 #endif
-
 #endif // ! _SUMMER_H_

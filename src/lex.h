@@ -41,6 +41,10 @@ extern "C" {
 #define LEXER_NAME_SIZE   255
 #define LEXER_TOKEN_SIZE  1024 * 4
 
+#define LIBIMPORT extern
+
+LIBIMPORT void Erro (char *format, ...);
+
 enum {
     TOK_INT = 255,
     TOK_IF,

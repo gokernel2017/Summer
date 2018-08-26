@@ -77,8 +77,9 @@ void display (struct DATA *data);
 //-----------------------------------------------
 //
 TVar              Gvar [GVAR_SIZE]; // global:
-int               compiler_mode;    // The Compiler: Write Assembly with AT&T syntax:
+int               asm_mode;    // The Compiler: Write Assembly with AT&T syntax:
 int               is_function;
+char              var_name [100];
 //
 static MODULE   * Gmodule = NULL; // ... console.log(); ...
 static TFunc    * Gfunc = NULL;  // store the user functions
@@ -655,8 +656,8 @@ static void word_function (LEXER *l, ASM *a) {
     strcpy (func_name, name);
 
 
-#ifdef USE_COMPILER
-if(compiler_mode){
+#ifdef USE_ASM
+if(asm_mode){
 printf(".globl %s\n%s:\n", name, name);
 }
 #endif
@@ -674,8 +675,8 @@ printf(".globl %s\n%s:\n", name, name);
 
 #ifdef USE_JIT
 
-#ifdef USE_COMPILER
-if(compiler_mode){
+#ifdef USE_ASM
+if(asm_mode){
 printf("; '%s' len: %d\n", name, len);
 }
 #endif
@@ -1018,6 +1019,9 @@ static void expression (LEXER *l, ASM *a) {
     else Erro ("%s: Expression ERRO(%d) - Ilegar Word (%s)\n", l->name, l->line, l->token);
 }
 static int expr0 (LEXER *l, ASM *a) {
+#ifdef USE_ASM
+write_asm("  ; Expression:");
+#endif
     if (l->tok == TOK_ID) {
         int i;
         //---------------------------------------
@@ -1033,6 +1037,9 @@ static int expr0 (LEXER *l, ASM *a) {
                 if (lex(l) == '=') {
                     lex(l);
                     expr1(l,a);
+                    // used to: write_asm();
+                    //
+                    sprintf (var_name, "%s", Gvar[i].name);
                     #ifdef USE_VM
                     // Copia o TOPO DA PILHA ( sp ) para a variavel ... e decrementa sp++.
                     emit_pop_var (a,i);
@@ -1125,6 +1132,11 @@ static void atom (LEXER *l, ASM *a) { // expres
 #endif
         if ((i=VarFind(l->token))!=-1) {
             var_type = Gvar[i].type;
+
+            //
+            // used to: write_asm();
+            //
+            sprintf (var_name, "%s", Gvar[i].name);
 
             #ifdef USE_JIT
             emit_push_var (a, &Gvar[i].value.i);
@@ -1305,7 +1317,7 @@ int Parse (LEXER *l, ASM *a, char *text, char *name) {
 }
 
 void write_asm (char *s) {
-    if (compiler_mode && is_function)
+    if (asm_mode && is_function)
         printf("%s\n", s);
 }
 

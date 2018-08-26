@@ -27,6 +27,8 @@
 //
 //   04: summer -s "10 * 20 + 3 * 5"
 //
+//   05: summer file.s -asm
+//
 // ----------------------------------------------
 //
 // START DATE:
@@ -48,7 +50,7 @@ int main (int argc, char **argv) {
 
     for (i = 0; i < argc; i++) {
         if (!strcmp(argv[i], "-s") && argc > i+1) is_string = i+1;
-        if (!strcmp(argv[i], "-asm")) compiler_mode = 1;
+        if (!strcmp(argv[i], "-asm")) asm_mode = 1;
         if (!strcmp(argv[i], "-h")) {
             printf ("Summer Language Help:\n");
             printf ("OPTIONS:\n");
@@ -89,13 +91,13 @@ int main (int argc, char **argv) {
 
             #ifdef USE_JIT
             if (asm_set_executable(a, asm_get_len(a)) == 0) {
-                if (!compiler_mode)
+                if (!asm_mode)
                     Run (a);
             }
             else printf ("ERRO:\n%s\n", ErroGet());
             #endif
             #ifdef USE_VM
-            if (!compiler_mode)
+            if (!asm_mode)
                 Run (a);
             #endif
 //            lib_info (1);

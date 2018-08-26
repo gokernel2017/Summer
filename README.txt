@@ -9,9 +9,9 @@
    make -f Makefile_VM clean
    make -f Makefile_VM
 
- To compile ! with ( USE_DISASM ):
+ To compile ! withOUT ( USE_ASM ):
  ----------------------------------
-   please edit the file ( src/config.h ) and "comment" the line 1
+   please edit the file ( src/config.h ) and "comment" the line
  ----------------------------------
 
  To test the Summer Language(WINDOWS), type:

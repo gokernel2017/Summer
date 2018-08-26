@@ -274,6 +274,10 @@ static void asm_change_jump (ASM *a) {
 //
 void asm_begin (ASM *a) { // 32/64 BITS OK
     #if defined(__x86_64__)
+#ifdef USE_ASM
+write_asm("  push\t%rbp");
+write_asm("  mov\t%rsp, %rbp");
+#endif
     // 55         : push  %rbp
     // 48 89 e5   : mov   %rsp,%rbp
     //-----------------------------
@@ -283,10 +287,10 @@ void asm_begin (ASM *a) { // 32/64 BITS OK
     a->p[3] = 0xe5;
     a->p += 4;
     #else
-#ifdef USE_COMPILER
-write_asm("push\t%ebp");
-write_asm("mov\t%esp, %ebp");
-write_asm("sub\t$100, %esp");
+#ifdef USE_ASM
+write_asm("  push\t%ebp");
+write_asm("  mov\t%esp, %ebp");
+write_asm("  sub\t$100, %esp");
 #endif
     // 55     : push  %ebp
     // 89 e5  : mov   %esp,%ebp
@@ -305,13 +309,15 @@ write_asm("sub\t$100, %esp");
 }
 void asm_end (ASM *a) { // 32/64 BITS OK
     #if defined(__x86_64__)
+#ifdef USE_ASM
+write_asm("  leaveq\n  retq");
+#endif
     a->p[0] = 0xc9; // c9 : leaveq
     a->p[1] = 0xc3; // c3 : retq
     a->p += 2;
     #else
-#ifdef USE_COMPILER
-write_asm("leave");
-write_asm("ret");
+#ifdef USE_ASM
+write_asm("  leave\n  ret");
 #endif
     a->p[0] = 0xc9; // c9 : leave
     a->p[1] = 0xc3; // c3 : ret
@@ -416,9 +422,9 @@ void emit_jump_jge (ASM *a, char *name) {
 // push number on: %esp:
 //
 void emit_push_int (ASM *a, int value) {
-#ifdef USE_COMPILER
-if(compiler_mode && is_function){
-printf("push\t$%d\n",value);
+#ifdef USE_ASM
+if(asm_mode && is_function){
+printf("  push\t$%d\n",value);
 }
 #endif
     stack++;
@@ -438,6 +444,11 @@ printf("push\t$%d\n",value);
 // push variable on: %esp:
 //
 void emit_push_var (ASM *a, void *var) {
+#ifdef USE_ASM
+if(asm_mode && is_function){
+printf("  push\t%s\n", var_name);
+}
+#endif
     stack++;
     #if defined(__x86_64__)
     g3(a,0xff,0x34,0x25); asm_get_addr(a,var);  // ff 34 25   60 40 40 00   pushq   0x404060
@@ -446,12 +457,11 @@ void emit_push_var (ASM *a, void *var) {
     #endif
 }
 void emit_pop_var (ASM *a, void *var) { // 32/64 BITS OK
-#ifdef USE_COMPILER
-if(compiler_mode && is_function){
-printf("pop\tvar_name\n");
+#ifdef USE_ASM
+if(asm_mode && is_function){
+printf("  pop\t%s\n", var_name);
 }
 #endif
-
     stack--;
     #if defined(__x86_64__)
     g3(a,0x8f,0x04,0x25); asm_get_addr(a,var);  // 8f 04 25   60 40 40 00    popq   0x404060
@@ -480,6 +490,10 @@ void asm_idivl_eax_esp (ASM *a) {
 //    stack++;
 }
 void asm_add_eax_esp (ASM *a) {
+#ifdef USE_ASM
+write_asm("  pop\t%eax");
+write_asm("  add\t%eax, (%esp)");
+#endif
     stack--;
     g(a,0x58);              // 58         pop  %eax
     g3(a,0x01,0x04,0x24);   // 01 04 24   add   %eax,(%esp)

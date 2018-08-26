@@ -33,6 +33,9 @@ static VALUE    eax;
 static int      callvm_stage2_position = 0;
 static int      flag;
 
+void vm_run     (ASM *a);
+void emit_halt  (ASM *a);
+
 void Run (ASM *a) {
     vm_run (a);
 }

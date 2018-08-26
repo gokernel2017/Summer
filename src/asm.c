@@ -23,22 +23,7 @@
 //
 //-------------------------------------------------------------------
 //
-/*
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <ctype.h>
-#ifdef WIN32
-    #include <windows.h>
-#endif
-#ifdef __linux__
-    #include <unistd.h>
-    #include <sys/mman.h> // to: mprotect()
-#endif
-*/
-#include "asm.h"
-
+#include "summer.h"
 
 LIBIMPORT void    Erro    (char *format, ...);
 LIBIMPORT char  * ErroGet (void);

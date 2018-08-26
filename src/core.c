@@ -330,7 +330,7 @@ static void word_if (LEXER *l, ASM *a) {
             #ifdef USE_JIT
             g2(a,0x85,0xc0); // 85 c0    test   %eax,%eax
             #endif
-            if (is_negative == 0) emit_jump_je (a,array[if_count]);
+            if (is_negative == 0) emit_jump_je  (a,array[if_count]);
             else                  emit_jump_jne (a,array[if_count]);
             break;
 
@@ -761,7 +761,9 @@ static void word_function (LEXER *l, ASM *a) {
 //
 void execute_call (LEXER *l, ASM *a, TFunc *func) {
     int count = 0;
+#ifdef USE_JIT
     int pos = 0, size = 4; // Used in: JIT 32 bits
+#endif
     int return_type = TYPE_INT;
 
     // no argument
@@ -1093,10 +1095,14 @@ static void atom (LEXER *l, ASM *a) { // expres
     }
     if (l->tok==TOK_ID) {
         int i;
-        TFunc *fi;
-
 #ifdef USE_JIT
-        if ((fi = FuncFind (l->token)) != NULL) {
+        TFunc *fi;
+        //
+        // push the pointer of function:
+        //
+        // NO CALL THE FUNCTION
+        //
+        if ((fi = FuncFind (l->token)) != NULL && see(l) != '(') {
             emit_mov_var_reg (a, &fi->code, EAX);
             g (a,0x50);// 50   push   %eax
             lex (l);

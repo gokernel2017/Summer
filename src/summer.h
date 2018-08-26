@@ -65,6 +65,14 @@ extern "C" {
 #define GVAR_SIZE             255
 #define TYPE_NO_RETURN        100
 #define OP_NOP                0x90
+//
+// pass 5 arguments to function:
+//
+#define G2_MOV_EAX_EDI    0x89, 0xc7        // 89 c7      : mov   %eax, %edi
+#define G2_MOV_EAX_ESI    0x89, 0xc6        // 89 c6      : mov   %eax, %esi
+#define G2_MOV_EAX_EDX    0x89, 0xc2        // 89 c2      : mov   %eax, %edx
+#define G2_MOV_EAX_ECX    0x89, 0xc1        // 89 c1      : mov   %eax, %ecx
+#define G3_MOV_EAX_r8d    0x41, 0x89, 0xc0  // 41 89 c0   : mov %eax, %r8d
 
 enum {
     TYPE_INT = 0,
@@ -99,7 +107,7 @@ enum { // jump type for change the labels
     ASM_JUMP_JL,
     ASM_JUMP_LOOP
 };
-enum { // VM OPCODE:
+enum { // VM opcodes:
     OP_PUSH_INT,
     OP_PUSH_VAR,
     OP_POP_VAR,
@@ -161,9 +169,11 @@ struct ASM {
     ASM_label *label;
     ASM_jump  *jump;
     int       size;
-    int       ip;       // not used
     //-------------------------------------------
-    VALUE     arg [10]; // not used
+    #ifdef USE_VM
+    int       ip;
+    VALUE     arg [10];
+    #endif
 };
 //
 #ifdef USE_JIT

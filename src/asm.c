@@ -43,7 +43,7 @@ ASM * asm_new (unsigned int size) {
         a->label = NULL;
         a->jump  = NULL;
         a->size  = size;
-        a->ip    = 0; // not used
+        //a->ip    = 0; // not used
         return a;
     }
     return NULL;

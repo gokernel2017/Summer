@@ -55,11 +55,17 @@ extern "C" {
 //-----------------------------------------------
 //
 #define SUMMER_VERSION        0
-#define SUMMER_VERSION_SUB    10
+#define SUMMER_VERSION_SUB    11
 #define SUMMER_VERSION_PATCH  0
 #define SUMMER_VERSION_NAME   "BETA"
 //
+//------------------------------------------------
+//
+// !!!!  HELLO !!!! : Defined im file: "lex.h"
+//
 //#define LIBIMPORT             extern
+//
+//------------------------------------------------
 //
 #define ASM_DEFAULT_SIZE      50000
 #define UCHAR                 unsigned char

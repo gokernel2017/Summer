@@ -34,14 +34,14 @@
 extern "C" {
 #endif
 
+#define LIBIMPORT extern
+
 //-----------------------------------------------
 //---------------  DEFINE / ENUM  ---------------
 //-----------------------------------------------
 //
 #define LEXER_NAME_SIZE   255
 #define LEXER_TOKEN_SIZE  1024 * 4
-
-#define LIBIMPORT extern
 
 LIBIMPORT void Erro (char *format, ...);
 
@@ -82,13 +82,13 @@ struct LEXER {
     int   level; // in: '{' level++; | in '}' level--;
 };
 
-extern int  lex         (LEXER *lexer);
+LIBIMPORT int   lex         (LEXER *lexer);
 
-extern void lex_set     (LEXER *lexer, char *text, char *name);
+LIBIMPORT void  lex_set     (LEXER *lexer, char *text, char *name);
 
-extern void lex_save    (LEXER *l);
+LIBIMPORT void  lex_save    (LEXER *l);
 
-extern void lex_restore (LEXER *l);
+LIBIMPORT void  lex_restore (LEXER *l);
 
 #ifdef __cplusplus
 }

@@ -458,7 +458,7 @@ printf("  push\t$%d\n",value);
 
 // push variable on: %esp:
 //
-void emit_push_var (ASM *a, void *var) {
+void emit_push_var (ASM *a, void *var) { // 32/64 BITS OK
 #ifdef USE_ASM
 if(asm_mode && is_function){
 printf("  push\t%s\n", var_name);

@@ -31,5 +31,5 @@ obj/lex.o: src/lex.c
 obj/asm.o: src/asm.c
 	$(CC) $(CFLAGS) -c src/asm.c -o obj/asm.o
 
-obj/summer.o: summer.c
-	$(CC) $(CFLAGS) -c summer.c -o obj/summer.o
+obj/summer.o: src/summer.c
+	$(CC) $(CFLAGS) -c src/summer.c -o obj/summer.o

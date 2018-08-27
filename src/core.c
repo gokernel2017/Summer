@@ -341,7 +341,7 @@ write_asm("  // if (...)");
 
         #ifdef USE_JIT
         if (l->tok == ')' || l->tok == TOK_AND_AND) emit_pop_eax (a); // 58     pop   %eax
-        else                                        g (a,0x5a); // 5a     pop   %edx
+        else                                        emit_pop_edx (a); // 5a     pop   %edx
         #endif
 
         switch (l->tok) {
@@ -383,24 +383,40 @@ write_asm("  test\t%eax, %eax");
             #endif
             emit_jump_jge (a,array[if_count]);
             break;
-/*
+
         case TOK_EQUAL_EQUAL: // ==
-            lex(l); expr0(l,a); / * asm_pop_eax(a); // 58     : pop   %eax
-            asm_cmp_eax_edx(a);                // 39 c2  : cmp   %eax,%edx
-            asm_jne(a,array[if_count]);
+            lex(l); expr0(l,a);
+            #ifdef USE_VM
+            emit_cmp_int (a);
+            #endif
+            #ifdef USE_JIT
+            emit_pop_eax(a);     // 58     : pop   %eax
+            emit_cmp_eax_edx(a); // 39 c2  : cmp   %eax,%edx
+            #endif
+            emit_jump_jne(a,array[if_count]);
             break;
 
         case TOK_NOT_EQUAL: // !=
-            tok=lex(); expr0(a); asm_pop_eax(a); // 58     : pop   %eax
-            asm_cmp_eax_edx(a);                 // 39 c2  : cmp   %eax,%edx
-            asm_je (a,array[if_count]);
+            lex(l); expr0(l,a);
+            #ifdef USE_VM
+            emit_cmp_int (a);
+            #endif
+            #ifdef USE_JIT
+            emit_pop_eax(a);
+            emit_cmp_eax_edx(a);
+            #endif
+            emit_jump_je (a,array[if_count]);
             break;
-*/
         }//: switch(tok)
 
         if (l->tok==')') break;
     }
-    if (see(l)=='{') stmt (l,a); else Erro ("word(if) need start block: '{'\n");
+    if (see(l)=='{') {
+#ifdef USE_ASM
+write_asm("  //------- if block -------");
+#endif
+        stmt (l,a);
+    } else Erro ("word(if) need start block: '{'\n");
 
     asm_label (a, array[if_count]);
     if_count--;
@@ -930,10 +946,23 @@ static void expression (LEXER *l, ASM *a) {
         }
 
         if ((i = VarFind (l->token)) != -1) {
+            int next = see(l);
 
             main_variable_type = var_type = Gvar[i].type;
 
-            if (see(l)=='=') {
+            // increment var type int: a++;
+            //
+            if (next == TOK_PLUS_PLUS) {
+                lex(l);
+                #ifdef USE_VM
+                emit_inc_var_int(a,(UCHAR)i);
+                #endif
+                #ifdef USE_JIT
+                emit_incl (a,&Gvar[i].value.i);
+                #endif
+                return;
+            }
+            if (next=='=') {
                 lex_save(l); // save the lexer position
                 lex(l); // =
                 if (lex(l)==TOK_ID) {

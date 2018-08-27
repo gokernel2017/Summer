@@ -91,13 +91,17 @@ int main (int argc, char **argv) {
 
             #ifdef USE_JIT
             if (asm_set_executable(a, asm_get_len(a)) == 0) {
+                #ifdef USE_ASM
                 if (!asm_mode)
+                #endif
                     Run (a);
             }
             else printf ("ERRO:\n%s\n", ErroGet());
             #endif
             #ifdef USE_VM
+            #ifdef USE_ASM
             if (!asm_mode)
+            #endif // ! USE_ASM
                 Run (a);
             #endif
         }
@@ -141,7 +145,7 @@ int main (int argc, char **argv) {
                 continue;
             }
 
-//            if (*string==0) strcpy(string, "info(0);");
+            if (*string==0) strcpy(string, "info(0);");
 
             if (Parse(&l, a, string, "stdin") == 0) {
 

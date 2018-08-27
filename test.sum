@@ -10,14 +10,14 @@
 //
 //-------------------------------------------------------------------
 //
-int i = 100, a, b, c, d;
+int i = 100, a = 50, b, c, d;
 
 function hello () {
 
-    a = 1000;
+    if (!c && i > a) {
 
-    if ( i ) {
         printf ("Value i: %d\n", i);
+
     }
 }
 
@@ -25,11 +25,5 @@ function main () {
     hello();
 }
 
-/*
-  if ( !i ) {
-
-      printf ("Value i: %d\n", i);
-
-  }
-*/
+  hello();
 

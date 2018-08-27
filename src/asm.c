@@ -428,9 +428,19 @@ printf("  jne\t%s\n",name);
     asm_conditional_jump (a, name, ASM_JUMP_JNE);
 }
 void emit_jump_jle (ASM *a, char *name) {
+#ifdef USE_ASM
+if(asm_mode && is_function){
+printf("  jle\t%s\n",name);
+}
+#endif
     asm_conditional_jump (a, name, ASM_JUMP_JLE);
 }
 void emit_jump_jge (ASM *a, char *name) {
+#ifdef USE_ASM
+if(asm_mode && is_function){
+printf("  jge\t%s\n",name);
+}
+#endif
     asm_conditional_jump (a, name, ASM_JUMP_JGE);
 }
 
@@ -546,6 +556,17 @@ write_asm("  pop\t%eax");
     g(a,0x58);  // 58     pop   %eax
 }
 
+void emit_pop_edx (ASM *a) {
+#ifdef USE_ASM
+write_asm("  pop\t%edx");
+#endif
+    stack--;
+    g(a,0x5a);// 5a     pop   %edx
+}
+
+
+
+
 void emit_movl_ESP (ASM *a, long value, UCHAR index) {
     // c7 44 24   04   dc 05 00 00 	  movl    $0x5dc,0x4(%esp)
     g4(a,0xc7,0x44,0x24,(UCHAR)index);
@@ -599,6 +620,17 @@ void emit_mov_reg_var (ASM *a, int reg, void *var) { // 32/64 BITS OK - move: %r
     }
 }
 
-void emit_cmp_eax_edx (ASM *a) { g2(a,0x39,0xc2); }  // 39 c2  : cmp   %eax,%edx
+void emit_cmp_eax_edx (ASM *a) {
+#ifdef USE_ASM
+write_asm("  cmp\t%eax, %edx");
+#endif
+    g2(a,0x39,0xc2); // 39 c2  : cmp   %eax,%edx
+}
 
-//#endif // ! USE_JIT
+void emit_incl (ASM *a, void *var) {
+    #if defined(__x86_64__)
+    g3(a,0xff,0x04,0x25); asm_get_addr(a,var);  // ff 04 25   00 0a 60 00   : incl   0x600a00
+    #else
+    g2(a,0xff,0x05); asm_get_addr(a,var);       // ff 05      00 20 40 00   : incl   0x402000
+    #endif
+}

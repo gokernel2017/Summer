@@ -1,0 +1,32 @@
+//-------------------------------------------------------------------
+//
+// Big Loop Example:
+//
+// Test in mode JIT and VM.
+//
+//-------------------------------------------------------------------
+//
+int i = 0;
+
+console.log("----------------\n");
+#ifdef USE_JIT
+    console.log("Tag - USE_JIT:\n");
+#endif
+#ifdef USE_VM
+    console.log("Tag - USE_VM:\n");
+#endif
+console.log("----------------\n");
+
+
+  console.log ("\nPlease Wait Long Loop: 0 ... 100 000 000\n");
+
+  for (;;) {
+
+      i++;
+
+      if (i > 100000000) {
+          break;
+      }
+  }
+
+  console.log ("\nValue i: %d\n", i);

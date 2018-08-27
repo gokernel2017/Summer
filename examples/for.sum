@@ -15,19 +15,17 @@ console.log("----------------\n");
 #endif
 console.log("----------------\n");
 
-function hello () {
-    i;
-    i = add (i,1);
-}
+
 
   for (;;) {
+
+      console.log ("Value i: %d\n", i);
+
+      i++;
 
       if (i > 20) {
           break;
       }
-
-      hello();
-
   }
 
 

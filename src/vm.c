@@ -157,6 +157,12 @@ case OP_PUSH_STRING: {
     sp->s = s;
     } continue;
 
+case OP_INC_VAR_INT: {
+    UCHAR index = (UCHAR)(a->code[a->ip++]);
+    Gvar[index].value.i++;
+    }
+    continue;
+
 // call a VM Function
 //
 case OP_CALL_VM: {
@@ -523,6 +529,11 @@ void emit_jump_jle (ASM *a, char *name) {
 }
 void emit_jump_jge (ASM *a, char *name) {
     conditional_jump (a, name, OP_JUMP_JGE);
+}
+
+void emit_inc_var_int (ASM *a, UCHAR index) {
+    *a->p++ = OP_INC_VAR_INT;
+    *a->p++ = index;
 }
 
 void emit_halt (ASM *a) {

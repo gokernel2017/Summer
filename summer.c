@@ -122,7 +122,7 @@ int main (int argc, char **argv) {
         #endif
 
         printf ("__________________________________________________________________\n\n");
-        printf (" SUMMER Language Version: %d.%d.%d\n\n", SUMMER_VERSION, SUMMER_VERSION_SUB, SUMMER_VERSION_PATCH);
+        printf (" SUMMER Language Version: %d.%d.%d - '%s'\n\n", SUMMER_VERSION, SUMMER_VERSION_SUB, SUMMER_VERSION_PATCH, SUMMER_VERSION_NAME);
         printf (" To exit type: 'quit' or 'q'\n");
         printf ("__________________________________________________________________\n\n");
 

@@ -55,8 +55,9 @@ extern "C" {
 //-----------------------------------------------
 //
 #define SUMMER_VERSION        0
-#define SUMMER_VERSION_SUB    1
+#define SUMMER_VERSION_SUB    10
 #define SUMMER_VERSION_PATCH  0
+#define SUMMER_VERSION_NAME   "BETA"
 //
 //#define LIBIMPORT             extern
 //
@@ -298,8 +299,8 @@ LIBIMPORT void    emit_mov_eax_ESP  (ASM *a, UCHAR index); // mov    %eax,0x4(%e
 LIBIMPORT void    emit_mov_var_reg  (ASM *a, void *var, int reg); // move: variable to %register
 LIBIMPORT void    emit_mov_reg_var  (ASM *a, int reg, void *var); // 32/64 BITS OK - move: %register to variable
 LIBIMPORT void    emit_cmp_eax_edx  (ASM *a);
-LIBIMPORT void    emit_pop_var      (ASM *a, void *var);
-LIBIMPORT void    emit_push_var     (ASM *a, void *var);
+LIBIMPORT void    emit_pop_var      (ASM *a, void *var); // 32/64 BITS OK
+LIBIMPORT void    emit_push_var     (ASM *a, void *var); // 32/64 BITS OK
 //
 #endif // #ifdef USE_JIT
 #ifdef USE_VM

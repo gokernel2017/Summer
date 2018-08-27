@@ -21,13 +21,13 @@
 //
 //   01: summer
 //
-//   02: summer file.s
+//   02: summer file.sum
 //
 //   03: summer -s "int a=100, b=200; a = b; a;"
 //
 //   04: summer -s "10 * 20 + 3 * 5"
 //
-//   05: summer file.s -asm
+//   05: summer file.sum -asm
 //
 // ----------------------------------------------
 //
@@ -46,7 +46,7 @@ int main (int argc, char **argv) {
     char  *text;
     ASM   *a;
     LEXER l;
-    int i, is_string=0;
+    int i, is_string = 0;
 
     for (i = 0; i < argc; i++) {
         if (!strcmp(argv[i], "-s") && argc > i+1) is_string = i+1;
@@ -82,7 +82,7 @@ int main (int argc, char **argv) {
         }
         else printf ("ERRO:\n%s\n", ErroGet());
         printf ("\nExiting With Sucess(STRING):\n");
-        return 0;
+  return 0;
     }
 
     if (argc >= 2 && (text = FileOpen (argv[1])) != NULL) {
@@ -100,8 +100,6 @@ int main (int argc, char **argv) {
             if (!asm_mode)
                 Run (a);
             #endif
-//            lib_info (1);
-
         }
         else printf ("ERRO:\n%s\n", ErroGet());
 

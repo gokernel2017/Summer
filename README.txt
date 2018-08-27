@@ -15,10 +15,10 @@
  ----------------------------------
 
  To test the Summer Language(WINDOWS), type:
-   summer.exe test.s
+   summer.exe test.sum
 
  To test the Summer Language(LINUX), type:
-   ./summer test.s
+   ./summer test.sum
 
 
  BETA.

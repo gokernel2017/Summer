@@ -115,6 +115,11 @@ int asm_get_len (ASM *a) {
 
 void asm_label (ASM *a, char *name) {
     if (name) {
+#ifdef USE_ASM
+char buf[100];
+sprintf (buf, "%s:", name);
+write_asm(buf);
+#endif
         ASM_label *lab;
         ASM_label *l = a->label;
 
@@ -407,9 +412,19 @@ static void asm_conditional_jump (ASM *a, char *name, int type) {
     }
 }
 void emit_jump_je (ASM *a, char *name) {
+#ifdef USE_ASM
+if(asm_mode && is_function){
+printf("  je\t%s\n",name);
+}
+#endif
     asm_conditional_jump (a, name, ASM_JUMP_JE);
 }
 void emit_jump_jne (ASM *a, char *name) {
+#ifdef USE_ASM
+if(asm_mode && is_function){
+printf("  jne\t%s\n",name);
+}
+#endif
     asm_conditional_jump (a, name, ASM_JUMP_JNE);
 }
 void emit_jump_jle (ASM *a, char *name) {
@@ -474,6 +489,11 @@ printf("  pop\t%s\n", var_name);
 // long expression math:
 //------------------------------------------------
 void asm_imul_eax_esp (ASM *a) {
+#ifdef USE_ASM
+write_asm("  pop\t%eax");
+write_asm("  imul\t(%esp), %eax");
+write_asm("  mov\t%eax, (%esp)");
+#endif
     stack--;
     g(a,0x58);                  // 58               pop  %eax
     g4(a,0x0f,0xaf,0x04,0x24);  // 0f af 04 24      imul   (%esp),%eax
@@ -506,6 +526,10 @@ void asm_sub_eax_esp (ASM *a) {
 //------------------------------------------------
 
 void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
+#ifdef USE_ASM
+if(asm_mode && is_function)
+printf ("  call\t%s\n", FName);
+#endif
 //void asm_call (ASM *a, void *func) {
     // b8   7a 13 40 00       mov    $0x40137a,%eax
     // ff d0                	call   *%eax
@@ -515,6 +539,9 @@ void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
 }
 
 void emit_pop_eax (ASM *a) {
+#ifdef USE_ASM
+write_asm("  pop\t%eax");
+#endif
     stack--;
     g(a,0x58);  // 58     pop   %eax
 }
@@ -527,6 +554,11 @@ void emit_movl_ESP (ASM *a, long value, UCHAR index) {
 }
 
 void emit_mov_eax_ESP (ASM *a, UCHAR index) {
+#ifdef USE_ASM
+if(asm_mode && is_function){
+printf("  mov\t%%eax, %d(%%esp)\n", index);
+}
+#endif
     g4 (a,0x89,0x44,0x24,(UCHAR)index); // 89 44 24     04    mov    %eax,0x4(%esp)
 }
 

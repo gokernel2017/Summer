@@ -80,6 +80,7 @@ TVar              Gvar [GVAR_SIZE]; // global:
 int               asm_mode;    // The Compiler: Write Assembly with AT&T syntax:
 int               is_function;
 char              var_name [100];
+char              FName [100];
 //
 static MODULE   * Gmodule = NULL; // ... console.log(); ...
 static TFunc    * Gfunc = NULL;  // store the user functions
@@ -211,6 +212,21 @@ void CreateVarInt (char *name, int value) {
         i++;
     }
     if (i < GVAR_SIZE) {
+/*
+.globl _d
+	.align 4
+_d:
+	.long	555
+#endif
+#ifdef USE_ASM
+if(asm_mode){
+printf(".globl %s\n",name);
+printf("  .align 4\n");
+printf("%s:\n", name);
+printf("  .long %d\n", value);
+}
+#endif
+*/
         v->name = strdup(name);
         v->type = TYPE_INT;
         v->value.i = value;
@@ -305,7 +321,11 @@ static void word_if (LEXER *l, ASM *a) {
     if (lex(l) !='(') { Erro ("ERRO SINTAX (if) need char: '('\n"); return; }
 
     if_count++;
-    sprintf (array[if_count], "0_IF%d", if_count_total++);
+    sprintf (array[if_count], "IF%d", if_count_total++);
+
+#ifdef USE_ASM
+write_asm("  // if (...)");
+#endif
 
     while (!erro && lex(l)) { // pass arguments: if (a > b) { ... }
         is_negative = 0;
@@ -320,7 +340,7 @@ static void word_if (LEXER *l, ASM *a) {
         }
 
         #ifdef USE_JIT
-        if (l->tok == ')' || l->tok == TOK_AND_AND) g (a,0x58); // 58     pop   %eax
+        if (l->tok == ')' || l->tok == TOK_AND_AND) emit_pop_eax (a); // 58     pop   %eax
         else                                        g (a,0x5a); // 5a     pop   %edx
         #endif
 
@@ -332,6 +352,9 @@ static void word_if (LEXER *l, ASM *a) {
             emit_cmp_int (a);
             #endif
             #ifdef USE_JIT
+#ifdef USE_ASM
+write_asm("  test\t%eax, %eax");
+#endif
             g2(a,0x85,0xc0); // 85 c0    test   %eax,%eax
             #endif
             if (is_negative == 0) emit_jump_je  (a,array[if_count]);
@@ -655,11 +678,9 @@ static void word_function (LEXER *l, ASM *a) {
     local_count = 0;
     strcpy (func_name, name);
 
-
 #ifdef USE_ASM
-if(asm_mode){
-printf(".globl %s\n%s:\n", name, name);
-}
+if(asm_mode)
+printf("\n.globl %s\n%s:\n", name, name);
 #endif
     // compiling to buffer ( f ):
     //
@@ -676,9 +697,8 @@ printf(".globl %s\n%s:\n", name, name);
 #ifdef USE_JIT
 
 #ifdef USE_ASM
-if(asm_mode){
-printf("; '%s' len: %d\n", name, len);
-}
+if(asm_mode)
+printf("  // '%s' len: %d\n", name, len);
 #endif
 
     // new function:
@@ -813,18 +833,33 @@ void execute_call (LEXER *l, ASM *a, TFunc *func) {
                 // %edi, %esi, %edx, %ecx, %r8 and %r9
                 //
                 if (count==0) {     // argument 1:
+#ifdef USE_ASM
+write_asm("  mov\t%eax, %edi");
+#endif
                     g2(a,G2_MOV_EAX_EDI);
                 }
                 else if (count==1) { // argument 2
+#ifdef USE_ASM
+write_asm("  mov\t%eax, %esi");
+#endif
                     g2(a,G2_MOV_EAX_ESI);
                 }
                 else if (count==2) { // argument 3
+#ifdef USE_ASM
+write_asm("  mov\t%eax, %edx");
+#endif
                     g2(a,G2_MOV_EAX_EDX);
                 }
                 else if (count==3) { // argument 4
+#ifdef USE_ASM
+write_asm("  mov\t%eax, %ecx");
+#endif
                     g2(a,G2_MOV_EAX_ECX);
                 }
                 else if (count==4) { // argument 5
+#ifdef USE_ASM
+write_asm("  mov\t%eax, %r8d");
+#endif
                     g3(a,G3_MOV_EAX_r8d);
                 }
                 #else
@@ -845,6 +880,7 @@ void execute_call (LEXER *l, ASM *a, TFunc *func) {
         Erro ("%s:%d: - Call Function(%s) the max arguments is: 5\n", l->name, l->line, func->name);
   return;
     }
+    sprintf (FName, "%s", func->name);
     if (func->proto) {
         if (func->proto[0] == '0') return_type = TYPE_NO_RETURN;
         if (func->proto[0] == 'f') return_type = TYPE_FLOAT;
@@ -1020,7 +1056,7 @@ static void expression (LEXER *l, ASM *a) {
 }
 static int expr0 (LEXER *l, ASM *a) {
 #ifdef USE_ASM
-write_asm("  ; Expression:");
+write_asm("  // Expression:");
 #endif
     if (l->tok == TOK_ID) {
         int i;
@@ -1106,6 +1142,10 @@ static void atom (LEXER *l, ASM *a) { // expres
             emit_push_string (a, s->s);
             #endif
             #ifdef USE_JIT
+#ifdef USE_ASM
+if(asm_mode && is_function)
+printf ("  push\t$LC%d /* '%s' */\n", s->i, s->s);
+#endif
             // this is a constans :
             // 68    00 20 40 00       	push   $0x402000
             //

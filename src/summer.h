@@ -243,6 +243,7 @@ LIBIMPORT TVar  Gvar [GVAR_SIZE];
 LIBIMPORT int   asm_mode;    // The Compiler: Write Assembly with AT&T Syntax:
 LIBIMPORT int   is_function;
 LIBIMPORT char  var_name [100];
+LIBIMPORT char  FName [100];
 
 //-------------------------------------------------------------------
 //---------------------------  PUBLIC API  --------------------------

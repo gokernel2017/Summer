@@ -21,9 +21,12 @@ function hello () {
     }
 }
 
-function main () {
-    hello();
+function loop () {
+    i = i + 1;
+    i;
 }
 
-  hello();
+  for (;;) {
+    loop();
+  }
 

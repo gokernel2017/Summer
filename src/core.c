@@ -65,7 +65,8 @@ static void   core_DefineAdd(char *name, int value);
 F_STRING    * fs_new        (char *s);
 // stdlib:
 void  lib_info    (int arg);
-int   lib_add     (int a, int b);
+int   lib_addi     (int a, int b);
+float lib_addf     (float a, float b);
 int   lib_arg     (int a, int b, int c, int d, int e);
 void  lib_printf  (char *format, ...);
 void  lib_log (char *s); // console.log();
@@ -113,7 +114,8 @@ static TFunc stdlib[]={
   // name         proto   code                    type  len   next
   //-----------------------------------------------------------------
   { "info",       "0i",     (UCHAR*)lib_info,       0,    0,    NULL },
-  { "add",        "iii",    (UCHAR*)lib_add,        0,    0,    NULL },
+  { "addi",        "iii",   (UCHAR*)lib_addi,        0,    0,    NULL },
+  { "addf",        "fff",   (UCHAR*)lib_addf,        0,    0,    NULL },
   { "arg",        "iiiiii", (UCHAR*)lib_arg,        0,    0,    NULL },
   { "printf",     "0s",     (UCHAR*)lib_printf,     0,    0,    NULL },
   { "get_func",   "ps",     (UCHAR*)lib_get_func,   0,    0,    NULL },
@@ -954,6 +956,7 @@ write_asm("  mov\t%eax, %r8d");
         #endif
     } else {
         emit_call (a, (void*)func->code, (UCHAR)count, return_type);
+        //emit_call (a, (void*)func, (UCHAR)count, return_type);
     }
 }
 
@@ -1172,7 +1175,12 @@ static void expr1 (LEXER *l, ASM *a) { // '+' '-' : ADDITION | SUBTRACTION
         lex(l);
         expr2(l,a);
         if (main_variable_type==TYPE_FLOAT) {
-//            if (op=='+') emit_add_float (a);
+#ifdef USE_VM
+            if (op=='+') emit_add_float (a);
+#endif
+#ifdef USE_JIT
+            Erro ("Sorry, Float Value Not Implemented:\n");
+#endif
         } else { // INT
             if (op=='+') emit_add_int (a);
             if (op=='-') emit_sub_int (a);
@@ -1244,6 +1252,12 @@ printf ("  push\t$LC%d /* '%s' */\n", s->i, s->s);
         if ((i=VarFind(l->token))!=-1) {
             var_type = Gvar[i].type;
 
+#ifdef USE_JIT
+            if (var_type == TYPE_FLOAT) {
+                Erro ("%s: %d: Sorry, Float Value Not Implemented: '%s'\n", l->name, l->line, Gvar[i].name);
+          return;
+            }
+#endif
             //
             // used to: write_asm();
             //
@@ -1266,7 +1280,12 @@ printf ("  push\t$LC%d /* '%s' */\n", s->i, s->s);
             var_type = TYPE_FLOAT;
 
         if (var_type==TYPE_FLOAT) {
-//            emit_push_float (a, atof(l->token));
+#ifdef USE_VM
+            emit_push_float (a, atof(l->token));
+#endif
+#ifdef USE_JIT
+            Erro ("Sorry, Float Value Not Implemented:\n");
+#endif
         } else {
             emit_push_int (a, atoi(l->token));
         }
@@ -1496,7 +1515,11 @@ void lib_info (int arg) {
         printf ("USAGE(%d): info(1);\n\nInfo Options:\n 1: Variables\n 2: Functions\n 3: Defines\n 4: Words\n",arg);
     }
 }
-int lib_add (int a, int b) {
+int lib_addi (int a, int b) {
+    return a + b;
+}
+float lib_addf (float a, float b) {
+printf ("a: %f   b: %f\n", a, b);
     return a + b;
 }
 

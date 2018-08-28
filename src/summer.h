@@ -117,6 +117,7 @@ enum { // jump type for change the labels
 };
 enum { // VM opcodes:
     OP_PUSH_INT,
+    OP_PUSH_FLOAT,
     OP_PUSH_VAR,
     OP_POP_VAR,
 
@@ -124,6 +125,12 @@ enum { // VM opcodes:
     OP_DIV_INT,
     OP_ADD_INT,
     OP_SUB_INT,
+
+    OP_MUL_FLOAT,
+    OP_DIV_FLOAT,
+    OP_ADD_FLOAT,
+    OP_SUB_FLOAT,
+
 
     // compare and jumps:
     OP_CMP_INT,
@@ -319,6 +326,7 @@ LIBIMPORT void    emit_mul_int      (ASM *a);
 LIBIMPORT void    emit_div_int      (ASM *a);
 LIBIMPORT void    emit_add_int      (ASM *a);
 LIBIMPORT void    emit_sub_int      (ASM *a);
+LIBIMPORT void    emit_add_float    (ASM *a);
 //
 LIBIMPORT void    emit_call_vm      (ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
 LIBIMPORT void    emit_cmp_int      (ASM *a);
@@ -348,6 +356,7 @@ LIBIMPORT void    emit_jump_jle     (ASM *a, char *name);
 LIBIMPORT void    emit_jump_jge     (ASM *a, char *name);
 //
 LIBIMPORT void    emit_push_int     (ASM *a, int value);
+LIBIMPORT void    emit_push_float   (ASM *a, float value);
 LIBIMPORT void    emit_pop_eax      (ASM *a);
 
 #ifdef __cplusplus

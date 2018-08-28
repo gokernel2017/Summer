@@ -61,6 +61,13 @@ case OP_PUSH_INT: // size: 5
     a->ip += sizeof(int);
     continue;
 
+case OP_PUSH_FLOAT:
+printf ("vm push flat\n");
+    sp++;
+    sp->f = *(float*)(a->code+a->ip);
+    a->ip += sizeof(float);
+    continue;
+
 case OP_PUSH_VAR: { // size: 2
     UCHAR i = (UCHAR)a->code[a->ip++];
     sp++;
@@ -77,6 +84,11 @@ case OP_MUL_INT: sp[-1].i *= sp[0].i; sp--; continue; // size: 1
 case OP_DIV_INT: sp[-1].i /= sp[0].i; sp--; continue; // size: 1
 case OP_ADD_INT: sp[-1].i += sp[0].i; sp--; continue; // size: 1
 case OP_SUB_INT: sp[-1].i -= sp[0].i; sp--; continue; // size: 1
+
+case OP_MUL_FLOAT: sp[-1].f *= sp[0].f; sp--; continue;
+case OP_DIV_FLOAT: sp[-1].f /= sp[0].f; sp--; continue;
+case OP_ADD_FLOAT: sp[-1].f += sp[0].f; sp--; continue;
+case OP_SUB_FLOAT: sp[-1].f -= sp[0].f; sp--; continue;
 
 case OP_CMP_INT:
     sp--;
@@ -231,11 +243,17 @@ case OP_CALL_VM: {
 //
 case OP_CALL:
     {
+//    TFunc *p = *(void**)(a->code+a->ip);
+
     int (*func)() = *(void**)(a->code+a->ip);
     float (*func_float)() = *(void**)(a->code+a->ip);
     a->ip += sizeof(void*);
     UCHAR arg_count = (UCHAR)(a->code[a->ip++]);
     UCHAR return_type = (UCHAR)(a->code[a->ip++]);
+
+
+//printf ("VM CALL Function(%s)\n", p->name);
+//    continue;
 
     switch (arg_count) {
     case 0: // no argument
@@ -419,6 +437,12 @@ void emit_push_int (ASM *a, int i) {
     *(int*)a->p = i;
     a->p += sizeof(int);
 }
+void emit_push_float (ASM *a, float value) {
+    *a->p++ = OP_PUSH_FLOAT;
+    *(float*)a->p = value;
+    a->p += sizeof(float);
+}
+
 void emit_push_var (ASM *a, UCHAR i) {
     *a->p++ = OP_PUSH_VAR;
     *a->p++ = i;
@@ -534,6 +558,10 @@ void emit_jump_jge (ASM *a, char *name) {
 void emit_inc_var_int (ASM *a, UCHAR index) {
     *a->p++ = OP_INC_VAR_INT;
     *a->p++ = index;
+}
+
+void emit_add_float (ASM *a) {
+    *a->p++ = OP_ADD_FLOAT;
 }
 
 void emit_halt (ASM *a) {

@@ -38,6 +38,7 @@ struct DATA { // test SDL_Surface ( w, h )
 //-----------------------------------------------
 //
 static void   word_int      (LEXER *l, ASM *a);
+static void   word_var      (LEXER *l, ASM *a);
 static void   word_if       (LEXER *l, ASM *a);
 static void   word_for      (LEXER *l, ASM *a);
 static void   word_break    (LEXER *l, ASM *a);
@@ -45,6 +46,7 @@ static void   word_module   (LEXER *l, ASM *a);
 static void   word_import   (LEXER *l, ASM *a);
 static void   word_function (LEXER *l, ASM *a);
 //
+static void   word_DEFINE   (LEXER *l, ASM *a);
 static void   word_IFDEF    (LEXER *l, ASM *a);
 //
 static void   expression    (LEXER *l, ASM *a);
@@ -202,6 +204,28 @@ char * FileOpen (const char *FileName) {
 
     return NULL;
 }
+void CreateVar (char *name, char *svalue) {
+    TVar *v = Gvar;
+    int i = 0;
+    while (v->name) {
+        if (!strcmp(v->name, name))
+      return;
+        v++;
+        i++;
+    }
+    if (i < GVAR_SIZE) {
+        if (strchr(svalue, '.')) {
+            v->type = TYPE_FLOAT;
+            v->value.f = atof(svalue);
+        } else {
+            v->type = TYPE_INT;
+            v->value.i = atoi(svalue);
+        }
+        v->name = strdup(name);
+        v->info = NULL;
+    }
+}
+
 void CreateVarInt (char *name, int value) {
     TVar *v = Gvar;
     int i = 0;
@@ -212,21 +236,6 @@ void CreateVarInt (char *name, int value) {
         i++;
     }
     if (i < GVAR_SIZE) {
-/*
-.globl _d
-	.align 4
-_d:
-	.long	555
-#endif
-#ifdef USE_ASM
-if(asm_mode){
-printf(".globl %s\n",name);
-printf("  .align 4\n");
-printf("%s:\n", name);
-printf("  .long %d\n", value);
-}
-#endif
-*/
         v->name = strdup(name);
         v->type = TYPE_INT;
         v->value.i = value;
@@ -310,6 +319,27 @@ static void word_int (LEXER *l, ASM *a) {
     if (l->tok != ';') Erro ("ERRO: The word(float) need the char(;) on the end\n");
 
 }//: word_int ()
+static void word_var (LEXER *l, ASM *a) {
+    while (lex(l)) {
+        if (l->tok == TOK_ID) {
+            char name[255];
+            char svalue[255] = { '0', 0 };
+
+            strcpy (name, l->token); // save
+
+            if (lex(l) == '=') {
+                if (lex(l) == TOK_NUMBER) {
+                    sprintf (svalue, "%s", l->token);
+                }
+            }
+            CreateVar (name, svalue);
+        }
+        if (l->tok == ';') break;
+    }
+    if (l->tok != ';') Erro ("ERRO: The word(float) need the char(;) on the end\n");
+
+}//: word_int ()
+
 
 static void word_if (LEXER *l, ASM *a) {
     //**** to "push/pop"
@@ -477,6 +507,18 @@ static void word_break (LEXER *l, ASM *a) {
         emit_jump_jmp (a, array_break[loop_level]);
     }
     else Erro ("%s: %d: word 'break' need a loop", l->name, l->line);
+}
+
+//
+// define TOK_ID    100
+//
+static void word_DEFINE (LEXER *l, ASM *a) {
+    char name[100];
+    lex(l);
+    strcpy (name,l->token);
+    if (lex(l)==TOK_NUMBER) {
+        core_DefineAdd(name,atoi(l->token));
+    } else Erro("%s: %d: word (define) suport only number\n", l->name, l->line);
 }
 
 static void word_IFDEF (LEXER *l, ASM *a) {
@@ -1255,6 +1297,7 @@ static int stmt (LEXER *l, ASM *a) {
         //----------------------------------------------------
         return 1;
     case TOK_INT:       word_int      (l,a); return 1;
+    case TOK_VAR:       word_var      (l,a); return 1;
     case TOK_IF:        word_if       (l,a); return 1;
     case TOK_FOR:       word_for      (l,a); return 1;
     case TOK_BREAK:     word_break    (l,a); return 1;

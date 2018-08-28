@@ -265,6 +265,7 @@ LIBIMPORT void    Run               (ASM *a); // back-end in file: asm.c | vm.c
 LIBIMPORT ASM   * core_Init         (unsigned int size);
 LIBIMPORT void    core_Finalize     (void);
 LIBIMPORT char  * FileOpen          (const char *FileName);
+LIBIMPORT void    CreateVar         (char *name, char *svalue);
 LIBIMPORT void    CreateVarInt      (char *name, int value);
 LIBIMPORT TFunc * FuncFind          (char *name);
 LIBIMPORT int     VarFind           (char *name);

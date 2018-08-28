@@ -103,7 +103,7 @@ int asm_set_executable (ASM *a, unsigned int size) {
     return set_executable (a->code, size);
 }
 
-void asm_get_addr (ASM *a, void *ptr) { // 32/64 BITS OK
+void asm_get_addr (ASM *a, void *ptr) { ///: 32/64 BITS OK
     *(void**)a->p = ptr;
     //a->p += sizeof(void*);
     a->p += 4; // ! OK
@@ -277,7 +277,7 @@ static void asm_change_jump (ASM *a) {
 //--------------------------  GEN / EMIT  ---------------------------
 //-------------------------------------------------------------------
 //
-void asm_begin (ASM *a) { // 32/64 BITS OK
+void asm_begin (ASM *a) { ///: 32/64 BITS OK
     #if defined(__x86_64__)
 #ifdef USE_ASM
 write_asm("  push\t%rbp");
@@ -312,7 +312,7 @@ write_asm("  sub\t$100, %esp");
     a->p += 6;
     #endif
 }
-void asm_end (ASM *a) { // 32/64 BITS OK
+void asm_end (ASM *a) { ///: 32/64 BITS OK
     #if defined(__x86_64__)
 #ifdef USE_ASM
 write_asm("  leaveq\n  retq");
@@ -419,6 +419,7 @@ printf("  je\t%s\n",name);
 #endif
     asm_conditional_jump (a, name, ASM_JUMP_JE);
 }
+
 void emit_jump_jne (ASM *a, char *name) {
 #ifdef USE_ASM
 if(asm_mode && is_function){
@@ -427,6 +428,7 @@ printf("  jne\t%s\n",name);
 #endif
     asm_conditional_jump (a, name, ASM_JUMP_JNE);
 }
+
 void emit_jump_jle (ASM *a, char *name) {
 #ifdef USE_ASM
 if(asm_mode && is_function){
@@ -468,7 +470,7 @@ printf("  push\t$%d\n",value);
 
 // push variable on: %esp:
 //
-void emit_push_var (ASM *a, void *var) { // 32/64 BITS OK
+void emit_push_var (ASM *a, void *var) { ///: 32/64 BITS OK
 #ifdef USE_ASM
 if(asm_mode && is_function){
 printf("  push\t%s\n", var_name);
@@ -481,7 +483,7 @@ printf("  push\t%s\n", var_name);
     g2(a,0xff,0x35); asm_get_addr(a,var);       // ff 35      60 40 40 00   pushl   0x404060
     #endif
 }
-void emit_pop_var (ASM *a, void *var) { // 32/64 BITS OK
+void emit_pop_var (ASM *a, void *var) { ///: 32/64 BITS OK
 #ifdef USE_ASM
 if(asm_mode && is_function){
 printf("  pop\t%s\n", var_name);
@@ -583,8 +585,18 @@ printf("  mov\t%%eax, %d(%%esp)\n", index);
     g4 (a,0x89,0x44,0x24,(UCHAR)index); // 89 44 24     04    mov    %eax,0x4(%esp)
 }
 
-void emit_mov_var_reg (ASM *a, void *var, int reg) { // move: variable to %register
+void emit_mov_var_reg (ASM *a, void *var, int reg) { ///: 32/64 BITS OK: Move variable to %register
     if (reg >= 0 && reg <= 7) {
+        #if defined(__x86_64__)
+        switch (reg) {
+        case EAX: g3(a,0x8b,0x04,0x25); break; // 8b 04 25   00 0a 60 00 	mov    0x600a00,%eax
+        case ECX: g3(a,0x8b,0x0c,0x25); break; // 8b 0c 25   00 0a 60 00 	mov    0x600a00,%ecx
+        case EDX: g3(a,0x8b,0x14,0x25); break; // 8b 14 25   00 0a 60 00 	mov    0x600a00,%edx
+        case EBX: g3(a,0x8b,0x1c,0x25); break; // 8b 1c 25   00 0a 60 00 	mov    0x600a00,%ebx
+        default: return;
+        }
+        asm_get_addr (a, var);
+        #else
         switch (reg) {
         case EAX: g(a,0xa1);       break; // a1       60 40 40 00   mov   0x404060, %eax
         case ECX: g2(a,0x8b,0x0d); break;	// 8b 0d    70 40 40 00   mov   0x404070, %ecx
@@ -593,10 +605,11 @@ void emit_mov_var_reg (ASM *a, void *var, int reg) { // move: variable to %regis
         default: return;
         }
         asm_get_addr (a, var);
+        #endif
     }
 }
 
-void emit_mov_reg_var (ASM *a, int reg, void *var) { // 32/64 BITS OK - move: %register to variable
+void emit_mov_reg_var (ASM *a, int reg, void *var) { ///: 32/64 BITS OK: Move %register to variable
     if (reg >= 0 && reg <= 7) {
         #if defined(__x86_64__)
         switch (reg) {
@@ -627,7 +640,7 @@ write_asm("  cmp\t%eax, %edx");
     g2(a,0x39,0xc2); // 39 c2  : cmp   %eax,%edx
 }
 
-void emit_incl (ASM *a, void *var) {
+void emit_incl (ASM *a, void *var) { ///: 32/64 BITS OK
     #if defined(__x86_64__)
     g3(a,0xff,0x04,0x25); asm_get_addr(a,var);  // ff 04 25   00 0a 60 00   : incl   0x600a00
     #else

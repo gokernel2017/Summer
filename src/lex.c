@@ -89,6 +89,7 @@ top:
         *p = 0;
 
         if (!strcmp(l->token, "int"))       { l->tok = TOK_INT;       return TOK_INT; }
+        if (!strcmp(l->token, "var"))       { l->tok = TOK_VAR;       return TOK_VAR; }
         if (!strcmp(l->token, "if"))        { l->tok = TOK_IF;        return TOK_IF; }
         if (!strcmp(l->token, "for"))       { l->tok = TOK_FOR;       return TOK_FOR; }
         if (!strcmp(l->token, "break"))     { l->tok = TOK_BREAK;     return TOK_BREAK; }

@@ -2,31 +2,23 @@
 //
 // Big Loop Example:
 //
+// Compatible code with: Node.js
+//
 // Test in mode JIT and VM.
 //
 //-------------------------------------------------------------------
 //
-int i = 0;
-
-console.log("----------------\n");
-#ifdef USE_JIT
-    console.log("Tag - USE_JIT:\n");
-#endif
-#ifdef USE_VM
-    console.log("Tag - USE_VM:\n");
-#endif
-console.log("----------------\n");
-
+var a = 0;
 
   console.log ("\nPlease Wait Long Loop: 0 ... 100 000 000\n");
 
   for (;;) {
 
-      i++;
+      a++;
 
-      if (i > 100000000) {
+      if (a > 100000000) {
           break;
       }
   }
 
-  console.log ("\nValue i: %d\n", i);
+  console.log ("\nValue a: %d\n", a);

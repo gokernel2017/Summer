@@ -150,6 +150,7 @@ enum { // VM opcodes:
     OP_PUSH_STRING,
 
     OP_INC_VAR_INT,
+    OP_DEC_VAR_INT,
 
     OP_CALL_VM,
     OP_CALL,
@@ -305,6 +306,17 @@ LIBIMPORT void    asm_imul_eax_esp  (ASM *a);
 LIBIMPORT void    asm_idivl_eax_esp (ASM *a);
 LIBIMPORT void    asm_add_eax_esp   (ASM *a);
 LIBIMPORT void    asm_sub_eax_esp   (ASM *a);
+//-------------------------------------------
+#define emit_push_float asm_float_flds_value
+#define emit_add_float  asm_float_faddp
+#define emit_mul_float  asm_float_fmulp
+LIBIMPORT void asm_float_flds_value (ASM *a, float value);
+LIBIMPORT void asm_float_flds (ASM *a, void *var);
+LIBIMPORT void asm_float_fstps (ASM *a, void *var);
+LIBIMPORT void asm_float_fmulp (ASM *a); // de c9    fmulp  %st,%st(1)
+LIBIMPORT void asm_float_faddp (ASM *a); // de c1    faddp  %st,%st(1)
+//-------------------------------------------
+
 LIBIMPORT void    g                 (ASM *a, UCHAR c);
 LIBIMPORT void    g2                (ASM *a, UCHAR c1, UCHAR c2);
 LIBIMPORT void    g3                (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3);
@@ -319,6 +331,7 @@ LIBIMPORT void    emit_pop_edx      (ASM *a);
 LIBIMPORT void    emit_pop_var      (ASM *a, void *var); // 32/64 BITS OK
 LIBIMPORT void    emit_push_var     (ASM *a, void *var); // 32/64 BITS OK
 LIBIMPORT void    emit_incl         (ASM *a, void *var);
+LIBIMPORT void    emit_decl         (ASM *a, void *var); //: 32/64 BITS OK
 //
 #endif // #ifdef USE_JIT
 #ifdef USE_VM
@@ -327,6 +340,7 @@ LIBIMPORT void    emit_div_int      (ASM *a);
 LIBIMPORT void    emit_add_int      (ASM *a);
 LIBIMPORT void    emit_sub_int      (ASM *a);
 LIBIMPORT void    emit_add_float    (ASM *a);
+LIBIMPORT void    emit_mul_float    (ASM *a);
 //
 LIBIMPORT void    emit_call_vm      (ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
 LIBIMPORT void    emit_cmp_int      (ASM *a);
@@ -336,6 +350,7 @@ LIBIMPORT void    emit_pop_var      (ASM *a, UCHAR i);
 LIBIMPORT void    emit_push_var     (ASM *a, UCHAR i);
 LIBIMPORT void    emit_push_string  (ASM *a, char *s);
 LIBIMPORT void    emit_inc_var_int  (ASM *a, UCHAR index);
+LIBIMPORT void    emit_dec_var_int  (ASM *a, UCHAR index);
 //
 #endif // #ifdef USE_VM
 //-------------------------------------------------------------------

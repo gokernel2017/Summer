@@ -157,7 +157,7 @@ int main (int argc, char **argv) {
         }//: for (;;)
     }
 
-    printf ("\nExiting With Sucess:\n");
+    printf ("Exiting With Sucess:\n");
 
     return 0;
 }

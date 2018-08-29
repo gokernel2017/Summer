@@ -500,6 +500,18 @@ loop_level++;  // <<<<<<<<<<  ! PUSH  >>>>>>>>>>
         for_count--;
 
 loop_level--;  // <<<<<<<<<<  ! POP  >>>>>>>>>>
+    } else {
+
+        Erro ("%s: %d: Sorry, for with arguments Not Implemented, USE: for(;;) { ... }\n", l->name, l->line);
+/*
+        // for (i = 10; i < 100; i++) { ... }
+        i = expr0 (l,a);
+        if (i != -1) {
+            printf ("var(%s): %d\n", Gvar[i].name,Gvar[i].value.i);
+            while(lex(l))
+                if (l->tok=='}') break;
+        }
+*/
     }
 
 }//: word_for ()
@@ -884,8 +896,13 @@ void execute_call (LEXER *l, ASM *a, TFunc *func) {
 
                 #ifdef USE_JIT
 
-                emit_pop_eax (a); // ... pop the "stack" and store in %eax ... := expression result
-
+                if (main_variable_type != TYPE_FLOAT) {
+                    emit_pop_eax (a); // ... pop the "stack" and store in %eax ... := expression result
+                } else {
+                    g3(a,0xd9,0x5c,0x24);  // d9 5c 24   04    fstps   0x4(%esp)
+                    g(a,(char)pos);  // 4, 8, 12, 16, ...
+                    pos += size;
+                }
                 #if defined(__x86_64__)
                 //-----------------------------------
                 // JIT 64 bits
@@ -925,8 +942,10 @@ write_asm("  mov\t%eax, %r8d");
                 #else
                 //-----------------------------------
                 // JIT 32 bits
-                emit_mov_eax_ESP (a, pos);
-                pos += size;
+                if (main_variable_type == TYPE_INT) {
+                    emit_mov_eax_ESP (a, pos);
+                    pos += size;
+                }
                 #endif
                 #endif // ! USE_JIT
 
@@ -966,7 +985,10 @@ static void expression (LEXER *l, ASM *a) {
         TFunc *fi;
         int i;
 
-        main_variable_type = var_type = TYPE_INT; // 0
+        if (l->tok==TOK_NUMBER && strchr(l->token, '.'))
+            main_variable_type = var_type = TYPE_FLOAT;
+        else
+            main_variable_type = var_type = TYPE_INT; // 0
 
         if (see(l)=='.') { // console.log();
             lex_save(l);
@@ -1007,6 +1029,19 @@ static void expression (LEXER *l, ASM *a) {
                 #endif
                 return;
             }
+            // increment var type int: a--;
+            //
+            if (next == TOK_MINUS_MINUS) {
+                lex(l);
+                #ifdef USE_VM
+                emit_dec_var_int(a,(UCHAR)i);
+                #endif
+                #ifdef USE_JIT
+                emit_decl (a,&Gvar[i].value.i);
+                #endif
+                return;
+            }
+
             if (next=='=') {
                 lex_save(l); // save the lexer position
                 lex(l); // =
@@ -1118,6 +1153,12 @@ static void expression (LEXER *l, ASM *a) {
                 emit_movl_ESP (a, (long)("%d\n"), 0); // pass argument 1
                 emit_mov_eax_ESP (a, 4);              // pass argument 2
             } else if (main_variable_type == TYPE_FLOAT) {
+                emit_movl_ESP (a, (long)("%f\n"), 0); // pass argument 1
+
+                // send the result of (float expression) to: 4(%esp)
+                //
+                // dd 5c 24 04          	fstpl  0x4(%esp)
+                g4(a,0xdd,0x5c,0x24,0x04); // pass argument 2
 
             }
             emit_call(a,printf,0,0);   // call the function
@@ -1155,8 +1196,12 @@ write_asm("  // Expression:");
                     emit_pop_var (a,i);
                     #endif
                     #ifdef USE_JIT
-                    // Copia o TOPO DA PILHA ( %ESP ) para a variavel ... e estabiliza a PILHA
-                    emit_pop_var (a, &Gvar[i].value.i);
+                    if(main_variable_type==TYPE_FLOAT) {
+                        asm_float_fstps (a, &Gvar[i].value.f); // Gvar[1]
+                    } else {
+                        // Copia o TOPO DA PILHA ( %ESP ) para a variavel ... e estabiliza a PILHA
+                        emit_pop_var (a, &Gvar[i].value.i);
+                    }
                     #endif
               return i;
                 } else {
@@ -1175,12 +1220,7 @@ static void expr1 (LEXER *l, ASM *a) { // '+' '-' : ADDITION | SUBTRACTION
         lex(l);
         expr2(l,a);
         if (main_variable_type==TYPE_FLOAT) {
-#ifdef USE_VM
             if (op=='+') emit_add_float (a);
-#endif
-#ifdef USE_JIT
-            Erro ("Sorry, Float Value Not Implemented:\n");
-#endif
         } else { // INT
             if (op=='+') emit_add_int (a);
             if (op=='-') emit_sub_int (a);
@@ -1195,7 +1235,7 @@ static void expr2 (LEXER *l, ASM *a) { // '*' '/' : MULTIPLICATION | DIVISION
         lex(l);
         expr3(l,a);
         if (main_variable_type==TYPE_FLOAT) {
-//            if (op=='*') emit_mul_float (a);
+            if (op=='*') emit_mul_float (a);
         } else { // INT
             if (op=='*') emit_mul_int (a);
             if (op=='/') emit_div_int (a);
@@ -1252,19 +1292,17 @@ printf ("  push\t$LC%d /* '%s' */\n", s->i, s->s);
         if ((i=VarFind(l->token))!=-1) {
             var_type = Gvar[i].type;
 
-#ifdef USE_JIT
-            if (var_type == TYPE_FLOAT) {
-                Erro ("%s: %d: Sorry, Float Value Not Implemented: '%s'\n", l->name, l->line, Gvar[i].name);
-          return;
-            }
-#endif
             //
             // used to: write_asm();
             //
             sprintf (var_name, "%s", Gvar[i].name);
 
             #ifdef USE_JIT
-            emit_push_var (a, &Gvar[i].value.i);
+            if (var_type == TYPE_FLOAT) {
+                asm_float_flds (a, &Gvar[i].value.f);
+            } else {
+                emit_push_var (a, &Gvar[i].value.i);
+            }
             #endif
             #ifdef USE_VM
             emit_push_var (a,i);
@@ -1280,12 +1318,7 @@ printf ("  push\t$LC%d /* '%s' */\n", s->i, s->s);
             var_type = TYPE_FLOAT;
 
         if (var_type==TYPE_FLOAT) {
-#ifdef USE_VM
             emit_push_float (a, atof(l->token));
-#endif
-#ifdef USE_JIT
-            Erro ("Sorry, Float Value Not Implemented:\n");
-#endif
         } else {
             emit_push_int (a, atoi(l->token));
         }
@@ -1344,6 +1377,7 @@ static int see (LEXER *l) {
         } else {
             if (s[0]=='=' && s[1]=='=') return TOK_EQUAL_EQUAL;
             if (s[0]=='+' && s[1]=='+') return TOK_PLUS_PLUS;
+            if (s[0]=='-' && s[1]=='-') return TOK_MINUS_MINUS;
             return *s;
         }
     }

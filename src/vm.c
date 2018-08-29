@@ -62,12 +62,12 @@ case OP_PUSH_INT: // size: 5
     continue;
 
 case OP_PUSH_FLOAT:
-printf ("vm push flat\n");
     sp++;
     sp->f = *(float*)(a->code+a->ip);
     a->ip += sizeof(float);
     continue;
 
+/*
 case OP_PUSH_VAR: { // size: 2
     UCHAR i = (UCHAR)a->code[a->ip++];
     sp++;
@@ -77,6 +77,24 @@ case OP_PUSH_VAR: { // size: 2
 case OP_POP_VAR: { // size: 2
     UCHAR i = (UCHAR)a->code[a->ip++];
     Gvar[i].value = sp[0];
+    sp--;
+    } continue;
+*/
+case OP_PUSH_VAR: {
+    UCHAR i = (UCHAR)a->code[a->ip++];
+    sp++;
+    switch (Gvar[i].type) {
+    case TYPE_INT:   sp->i = Gvar[i].value.i; break;
+    case TYPE_FLOAT: sp->f = Gvar[i].value.f; break;
+    }
+    } continue;
+
+case OP_POP_VAR: {
+    UCHAR i = (UCHAR)a->code[a->ip++];
+    switch (Gvar[i].type) {
+    case TYPE_INT:   Gvar[i].value.i = sp->i; break;
+    case TYPE_FLOAT: Gvar[i].value.f = sp->f; break;
+    }
     sp--;
     } continue;
 
@@ -175,6 +193,12 @@ case OP_INC_VAR_INT: {
     }
     continue;
 
+case OP_DEC_VAR_INT: {
+    UCHAR index = (UCHAR)(a->code[a->ip++]);
+    Gvar[index].value.i--;
+    }
+    continue;
+
 // call a VM Function
 //
 case OP_CALL_VM: {
@@ -243,17 +267,11 @@ case OP_CALL_VM: {
 //
 case OP_CALL:
     {
-//    TFunc *p = *(void**)(a->code+a->ip);
-
     int (*func)() = *(void**)(a->code+a->ip);
     float (*func_float)() = *(void**)(a->code+a->ip);
     a->ip += sizeof(void*);
     UCHAR arg_count = (UCHAR)(a->code[a->ip++]);
     UCHAR return_type = (UCHAR)(a->code[a->ip++]);
-
-
-//printf ("VM CALL Function(%s)\n", p->name);
-//    continue;
 
     switch (arg_count) {
     case 0: // no argument
@@ -559,10 +577,20 @@ void emit_inc_var_int (ASM *a, UCHAR index) {
     *a->p++ = OP_INC_VAR_INT;
     *a->p++ = index;
 }
+void emit_dec_var_int (ASM *a, UCHAR index) {
+    *a->p++ = OP_DEC_VAR_INT;
+    *a->p++ = index;
+}
+
+
+void emit_mul_float (ASM *a) {
+    *a->p++ = OP_MUL_FLOAT;
+}
 
 void emit_add_float (ASM *a) {
     *a->p++ = OP_ADD_FLOAT;
 }
+
 
 void emit_halt (ASM *a) {
     *a->p++ = OP_HALT;

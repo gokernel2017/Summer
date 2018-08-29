@@ -27,7 +27,8 @@
 
 static void asm_change_jump (ASM *a);
 
-static int  stack;
+static float  asmFvalue;
+static int    stack;
 
 void Run (ASM *a) {
     ( (void(*)())a->code ) ();
@@ -537,6 +538,151 @@ void asm_sub_eax_esp (ASM *a) {
 }
 //------------------------------------------------
 
+//-------------------------------------------------------------------
+//###########################  MATH FLOAT  ##########################
+//-------------------------------------------------------------------
+//
+// load a float value:
+// USAGE:
+//   asm_float_flds_value (a, 12345.00);
+//
+/*
+void asm_float_flds_value (ASM *a, float value) {
+    // b8     9a 19 c9 42       	mov    $0x42c9199a,%eax
+    //
+    g(a,0xb8);
+    *(float*)a->p = value;
+    a->p += sizeof(float);
+
+    // a3     00 20 40 00       	mov    %eax,0x402000
+    //
+    g(a,0xa3);
+    *(void**)a->p = &asmFvalue;
+    a->p += sizeof(void*);
+
+    // FLDS VARIABLE ( asmFvalue ):
+    //
+    // d9 05    04 20 40 00    	flds   0x402004
+    //
+    g2 (a,0xd9,0x05);
+    *(void**)a->p = &asmFvalue;
+    a->p += sizeof(void*);
+}
+*/
+//
+// load a float value:
+// USAGE:
+//   asm_float_flds_value (a, 12345.00);
+//
+void asm_float_flds_value (ASM *a, float value) {
+    // b8     9a 19 c9 42       	mov    $0x42c9199a,%eax
+    //
+    g(a,0xb8);
+    *(float*)a->p = value;
+    a->p += 4;
+
+    // a3     00 20 40 00       	mov    %eax,0x402000
+    //
+    #if defined(__x86_64__)
+    g3(a,0x89,0x04,0x25);
+    #else
+    g(a, 0xa3);
+    #endif
+    *(void**)a->p = &asmFvalue;
+    a->p += 4;
+
+    // FLDS VARIABLE ( asmFvalue ):
+    //
+    // d9 05    04 20 40 00    	flds   0x402004
+    //
+    #if defined(__x86_64__)
+    // d9 04 25    04 b4 60 00 	flds   0x60b404
+    g3 (a,0xd9,0x04,0x25);
+    #else
+    g2 (a,0xd9,0x05);
+    #endif
+    *(void**)a->p = &asmFvalue;
+    a->p += 4;
+}
+
+
+
+//
+// load a float variable:
+// USAGE:
+//   asm_float_flds (a, &var_name);
+//
+void asm_float_flds (ASM *a, void *var) {
+/*
+    // d9 05    04 20 40 00    	flds   0x402004
+    //
+    #if defined(__x86_64__)
+    // d9 04 25    04 b4 60 00 	flds   0x60b404
+    g3 (a,0xd9,0x04,0x25);
+    #else
+    g2(a,0xd9,0x05);
+    #endif
+    *(void**)a->p = var;
+    a->p += 4;
+*/
+    // d9 05    04 20 40 00    	flds   0x402004
+    //
+    g2(a,0xd9,0x05);
+    *(void**)a->p = var;
+    a->p += sizeof(void*);
+}
+
+//
+// multiply the stack float:
+// USAGE:
+//   asm_float_fmulp (a);
+//
+void asm_float_fmulp (ASM *a) { g2 (a,0xde,0xc9); } // de c9    fmulp  %st,%st(1)
+
+//
+// divide the stack float:
+// USAGE:
+//   asm_float_fmulp (a);
+//
+void asm_float_fdivp (ASM *a) { g2(a,0xde,0xf1); } // de f1    fdivp  %st,%st(1)
+
+//
+// add the stack float:
+// USAGE:
+//   asm_float_faddp (a);
+//
+void asm_float_faddp (ASM *a) { g2 (a,0xde,0xc1); } // de c1    faddp  %st,%st(1)
+
+//
+// sub the stack float:
+// USAGE:
+//   asm_float_faddp (a);
+//
+void asm_float_fsubp (ASM *a) { g2 (a,0xde,0xe1); } // de e1    fsubp  %st,%st(1)
+
+//
+// set the variable and CLEAR the stack:
+// USAGE:
+//   asm_float_fstps (a, &var_name);
+//
+void asm_float_fstps (ASM *a, void *var) {
+    // d9 1d    00 20 40 00    	fstps  0x402000
+    //
+    #if defined(__x86_64__)
+    // d9 1c 25    00 b4 60 00 	fstps  0x60b400
+    g3(a,0xd9,0x1c,0x25);
+    #else
+    g2(a,0xd9,0x1d);
+    #endif
+    *(void**)a->p = var;
+//    a->p += sizeof(void*);
+    a->p += 4;
+}
+//-------------------------------------------------------------------
+//###########################  MATH FLOAT  ##########################
+//-------------------------------------------------------------------
+
+
 void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
 #ifdef USE_ASM
 if(asm_mode && is_function)
@@ -640,10 +786,18 @@ write_asm("  cmp\t%eax, %edx");
     g2(a,0x39,0xc2); // 39 c2  : cmp   %eax,%edx
 }
 
-void emit_incl (ASM *a, void *var) { ///: 32/64 BITS OK
+void emit_incl (ASM *a, void *var) { //: 32/64 BITS OK
     #if defined(__x86_64__)
     g3(a,0xff,0x04,0x25); asm_get_addr(a,var);  // ff 04 25   00 0a 60 00   : incl   0x600a00
     #else
     g2(a,0xff,0x05); asm_get_addr(a,var);       // ff 05      00 20 40 00   : incl   0x402000
+    #endif
+}
+
+void emit_decl (ASM *a, void *var) { //: 32/64 BITS OK
+    #if defined(__x86_64__)
+    g3(a,0xff,0x0c,0x25); asm_get_addr(a, var);  // ff 0c 25   cc 0a 60 00   decl  0x600acc
+    #else
+    g2(a,0xff,0x0d); asm_get_addr(a, var);  // ff 0d      00 20 40 00   decl  0x402000
     #endif
 }

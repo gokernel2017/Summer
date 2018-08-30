@@ -261,7 +261,6 @@ LIBIMPORT int   asm_mode;    // The Compiler: Write Assembly with AT&T Syntax:
 LIBIMPORT int   is_function;
 LIBIMPORT char  var_name [100];
 LIBIMPORT char  FName [100];
-LIBIMPORT float asmFvalue; // src/asm.c
 
 //-------------------------------------------------------------------
 //---------------------------  PUBLIC API  --------------------------
@@ -294,6 +293,9 @@ LIBIMPORT void    write_asm         (char *s);
 //-------------------------------------------------------------------
 //
 #ifdef USE_JIT
+LIBIMPORT void emit_expression_pop_64_int (ASM *a);
+LIBIMPORT void emit_expression_pop_64_float (ASM *a);
+//
 LIBIMPORT int     set_executable    (void *ptr, unsigned int size);
 LIBIMPORT void    asm_get_addr      (ASM *a, void *ptr); // 32/64 BITS OK
 //-----------------------------------------------
@@ -334,6 +336,14 @@ LIBIMPORT void    emit_push_var     (ASM *a, void *var);  // 32/64 BITS OK
 LIBIMPORT void    emit_incl         (ASM *a, void *var);
 LIBIMPORT void    emit_decl         (ASM *a, void *var);  //: 32/64 BITS OK
 LIBIMPORT void    emit_sub_esp      (ASM *a, char c);     // 32/64 BITS OK
+//
+// 64 BITS: Function argument:
+//
+LIBIMPORT void    emit_mov_eax_edi  (ASM *a); // 64 BITS: Function argument 1: %edi
+LIBIMPORT void    emit_mov_eax_esi  (ASM *a); // 64 BITS: Function argument 2: %esi
+LIBIMPORT void    emit_mov_eax_edx  (ASM *a); // 64 BITS: Function argument 3: %edx
+LIBIMPORT void    emit_mov_eax_ecx  (ASM *a); // 64 BITS: Function argument 4: %ecx
+LIBIMPORT void    emit_mov_eax_r8d  (ASM *a); // 64 BITS: Function argument 5: %r8d
 //
 #endif // #ifdef USE_JIT
 #ifdef USE_VM

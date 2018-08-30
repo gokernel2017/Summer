@@ -27,7 +27,7 @@
 
 static void asm_change_jump (ASM *a);
 
-float  asmFvalue;
+static float  asmFvalue;
 static int    stack;
 
 void Run (ASM *a) {
@@ -775,12 +775,16 @@ void emit_mov_reg_var (ASM *a, int reg, void *var) { ///: 32/64 BITS OK: Move %r
 }
 
 void emit_sub_esp (ASM *a, char c) { // 32/64 BITS OK
+#ifdef USE_ASM
+if(asm_mode && is_function){
+printf("  sub\t$%d, %%esp", c);
+}
+#endif
     #if defined(__x86_64__)
     g4(a,0x48,0x83,0xec,(char)c); // 48 83 ec   08   sub   $0x8,%rsp
     #else
     g3(a,0x83,0xec,(char)c);      // 83 ec      08   sub  $0x8,%esp
     #endif
-    printf ("emit_SUB_ESP LIGADO\n");
 }
 
 
@@ -805,4 +809,67 @@ void emit_decl (ASM *a, void *var) { //: 32/64 BITS OK
     #else
     g2(a,0xff,0x0d); asm_get_addr(a, var);  // ff 0d      00 20 40 00   decl  0x402000
     #endif
+}
+
+
+void emit_expression_pop_64_int (ASM *a) {
+    // argument 1:
+    // this is a constans :
+    // b8    00 20 40 00       	mov    $0x402000,%eax
+    g(a,0xb8); asm_get_addr(a,"%d\n");
+    g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
+
+    // argument 2:
+    emit_pop_eax (a); // %eax | eax.i := expression result
+    g2(a,G2_MOV_EAX_ESI); // 89 c6   : mov   %eax,%esi
+}
+void emit_expression_pop_64_float (ASM *a) {
+    //  dd 1c 25    f8 09 60 00 	fstpl  0x6009f8
+    asm_float_fstps (a, &asmFvalue); // store expression result | TYPE_FLOAT
+    emit_mov_var_reg(a, &asmFvalue, EAX);
+
+    // 89 45 fc             	mov    %eax,-0x4(%rbp)
+    g3(a,0x89, 0x45,0xfc);
+    // f3 0f 10 45 fc       	movss  -0x4(%rbp),%xmm0
+    g4(a,0xf3, 0x0f, 0x10, 0x45);
+    g(a,(char)-4);
+
+    // 0f 5a c0             	cvtps2pd %xmm0,%xmm0
+    g3(a,0x0f, 0x5a, 0xc0);
+
+    // argument 1:
+    // b8    00 20 40 00       	mov    $0x402000,%eax
+    g(a,0xb8); asm_get_addr(a,"%f\n");
+    g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
+}
+
+void emit_mov_eax_edi (ASM *a) {
+#ifdef USE_ASM
+write_asm("  mov\t%eax, %edi");
+#endif
+    g2(a,G2_MOV_EAX_EDI);
+}
+void emit_mov_eax_esi (ASM *a) {
+#ifdef USE_ASM
+write_asm("  mov\t%eax, %esi");
+#endif
+    g2(a,G2_MOV_EAX_ESI);
+}
+void emit_mov_eax_edx (ASM *a) {
+#ifdef USE_ASM
+write_asm("  mov\t%eax, %edx");
+#endif
+    g2(a,G2_MOV_EAX_EDX);
+}
+void emit_mov_eax_ecx (ASM *a) {
+#ifdef USE_ASM
+write_asm("  mov\t%eax, %ecx");
+#endif
+    g2(a,G2_MOV_EAX_ECX);
+}
+void emit_mov_eax_r8d (ASM *a) {
+#ifdef USE_ASM
+write_asm("  mov\t%eax, %r8d");
+#endif
+    g3(a,G3_MOV_EAX_r8d);
 }

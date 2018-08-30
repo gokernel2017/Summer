@@ -63,6 +63,7 @@ static int    see           (LEXER *l);
 static void   core_ModuleAdd(char *module_name, char *func_name, char *proto, UCHAR *code);
 static void   core_DefineAdd(char *name, int value);
 F_STRING    * fs_new        (char *s);
+static void   execute_call  (LEXER *l, ASM *a, TFunc *func);
 // stdlib:
 void  lib_info    (int arg);
 int   lib_addi     (int a, int b);
@@ -91,6 +92,8 @@ static DEFINE   * Gdefine = NULL;
 static ASM      * asm_function;
 static ARG        argument [20];
 static F_STRING * fs = NULL;
+
+static float      _Fvalue_;
 
 static char
     strErro     [STR_ERRO_SIZE],
@@ -300,6 +303,194 @@ int VarFind (char *name) {
     }
     return -1;
 }
+
+static void expression (LEXER *l, ASM *a) {
+    if (l->tok==TOK_ID || l->tok==TOK_NUMBER) {
+        char buf[100];
+        TFunc *fi;
+        int i;
+
+        if (l->tok==TOK_NUMBER && strchr(l->token, '.'))
+            main_variable_type = var_type = TYPE_FLOAT;
+        else
+            main_variable_type = var_type = TYPE_INT; // 0
+
+        if (see(l)=='.') { // console.log();
+            lex_save(l);
+            sprintf (buf, "%s", l->token);
+            lex(l); // .
+            if (lex(l)==TOK_ID) { // ! FuncName:
+                if ((fi = ModuleFind (buf, l->token)) != NULL) {
+                    execute_call (l, a, fi);
+              return;
+                }
+            }
+            else lex_restore(l);
+        }
+
+        //
+        // call a function without return:
+        //   function_name (...);
+        //
+        if ((fi = FuncFind(l->token)) != NULL) {
+            execute_call (l, a, fi);
+      return;
+        }
+
+        if ((i = VarFind (l->token)) != -1) {
+            int next = see(l);
+
+            main_variable_type = var_type = Gvar[i].type;
+
+            // increment var type int: a++;
+            //
+            if (next == TOK_PLUS_PLUS) {
+                lex(l);
+                #ifdef USE_VM
+                emit_inc_var_int(a,(UCHAR)i);
+                #endif
+                #ifdef USE_JIT
+                emit_incl (a,&Gvar[i].value.i);
+                #endif
+                return;
+            }
+            // increment var type int: a--;
+            //
+            if (next == TOK_MINUS_MINUS) {
+                lex(l);
+                #ifdef USE_VM
+                emit_dec_var_int(a,(UCHAR)i);
+                #endif
+                #ifdef USE_JIT
+                emit_decl (a,&Gvar[i].value.i);
+                #endif
+                return;
+            }
+
+            if (next=='=') {
+                lex_save(l); // save the lexer position
+                lex(l); // =
+                if (lex(l)==TOK_ID) {
+
+                    if (see(l)=='.' && ModuleIsLib(l->token)) {
+                        lex_save(l); // save the lexer position
+                        sprintf (buf, l->token);
+                        lex(l); // .
+                        if (lex(l)==TOK_ID) { // Module FuncName
+                            if ((fi = ModuleFind(buf, l->token)) != NULL) {
+
+                                execute_call (l, a, fi);
+
+                                #ifdef USE_VM
+                                // The function return is stored in variable VALUE( eax ) ... see in file: vm.c
+                                emit_mov_eax_var(a,i);
+                                #endif
+
+                                #ifdef USE_JIT
+                                //
+                                // The function return is stored in register %eax ... types ! TYPE_FLOAT
+                                //
+                                //   HERE: copy the register ( %eax ) to the variable
+                                //
+                                if (main_variable_type != TYPE_FLOAT) {
+                                    emit_mov_reg_var (a, EAX, &Gvar[i].value.i);
+                                } else {
+
+                                }
+                                #endif //: #ifdef USE_JIT
+                          return;
+                            }
+                        }
+                    }
+                    //
+                    // call a function with return:
+                    //   i = function_name (...);
+                    //
+                    if ((fi = FuncFind(l->token)) != NULL) {
+                        execute_call (l, a, fi);
+
+                        #ifdef USE_VM
+                        // The function return is stored in variable VALUE( eax ) ... see in file: vm.c
+                        emit_mov_eax_var(a,i);
+                        #endif
+
+                        #ifdef USE_JIT
+                        //
+                        // The function return is stored in register %eax ... types ! TYPE_FLOAT
+                        //
+                        //   HERE: copy the register ( %eax ) to the variable
+                        //
+                        if (main_variable_type != TYPE_FLOAT) {
+                            emit_mov_reg_var (a, EAX, &Gvar[i].value.i);
+                        } else {
+
+                        }
+                        #endif //: #ifdef USE_JIT
+                  return;
+                    }//: if ((fi = FuncFind(l->token)) != NULL)
+
+                }
+                lex_restore (l); // restore the lexer position
+
+            }//: if (see(l)=='=')
+
+        }//: if ((i = VarFind (l->token)) != -1)
+
+        //---------------------------------------
+        // Expression types:
+        //   a * b + c * d;
+        //   10 * a + 3 * b;
+        //   i;
+        //---------------------------------------
+        //
+        if (expr0(l,a) == -1) {
+            #ifdef USE_VM
+            emit_pop_eax (a); // %eax | eax.i := expression result
+            emit_print_eax (a,main_variable_type);
+            #endif
+
+            #ifdef USE_JIT
+            #if defined(__x86_64__)
+            //
+            // JIT 64 bits
+            //
+            if (main_variable_type == TYPE_INT) {
+
+                // this "pop" the expression to register %eax and prepare to print the result.
+                emit_expression_pop_64_int (a);
+
+            } else if (main_variable_type == TYPE_FLOAT) {
+
+                // this "pop" ( asm_float_fstps ) the expression and prepare to print the result.
+                emit_expression_pop_64_float (a);
+
+            }
+            emit_call (a,printf,0,0); // display the result
+            #else
+            //
+            // JIT 32 bits
+            //
+            if (main_variable_type == TYPE_INT) {
+                emit_pop_eax (a); // %eax | eax.i := expression result
+                emit_movl_ESP (a, (long)("%d\n"), 0); // pass argument 1
+                emit_mov_eax_ESP (a, 4);              // pass argument 2
+            } else if (main_variable_type == TYPE_FLOAT) {
+                emit_movl_ESP (a, (long)("%f\n"), 0); // pass argument 1
+
+                // send the result of (float expression) to: 4(%esp)
+                //
+                // dd 5c 24 04          	fstpl  0x4(%esp)
+                g4(a,0xdd,0x5c,0x24,0x04); // pass argument 2
+            }
+            emit_call(a,printf,0,0); // display the result
+            #endif
+            #endif // #ifdef USE_JIT
+        }// if (expr0(l,a) == -1)
+
+    }
+    else Erro ("%s: Expression ERRO(%d) - Ilegar Word (%s)\n", l->name, l->line, l->token);
+}// expression ();
+
 
 static void word_int (LEXER *l, ASM *a) {
     while (lex(l)) {
@@ -866,10 +1057,10 @@ printf("  // '%s' len: %d\n", name, len);
 //
 // function_name (a, b, c + d);
 //
-void execute_call (LEXER *l, ASM *a, TFunc *func) {
+static void execute_call (LEXER *l, ASM *a, TFunc *func) {
     int count = 0;
 #ifdef USE_JIT
-    int pos = 0, size = 4; // Used in: JIT 32 bits
+    int pos = 0, size = 4, is_float = 0; // Used in: JIT 32 bits
 #endif
     int return_type = TYPE_INT;
 
@@ -884,7 +1075,7 @@ void execute_call (LEXER *l, ASM *a, TFunc *func) {
         while (lex(l)) {
 
             if (l->tok==TOK_ID || l->tok==TOK_NUMBER || l->tok==TOK_STRING || l->tok=='(') {
-
+                var_type = TYPE_INT;
                 //
                 // The result of expression is store in the "stack".
                 //
@@ -896,49 +1087,59 @@ void execute_call (LEXER *l, ASM *a, TFunc *func) {
 
                 #ifdef USE_JIT
 
-                emit_pop_eax (a); // ... pop the "stack" and store in %eax ... := expression result TYPE_INT
+                if (var_type == TYPE_INT) {
+                    emit_pop_eax (a); // ... pop the "stack" and store in %eax ... := expression result TYPE_INT
+                }
 
                 #if defined(__x86_64__)
                 //-----------------------------------
                 // JIT 64 bits
-                //
                 // %edi, %esi, %edx, %ecx, %r8 and %r9
                 //
-                if (count==0) {     // argument 1:
-#ifdef USE_ASM
-write_asm("  mov\t%eax, %edi");
-#endif
-                    g2(a,G2_MOV_EAX_EDI);
-                }
-                else if (count==1) { // argument 2
-#ifdef USE_ASM
-write_asm("  mov\t%eax, %esi");
-#endif
-                    g2(a,G2_MOV_EAX_ESI);
-                }
-                else if (count==2) { // argument 3
-#ifdef USE_ASM
-write_asm("  mov\t%eax, %edx");
-#endif
-                    g2(a,G2_MOV_EAX_EDX);
-                }
-                else if (count==3) { // argument 4
-#ifdef USE_ASM
-write_asm("  mov\t%eax, %ecx");
-#endif
-                    g2(a,G2_MOV_EAX_ECX);
-                }
-                else if (count==4) { // argument 5
-#ifdef USE_ASM
-write_asm("  mov\t%eax, %r8d");
-#endif
-                    g3(a,G3_MOV_EAX_r8d);
+                if (var_type != TYPE_FLOAT) {
+                    if (count==0) {         // argument 1
+                        emit_mov_eax_edi (a);
+                    } else if (count==1) {  // argument 2
+                        emit_mov_eax_esi (a);
+                    } else if (count==2) {  // argument 3
+                        emit_mov_eax_edx (a);
+                    } else if (count==3) {  // argument 4
+                        emit_mov_eax_ecx (a);
+                    } else if (count==4) {  // argument 5
+                        emit_mov_eax_r8d (a);
+                    }
+                } else {
+                    if (is_float==0) { // Function argument float
+
+                        //  dd 1c 25    f8 09 60 00 	fstpl  0x6009f8
+                        asm_float_fstps (a, &_Fvalue_); // store expression result | TYPE_FLOAT
+                        emit_mov_var_reg(a, &_Fvalue_, EAX);
+
+                        // 89 45 fc             	mov    %eax,-0x4(%rbp)
+                        g3(a,0x89, 0x45,0xfc);
+                        // f3 0f 10 45 fc       	movss  -0x4(%rbp),%xmm0
+                        g4(a,0xf3, 0x0f, 0x10, 0x45);
+                        g(a,(char)-4);
+
+                        // 0f 5a c0             	cvtps2pd %xmm0,%xmm0
+                        g3(a,0x0f, 0x5a, 0xc0);
+                    }
+                    is_float++;
                 }
                 #else
                 //-----------------------------------
                 // JIT 32 bits
-                emit_mov_eax_ESP (a, pos);
-                pos += size;
+                if (var_type != TYPE_FLOAT) {
+                    emit_mov_eax_ESP (a, pos);
+                    pos += size;
+                } else { // JIT 32 bits: pass function argument float
+
+                    // send the result of (float expression) to: 4(%esp)
+                    //
+                    // dd 5c 24   04          	fstpl  0x4(%esp)
+                    g4 (a,0xdd,0x5c,0x24, (char)pos); // pass argument
+                    pos += size;
+                }
                 #endif
                 #endif // ! USE_JIT
 
@@ -968,216 +1169,9 @@ write_asm("  mov\t%eax, %r8d");
         #endif
     } else {
         emit_call (a, (void*)func->code, (UCHAR)count, return_type);
-        //emit_call (a, (void*)func, (UCHAR)count, return_type);
     }
 }
 
-static void expression (LEXER *l, ASM *a) {
-    if (l->tok==TOK_ID || l->tok==TOK_NUMBER) {
-        char buf[100];
-        TFunc *fi;
-        int i;
-
-        if (l->tok==TOK_NUMBER && strchr(l->token, '.'))
-            main_variable_type = var_type = TYPE_FLOAT;
-        else
-            main_variable_type = var_type = TYPE_INT; // 0
-
-        if (see(l)=='.') { // console.log();
-            lex_save(l);
-            sprintf (buf, "%s", l->token);
-            lex(l); // .
-            if (lex(l)==TOK_ID) { // ! FuncName:
-                if ((fi = ModuleFind (buf, l->token)) != NULL) {
-                    execute_call (l, a, fi);
-              return;
-                }
-            }
-            else lex_restore(l);
-        }
-
-        //
-        // call a function without return:
-        //   function_name (...);
-        //
-        if ((fi = FuncFind(l->token)) != NULL) {
-            execute_call (l, a, fi);
-      return;
-        }
-
-        if ((i = VarFind (l->token)) != -1) {
-            int next = see(l);
-
-            main_variable_type = var_type = Gvar[i].type;
-
-            // increment var type int: a++;
-            //
-            if (next == TOK_PLUS_PLUS) {
-                lex(l);
-                #ifdef USE_VM
-                emit_inc_var_int(a,(UCHAR)i);
-                #endif
-                #ifdef USE_JIT
-                emit_incl (a,&Gvar[i].value.i);
-                #endif
-                return;
-            }
-            // increment var type int: a--;
-            //
-            if (next == TOK_MINUS_MINUS) {
-                lex(l);
-                #ifdef USE_VM
-                emit_dec_var_int(a,(UCHAR)i);
-                #endif
-                #ifdef USE_JIT
-                emit_decl (a,&Gvar[i].value.i);
-                #endif
-                return;
-            }
-
-            if (next=='=') {
-                lex_save(l); // save the lexer position
-                lex(l); // =
-                if (lex(l)==TOK_ID) {
-
-                    if (see(l)=='.' && ModuleIsLib(l->token)) {
-                        lex_save(l); // save the lexer position
-                        sprintf (buf, l->token);
-                        lex(l); // .
-                        if (lex(l)==TOK_ID) { // Module FuncName
-                            if ((fi = ModuleFind(buf, l->token)) != NULL) {
-
-                                execute_call (l, a, fi);
-
-                                #ifdef USE_VM
-                                // The function return is stored in variable VALUE( eax ) ... see in file: vm.c
-                                emit_mov_eax_var(a,i);
-                                #endif
-
-                                #ifdef USE_JIT
-                                //
-                                // The function return is stored in register %eax ... types ! TYPE_FLOAT
-                                //
-                                //   HERE: copy the register ( %eax ) to the variable
-                                //
-                                if (main_variable_type != TYPE_FLOAT) {
-                                    emit_mov_reg_var (a, EAX, &Gvar[i].value.i);
-                                } else {
-
-                                }
-                                #endif //: #ifdef USE_JIT
-                          return;
-                            }
-                        }
-                    }
-                    //
-                    // call a function with return:
-                    //   i = function_name (...);
-                    //
-                    if ((fi = FuncFind(l->token)) != NULL) {
-                        execute_call (l, a, fi);
-
-                        #ifdef USE_VM
-                        // The function return is stored in variable VALUE( eax ) ... see in file: vm.c
-                        emit_mov_eax_var(a,i);
-                        #endif
-
-                        #ifdef USE_JIT
-                        //
-                        // The function return is stored in register %eax ... types ! TYPE_FLOAT
-                        //
-                        //   HERE: copy the register ( %eax ) to the variable
-                        //
-                        if (main_variable_type != TYPE_FLOAT) {
-                            emit_mov_reg_var (a, EAX, &Gvar[i].value.i);
-                        } else {
-
-                        }
-                        #endif //: #ifdef USE_JIT
-                  return;
-                    }//: if ((fi = FuncFind(l->token)) != NULL)
-
-                }
-                lex_restore (l); // restore the lexer position
-
-            }//: if (see(l)=='=')
-
-        }//: if ((i = VarFind (l->token)) != -1)
-
-        //---------------------------------------
-        // Expression types:
-        //   a * b + c * d;
-        //   10 * a + 3 * b;
-        //---------------------------------------
-        //
-        if (expr0(l,a) == -1) {
-            #ifdef USE_VM
-            emit_pop_eax (a); // %eax | eax.i := expression result
-            emit_print_eax (a,main_variable_type);
-            #endif
-
-            #ifdef USE_JIT
-            #if defined(__x86_64__)
-            //
-            // JIT 64 bits
-            //
-            if (main_variable_type == TYPE_INT) {
-                // argument 1:
-                // this is a constans :
-                // b8    00 20 40 00       	mov    $0x402000,%eax
-                g(a,0xb8); asm_get_addr(a,"%d\n");
-                g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
-
-                // argument 2:
-                emit_pop_eax (a); // %eax | eax.i := expression result
-                g2(a,G2_MOV_EAX_ESI); // 89 c6   : mov   %eax,%esi
-
-            emit_call(a,printf,0,0);   // call the function
-            } else if (main_variable_type == TYPE_FLOAT) {
-                //  dd 1c 25    f8 09 60 00 	fstpl  0x6009f8
-                asm_float_fstps (a, &asmFvalue); // store expression result | TYPE_FLOAT
-                emit_mov_var_reg(a, &asmFvalue, EAX);
-
-                // 89 45 fc             	mov    %eax,-0x4(%rbp)
-                g3(a,0x89, 0x45,0xfc);
-                // f3 0f 10 45 fc       	movss  -0x4(%rbp),%xmm0
-                g4(a,0xf3, 0x0f, 0x10, 0x45);
-                g(a,(char)-4);
-
-                // 0f 5a c0             	cvtps2pd %xmm0,%xmm0
-                g3(a,0x0f, 0x5a, 0xc0);
-
-                // argument 1:
-                // b8    00 20 40 00       	mov    $0x402000,%eax
-                g(a,0xb8); asm_get_addr(a,"%f\n");
-                g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
-
-            emit_call(a,printf,0,0);   // call the function
-            }
-            #else
-            //
-            // JIT 32 bits
-            //
-            if (main_variable_type == TYPE_INT) {
-                emit_pop_eax (a); // %eax | eax.i := expression result
-                emit_movl_ESP (a, (long)("%d\n"), 0); // pass argument 1
-                emit_mov_eax_ESP (a, 4);              // pass argument 2
-            } else if (main_variable_type == TYPE_FLOAT) {
-                emit_movl_ESP (a, (long)("%f\n"), 0); // pass argument 1
-
-                // send the result of (float expression) to: 4(%esp)
-                //
-                // dd 5c 24 04          	fstpl  0x4(%esp)
-                g4(a,0xdd,0x5c,0x24,0x04); // pass argument 2
-            }
-            emit_call(a,printf,0,0);   // call the function
-            #endif
-            #endif //: #ifdef USE_JIT
-        }//: if (expr0(l,a) == -1)
-
-    }
-    else Erro ("%s: Expression ERRO(%d) - Ilegar Word (%s)\n", l->name, l->line, l->token);
-}
 static int expr0 (LEXER *l, ASM *a) {
 #ifdef USE_ASM
 write_asm("  // Expression:");

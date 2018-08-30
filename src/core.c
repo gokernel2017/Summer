@@ -896,13 +896,8 @@ void execute_call (LEXER *l, ASM *a, TFunc *func) {
 
                 #ifdef USE_JIT
 
-                if (main_variable_type != TYPE_FLOAT) {
-                    emit_pop_eax (a); // ... pop the "stack" and store in %eax ... := expression result
-                } else {
-                    g3(a,0xd9,0x5c,0x24);  // d9 5c 24   04    fstps   0x4(%esp)
-                    g(a,(char)pos);  // 4, 8, 12, 16, ...
-                    pos += size;
-                }
+                emit_pop_eax (a); // ... pop the "stack" and store in %eax ... := expression result TYPE_INT
+
                 #if defined(__x86_64__)
                 //-----------------------------------
                 // JIT 64 bits
@@ -942,10 +937,8 @@ write_asm("  mov\t%eax, %r8d");
                 #else
                 //-----------------------------------
                 // JIT 32 bits
-                if (main_variable_type == TYPE_INT) {
-                    emit_mov_eax_ESP (a, pos);
-                    pos += size;
-                }
+                emit_mov_eax_ESP (a, pos);
+                pos += size;
                 #endif
                 #endif // ! USE_JIT
 
@@ -1139,15 +1132,32 @@ static void expression (LEXER *l, ASM *a) {
                 emit_pop_eax (a); // %eax | eax.i := expression result
                 g2(a,G2_MOV_EAX_ESI); // 89 c6   : mov   %eax,%esi
 
-            } else if (main_variable_type == TYPE_FLOAT) {
-
-            }
             emit_call(a,printf,0,0);   // call the function
+            } else if (main_variable_type == TYPE_FLOAT) {
+                //  dd 1c 25    f8 09 60 00 	fstpl  0x6009f8
+                asm_float_fstps (a, &asmFvalue); // store expression result | TYPE_FLOAT
+                emit_mov_var_reg(a, &asmFvalue, EAX);
+
+                // 89 45 fc             	mov    %eax,-0x4(%rbp)
+                g3(a,0x89, 0x45,0xfc);
+                // f3 0f 10 45 fc       	movss  -0x4(%rbp),%xmm0
+                g4(a,0xf3, 0x0f, 0x10, 0x45);
+                g(a,(char)-4);
+
+                // 0f 5a c0             	cvtps2pd %xmm0,%xmm0
+                g3(a,0x0f, 0x5a, 0xc0);
+
+                // argument 1:
+                // b8    00 20 40 00       	mov    $0x402000,%eax
+                g(a,0xb8); asm_get_addr(a,"%f\n");
+                g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
+
+            emit_call(a,printf,0,0);   // call the function
+            }
             #else
             //
             // JIT 32 bits
             //
-
             if (main_variable_type == TYPE_INT) {
                 emit_pop_eax (a); // %eax | eax.i := expression result
                 emit_movl_ESP (a, (long)("%d\n"), 0); // pass argument 1
@@ -1159,7 +1169,6 @@ static void expression (LEXER *l, ASM *a) {
                 //
                 // dd 5c 24 04          	fstpl  0x4(%esp)
                 g4(a,0xdd,0x5c,0x24,0x04); // pass argument 2
-
             }
             emit_call(a,printf,0,0);   // call the function
             #endif

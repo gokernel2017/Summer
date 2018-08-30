@@ -261,6 +261,7 @@ LIBIMPORT int   asm_mode;    // The Compiler: Write Assembly with AT&T Syntax:
 LIBIMPORT int   is_function;
 LIBIMPORT char  var_name [100];
 LIBIMPORT char  FName [100];
+LIBIMPORT float asmFvalue; // src/asm.c
 
 //-------------------------------------------------------------------
 //---------------------------  PUBLIC API  --------------------------
@@ -313,8 +314,8 @@ LIBIMPORT void    asm_sub_eax_esp   (ASM *a);
 LIBIMPORT void asm_float_flds_value (ASM *a, float value);
 LIBIMPORT void asm_float_flds (ASM *a, void *var);
 LIBIMPORT void asm_float_fstps (ASM *a, void *var);
-LIBIMPORT void asm_float_fmulp (ASM *a); // de c9    fmulp  %st,%st(1)
-LIBIMPORT void asm_float_faddp (ASM *a); // de c1    faddp  %st,%st(1)
+LIBIMPORT void asm_float_fmulp (ASM *a);
+LIBIMPORT void asm_float_faddp (ASM *a);
 //-------------------------------------------
 
 LIBIMPORT void    g                 (ASM *a, UCHAR c);
@@ -328,10 +329,11 @@ LIBIMPORT void    emit_mov_var_reg  (ASM *a, void *var, int reg); // move: varia
 LIBIMPORT void    emit_mov_reg_var  (ASM *a, int reg, void *var); // 32/64 BITS OK - move: %register to variable
 LIBIMPORT void    emit_cmp_eax_edx  (ASM *a);
 LIBIMPORT void    emit_pop_edx      (ASM *a);
-LIBIMPORT void    emit_pop_var      (ASM *a, void *var); // 32/64 BITS OK
-LIBIMPORT void    emit_push_var     (ASM *a, void *var); // 32/64 BITS OK
+LIBIMPORT void    emit_pop_var      (ASM *a, void *var);  // 32/64 BITS OK
+LIBIMPORT void    emit_push_var     (ASM *a, void *var);  // 32/64 BITS OK
 LIBIMPORT void    emit_incl         (ASM *a, void *var);
-LIBIMPORT void    emit_decl         (ASM *a, void *var); //: 32/64 BITS OK
+LIBIMPORT void    emit_decl         (ASM *a, void *var);  //: 32/64 BITS OK
+LIBIMPORT void    emit_sub_esp      (ASM *a, char c);     // 32/64 BITS OK
 //
 #endif // #ifdef USE_JIT
 #ifdef USE_VM

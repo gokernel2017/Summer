@@ -27,7 +27,7 @@
 
 static void asm_change_jump (ASM *a);
 
-static float  asmFvalue;
+float  asmFvalue;
 static int    stack;
 
 void Run (ASM *a) {
@@ -292,6 +292,7 @@ write_asm("  mov\t%rsp, %rbp");
     a->p[2] = 0x89;
     a->p[3] = 0xe5;
     a->p += 4;
+    emit_sub_esp (a,16);
     #else
 #ifdef USE_ASM
 write_asm("  push\t%ebp");
@@ -471,7 +472,7 @@ printf("  push\t$%d\n",value);
 
 // push variable on: %esp:
 //
-void emit_push_var (ASM *a, void *var) { ///: 32/64 BITS OK
+void emit_push_var (ASM *a, void *var) { //: 32/64 BITS OK
 #ifdef USE_ASM
 if(asm_mode && is_function){
 printf("  push\t%s\n", var_name);
@@ -612,24 +613,18 @@ void asm_float_flds_value (ASM *a, float value) {
 // USAGE:
 //   asm_float_flds (a, &var_name);
 //
-void asm_float_flds (ASM *a, void *var) {
-/*
-    // d9 05    04 20 40 00    	flds   0x402004
-    //
+void asm_float_flds (ASM *a, void *var) { //: 32/64 BITS OK
     #if defined(__x86_64__)
     // d9 04 25    04 b4 60 00 	flds   0x60b404
+    //
     g3 (a,0xd9,0x04,0x25);
     #else
+    // d9 05    04 20 40 00    	flds   0x402004
+    //
     g2(a,0xd9,0x05);
     #endif
     *(void**)a->p = var;
     a->p += 4;
-*/
-    // d9 05    04 20 40 00    	flds   0x402004
-    //
-    g2(a,0xd9,0x05);
-    *(void**)a->p = var;
-    a->p += sizeof(void*);
 }
 
 //
@@ -778,6 +773,16 @@ void emit_mov_reg_var (ASM *a, int reg, void *var) { ///: 32/64 BITS OK: Move %r
         #endif
     }
 }
+
+void emit_sub_esp (ASM *a, char c) { // 32/64 BITS OK
+    #if defined(__x86_64__)
+    g4(a,0x48,0x83,0xec,(char)c); // 48 83 ec   08   sub   $0x8,%rsp
+    #else
+    g3(a,0x83,0xec,(char)c);      // 83 ec      08   sub  $0x8,%esp
+    #endif
+    printf ("emit_SUB_ESP LIGADO\n");
+}
+
 
 void emit_cmp_eax_edx (ASM *a) {
 #ifdef USE_ASM

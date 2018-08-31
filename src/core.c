@@ -692,16 +692,25 @@ loop_level++;  // <<<<<<<<<<  ! PUSH  >>>>>>>>>>
 
 loop_level--;  // <<<<<<<<<<  ! POP  >>>>>>>>>>
     } else {
-
-        Erro ("%s: %d: Sorry, for with arguments Not Implemented, USE: for(;;) { ... }\n", l->name, l->line);
+        Erro ("%s: %d: USAGE: for (;;) { ... }\n", l->name, l->line);
 /*
+        int i;
+        int type = 0; // <  >  ==  !=
+        int inc; // ++, --
+
         // for (i = 10; i < 100; i++) { ... }
         i = expr0 (l,a);
         if (i != -1) {
-            printf ("var(%s): %d\n", Gvar[i].name,Gvar[i].value.i);
-            while(lex(l))
-                if (l->tok=='}') break;
+            lex(l);
+            if (!strcmp(Gvar[i].name, l->token)) {
+                printf ("var(%s): %d = (%s)\n", Gvar[i].name,Gvar[i].value.i, l->token);
+                lex(l);
+                printf ("token(%s)\n", l->token);
+            }
+            else Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
+return;
         }
+        else Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
 */
     }
 
@@ -1060,7 +1069,7 @@ printf("  // '%s' len: %d\n", name, len);
 static void execute_call (LEXER *l, ASM *a, TFunc *func) {
     int count = 0;
 #ifdef USE_JIT
-    int pos = 0, size = 4, is_float = 0; // Used in: JIT 32 bits
+    int pos = 0, size = 4, is_float = 0, is_string = 0; // Used in: JIT 32 bits
 #endif
     int return_type = TYPE_INT;
 
@@ -1075,6 +1084,10 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
         while (lex(l)) {
 
             if (l->tok==TOK_ID || l->tok==TOK_NUMBER || l->tok==TOK_STRING || l->tok=='(') {
+
+                if (l->tok==TOK_STRING)
+                    is_string = 1;
+
                 var_type = TYPE_INT;
                 //
                 // The result of expression is store in the "stack".
@@ -1112,7 +1125,9 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                     if (is_float==0) { // Function argument float
 
                         //  dd 1c 25    f8 09 60 00 	fstpl  0x6009f8
+                        //
                         asm_float_fstps (a, &_Fvalue_); // store expression result | TYPE_FLOAT
+
                         emit_mov_var_reg(a, &_Fvalue_, EAX);
 
                         // 89 45 fc             	mov    %eax,-0x4(%rbp)
@@ -1131,6 +1146,7 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                 // JIT 32 bits
                 if (var_type != TYPE_FLOAT) {
                     emit_mov_eax_ESP (a, pos);
+                    size = 4;
                     pos += size;
                 } else { // JIT 32 bits: pass function argument float
 
@@ -1138,6 +1154,7 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                     //
                     // dd 5c 24   04          	fstpl  0x4(%esp)
                     g4 (a,0xdd,0x5c,0x24, (char)pos); // pass argument
+                    if (is_string) size = 8;
                     pos += size;
                 }
                 #endif

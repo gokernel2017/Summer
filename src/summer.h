@@ -257,10 +257,6 @@ struct DEFINE {
 
 // global:
 LIBIMPORT TVar  Gvar [GVAR_SIZE];
-LIBIMPORT int   asm_mode;    // The Compiler: Write Assembly with AT&T Syntax:
-LIBIMPORT int   is_function;
-LIBIMPORT char  var_name [100];
-LIBIMPORT char  FName [100];
 
 //-------------------------------------------------------------------
 //---------------------------  PUBLIC API  --------------------------
@@ -284,9 +280,6 @@ LIBIMPORT int     Parse             (LEXER *l, ASM *a, char *text, char *name);
 LIBIMPORT void    Erro              (char *format, ...);
 LIBIMPORT char  * ErroGet           (void);
 LIBIMPORT void    ErroReset         (void);
-#ifdef USE_ASM
-LIBIMPORT void    write_asm         (char *s);
-#endif
 //
 //-------------------------------------------------------------------
 // BACK-END in file: asm.c | vm.c

@@ -22,16 +22,9 @@
 // BY:  Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
-// FILE SIZE: 37.699
+// FILE SIZE: 49.251
 #include "summer.h"
 #include <stdarg.h>
-
-struct DATA { // test SDL_Surface ( w, h )
-    int   flags;  // not used
-    void  *none;  // not used
-    int   w;
-    int   h;
-};
 
 //-----------------------------------------------
 //-----------------  PROTOTYPES  ----------------
@@ -73,18 +66,11 @@ void  lib_printf  (char *format, ...);
 void  lib_log (char *s); // console.log();
 TFunc *lib_get_func (char *name);
 
-struct DATA *new_data (int x, int y, int w, int h);
-void display (struct DATA *data);
-
 //-----------------------------------------------
 //------------------  VARIABLES  ----------------
 //-----------------------------------------------
 //
 TVar              Gvar [GVAR_SIZE]; // global:
-int               asm_mode;    // The Compiler: Write Assembly with AT&T syntax:
-int               is_function;
-char              var_name [100];
-char              FName [100];
 //
 static MODULE   * Gmodule = NULL; // ... console.log(); ...
 static TFunc    * Gfunc = NULL;  // store the user functions
@@ -104,6 +90,7 @@ static char
 static int
     erro,
     loop_level,
+    is_function,
     is_recursive,
     main_variable_type,
     var_type,
@@ -122,10 +109,6 @@ static TFunc stdlib[]={
   { "arg",        "iiiiii", (UCHAR*)lib_arg,        0,    0,    NULL },
   { "printf",     "0s",     (UCHAR*)lib_printf,     0,    0,    NULL },
   { "get_func",   "ps",     (UCHAR*)lib_get_func,   0,    0,    NULL },
-
-  { "new_data",   "piiii",  (UCHAR*)new_data,       0,    0,    NULL },
-  { "display",    "0p",     (UCHAR*)display,        0,    0,    NULL },
-
   { NULL,         NULL,     NULL,                   0,    0,    NULL }
 };
 
@@ -546,10 +529,6 @@ static void word_if (LEXER *l, ASM *a) {
     if_count++;
     sprintf (array[if_count], "IF%d", if_count_total++);
 
-#ifdef USE_ASM
-write_asm("  // if (...)");
-#endif
-
     while (!erro && lex(l)) { // pass arguments: if (a > b) { ... }
         is_negative = 0;
 
@@ -575,9 +554,6 @@ write_asm("  // if (...)");
             emit_cmp_int (a);
             #endif
             #ifdef USE_JIT
-#ifdef USE_ASM
-write_asm("  test\t%eax, %eax");
-#endif
             g2(a,0x85,0xc0); // 85 c0    test   %eax,%eax
             #endif
             if (is_negative == 0) emit_jump_je  (a,array[if_count]);
@@ -634,12 +610,7 @@ write_asm("  test\t%eax, %eax");
 
         if (l->tok==')') break;
     }
-    if (see(l)=='{') {
-#ifdef USE_ASM
-write_asm("  //------- if block -------");
-#endif
-        stmt (l,a);
-    } else Erro ("word(if) need start block: '{'\n");
+    if (see(l)=='{') stmt (l,a); else Erro ("word(if) need start block: '{'\n");
 
     asm_label (a, array[if_count]);
     if_count--;
@@ -950,10 +921,6 @@ static void word_function (LEXER *l, ASM *a) {
     local_count = 0;
     strcpy (func_name, name);
 
-#ifdef USE_ASM
-if(asm_mode)
-printf("\n.globl %s\n%s:\n", name, name);
-#endif
     // compiling to buffer ( f ):
     //
     asm_reset (asm_function);
@@ -967,11 +934,6 @@ printf("\n.globl %s\n%s:\n", name, name);
     int len = asm_get_len (asm_function);
 
 #ifdef USE_JIT
-
-#ifdef USE_ASM
-if(asm_mode)
-printf("  // '%s' len: %d\n", name, len);
-#endif
 
     // new function:
     //
@@ -1088,7 +1050,8 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                 if (l->tok==TOK_STRING)
                     is_string = 1;
 
-                var_type = TYPE_INT;
+                main_variable_type = var_type = TYPE_INT;
+
                 //
                 // The result of expression is store in the "stack".
                 //
@@ -1170,7 +1133,7 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
         Erro ("%s:%d: - Call Function(%s) the max arguments is: 5\n", l->name, l->line, func->name);
   return;
     }
-    sprintf (FName, "%s", func->name);
+
     if (func->proto) {
         if (func->proto[0] == '0') return_type = TYPE_NO_RETURN;
         if (func->proto[0] == 'f') return_type = TYPE_FLOAT;
@@ -1190,9 +1153,7 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 }
 
 static int expr0 (LEXER *l, ASM *a) {
-#ifdef USE_ASM
-write_asm("  // Expression:");
-#endif
+
     if (l->tok == TOK_ID) {
         int i;
         //---------------------------------------
@@ -1208,9 +1169,6 @@ write_asm("  // Expression:");
                 if (lex(l) == '=') {
                     lex(l);
                     expr1(l,a);
-                    // used to: write_asm();
-                    //
-                    sprintf (var_name, "%s", Gvar[i].name);
                     #ifdef USE_VM
                     // Copia o TOPO DA PILHA ( sp ) para a variavel ... e decrementa sp++.
                     emit_pop_var (a,i);
@@ -1281,10 +1239,6 @@ static void atom (LEXER *l, ASM *a) { // expres
             emit_push_string (a, s->s);
             #endif
             #ifdef USE_JIT
-#ifdef USE_ASM
-if(asm_mode && is_function)
-printf ("  push\t$LC%d /* '%s' */\n", s->i, s->s);
-#endif
             // this is a constans :
             // 68    00 20 40 00       	push   $0x402000
             //
@@ -1310,12 +1264,7 @@ printf ("  push\t$LC%d /* '%s' */\n", s->i, s->s);
         else
 #endif
         if ((i=VarFind(l->token))!=-1) {
-            var_type = Gvar[i].type;
-
-            //
-            // used to: write_asm();
-            //
-            sprintf (var_name, "%s", Gvar[i].name);
+            main_variable_type = var_type = Gvar[i].type;
 
             #ifdef USE_JIT
             if (var_type == TYPE_FLOAT) {
@@ -1335,7 +1284,7 @@ printf ("  push\t$LC%d /* '%s' */\n", s->i, s->s);
     }
     else if (l->tok==TOK_NUMBER) {
         if (strchr(l->token, '.'))
-            var_type = TYPE_FLOAT;
+            main_variable_type = var_type = TYPE_FLOAT;
 
         if (var_type==TYPE_FLOAT) {
             emit_push_float (a, atof(l->token));
@@ -1501,12 +1450,6 @@ int Parse (LEXER *l, ASM *a, char *text, char *name) {
     return erro;
 }
 
-void write_asm (char *s) {
-    if (asm_mode && is_function)
-        printf("%s\n", s);
-}
-
-
 void lib_log (char *s) {
     printf ("%s\n", s);
 }
@@ -1618,7 +1561,6 @@ printf ("f existe\n");
     return NULL;
 }
 
-//void Erro (char *s) {
 void Erro (char *format, ...) {
     char msg[1024] = { 0 };
     va_list ap;
@@ -1631,35 +1573,13 @@ void Erro (char *format, ...) {
     if ((strlen(strErro) + strlen(msg)) < STR_ERRO_SIZE)
         strcat (strErro, msg);
 }
-
 char *ErroGet (void) {
     if (strErro[0])
         return strErro;
     else
         return NULL;
 }
-
 void ErroReset (void) {
     erro = 0;
     strErro[0] = 0;
 }
-
-struct DATA *new_data (int x, int y, int w, int h) {
-    struct DATA *d = (struct DATA*)malloc(sizeof(struct DATA));
-
-    if (d) {
-        d->w = w;
-        d->h = h;
-    }
-    return d;
-}
-void display (struct DATA *data) {
-    printf ("\nFunction: void display (struct DATA *data);\n");
-    printf ("------------------------------------------------\n");
-//    printf ("data->x: %d\n", data->x);
-//    printf ("data->y: %d\n", data->y);
-    printf ("data->w: %d\n", data->w);
-    printf ("data->h: %d\n", data->h);
-    printf ("------------------------------------------------\n");
-}
-

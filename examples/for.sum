@@ -4,9 +4,10 @@
 //
 //-----------------------------------------------
 //
-int i = 0;
+int i = 15, a = 30;
 
 console.log("----------------\n");
+
 #ifdef USE_JIT
     console.log("Tag - USE_JIT:\n");
 #endif
@@ -16,16 +17,10 @@ console.log("----------------\n");
 console.log("----------------\n");
 
 
-
-  for (;;) {
+  for (i = 15; i < a; i++) {
 
       console.log ("Value i: %d\n", i);
 
-      i++;
-
-      if (i > 20) {
-          break;
-      }
   }
 
 

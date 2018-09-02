@@ -323,12 +323,14 @@ LIBIMPORT void    emit_mov_eax_ESP  (ASM *a, UCHAR index); // mov    %eax,0x4(%e
 LIBIMPORT void    emit_mov_var_reg  (ASM *a, void *var, int reg); // move: variable to %register
 LIBIMPORT void    emit_mov_reg_var  (ASM *a, int reg, void *var); // 32/64 BITS OK - move: %register to variable
 LIBIMPORT void    emit_cmp_eax_edx  (ASM *a);
+LIBIMPORT void    emit_cmp_eax_var  (ASM *a, void *var);
 LIBIMPORT void    emit_pop_edx      (ASM *a);
 LIBIMPORT void    emit_pop_var      (ASM *a, void *var);  // 32/64 BITS OK
 LIBIMPORT void    emit_push_var     (ASM *a, void *var);  // 32/64 BITS OK
 LIBIMPORT void    emit_incl         (ASM *a, void *var);
 LIBIMPORT void    emit_decl         (ASM *a, void *var);  //: 32/64 BITS OK
 LIBIMPORT void    emit_sub_esp      (ASM *a, char c);     // 32/64 BITS OK
+LIBIMPORT void    asm_mov_value_eax (ASM *a, long value);
 //
 // 64 BITS: Function argument:
 //
@@ -371,9 +373,12 @@ LIBIMPORT void    emit_call         (ASM *a, void *func, UCHAR arg_count, UCHAR 
 //
 LIBIMPORT void    emit_jump_jmp     (ASM *a, char *name);
 LIBIMPORT void    emit_jump_je      (ASM *a, char *name);
+LIBIMPORT void    emit_jump_jg      (ASM *a, char *name);
+LIBIMPORT void    emit_jump_jl      (ASM *a, char *name);
 LIBIMPORT void    emit_jump_jne     (ASM *a, char *name);
 LIBIMPORT void    emit_jump_jle     (ASM *a, char *name);
 LIBIMPORT void    emit_jump_jge     (ASM *a, char *name);
+
 //
 LIBIMPORT void    emit_push_int     (ASM *a, int value);
 LIBIMPORT void    emit_push_float   (ASM *a, float value);

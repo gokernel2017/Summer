@@ -4,7 +4,7 @@
 //
 //-----------------------------------------------
 //
-int data = 500;
+var data;
 
 #ifdef WIN32
     module ("SDL",    "sdl"); // in Windows:  "SDL.dll"
@@ -25,7 +25,5 @@ import  ("sdl", "SDL_Quit",   "00");
   sdl.SDL_Delay (3000);
 
   sdl.SDL_Quit ();
-
-  display (data);
 
 //-----------------------------------------------

@@ -65,6 +65,7 @@ int   lib_arg     (int a, int b, int c, int d, int e);
 void  lib_printf  (char *format, ...);
 void  lib_log (char *s); // console.log();
 TFunc *lib_get_func (char *name);
+void lib_compile (char *name); // 32 bits only
 
 //-----------------------------------------------
 //------------------  VARIABLES  ----------------
@@ -104,11 +105,12 @@ static TFunc stdlib[]={
   // name         proto   code                    type  len   next
   //-----------------------------------------------------------------
   { "info",       "0i",     (UCHAR*)lib_info,       0,    0,    NULL },
-  { "addi",        "iii",   (UCHAR*)lib_addi,        0,    0,    NULL },
-  { "addf",        "fff",   (UCHAR*)lib_addf,        0,    0,    NULL },
+  { "addi",       "iii",    (UCHAR*)lib_addi,       0,    0,    NULL },
+  { "addf",       "fff",    (UCHAR*)lib_addf,       0,    0,    NULL },
   { "arg",        "iiiiii", (UCHAR*)lib_arg,        0,    0,    NULL },
   { "printf",     "0s",     (UCHAR*)lib_printf,     0,    0,    NULL },
   { "get_func",   "ps",     (UCHAR*)lib_get_func,   0,    0,    NULL },
+  { "compile",    "0s",     (UCHAR*)lib_compile,    0,    0,    NULL },
   { NULL,         NULL,     NULL,                   0,    0,    NULL }
 };
 
@@ -498,8 +500,8 @@ static void word_int (LEXER *l, ASM *a) {
 static void word_var (LEXER *l, ASM *a) {
     while (lex(l)) {
         if (l->tok == TOK_ID) {
-            char name[255];
-            char svalue[255] = { '0', 0 };
+            char name[100];
+            char svalue[100] = { '0', 0 };
 
             strcpy (name, l->token); // save
 
@@ -650,8 +652,8 @@ loop_level++;  // <<<<<<<<<<  ! PUSH  >>>>>>>>>>
 
         for_count++;
         for_count_total++;
-        sprintf (array[for_count], "_FOR_%d", for_count_total);
-        sprintf (array_break[loop_level], "_FOR_END%d", for_count_total); // used for break
+        sprintf (array[for_count], "FOR_%d", for_count_total);
+        sprintf (array_break[loop_level], "FOR_END%d", for_count_total); // used for break
         asm_label(a, array[for_count]);
 
         stmt (l,a); //<<<<<<<<<<  block  >>>>>>>>>>
@@ -663,27 +665,97 @@ loop_level++;  // <<<<<<<<<<  ! PUSH  >>>>>>>>>>
 
 loop_level--;  // <<<<<<<<<<  ! POP  >>>>>>>>>>
     } else {
-        Erro ("%s: %d: USAGE: for (;;) { ... }\n", l->name, l->line);
-/*
-        int i;
+//        Erro ("%s: %d: USAGE: for (;;) { ... }\n", l->name, l->line);
+
+        int i; // var index
         int type = 0; // <  >  ==  !=
-        int inc; // ++, --
+        int inc = 0; // ++, --
+        int var_count = -1, number_count = 0;
 
         // for (i = 10; i < 100; i++) { ... }
         i = expr0 (l,a);
         if (i != -1) {
             lex(l);
             if (!strcmp(Gvar[i].name, l->token)) {
-                printf ("var(%s): %d = (%s)\n", Gvar[i].name,Gvar[i].value.i, l->token);
-                lex(l);
-                printf ("token(%s)\n", l->token);
+                // < >  ==  !=
+                type = lex(l);
+                lex(l); // get number or variable
+                var_count = VarFind (l->token);
+                if (var_count == -1) {
+                    number_count = atoi (l->token);
+                }
+                while (lex(l)) {
+                    if (l->tok == TOK_PLUS_PLUS)   inc = TOK_PLUS_PLUS;
+                    if (l->tok == TOK_MINUS_MINUS) inc = TOK_MINUS_MINUS;
+                    if (l->tok == ')') break;
+                }
+                if (l->tok == ')' && see(l)=='{') {
+
+loop_level++;
+                    for_count++;
+                    for_count_total++;
+                    sprintf (array[for_count], "FOR_%d", for_count_total);
+                    sprintf (array_break[loop_level], "FOR_END%d", for_count_total); // used for break
+                    asm_label (a, array[for_count]);
+
+//-------------------------------------------------------------------
+//<<<<<<<<<<<<<<<<<<<<<<<  " TOP OF LOOP "  >>>>>>>>>>>>>>>>>>>>>>>>>
+//-------------------------------------------------------------------
+
+                    if (var_count == -1) {
+                        asm_mov_value_eax (a, number_count);
+                    } else {
+                        emit_mov_var_reg (a, &Gvar[var_count].value.i, EAX);
+                    }
+
+                    emit_cmp_eax_var (a, &Gvar[i].value.i);
+
+                    //
+                    // ! Jump to: " END OF LOOP "
+                    //
+                    if (type == '>') emit_jump_jle (a, array_break[loop_level]);
+                    else
+                    if (type == '<') emit_jump_jge (a, array_break[loop_level]);
+                    else
+                    {
+                        printf ("Not found: %d\n", type);
+                        Erro ("< > == !=");
+                    }
+
+                    //---------------------------------------------------------------
+                    // process the block starting from string char: '{'
+                    //---------------------------------------------------------------
+                    //
+                    stmt (l,a);  //<<<<<<<<<<  block  >>>>>>>>>>
+
+                    if (inc == TOK_PLUS_PLUS)
+                        emit_incl (a, &Gvar[i].value.i);
+                    else if (inc == TOK_MINUS_MINUS)
+                        emit_decl (a, &Gvar[i].value.i);
+
+                    //
+                    // Jump to: " TOP OF LOOP "
+                    //
+                    emit_jump_jmp (a, array[for_count]);
+
+                    asm_label(a, array_break[loop_level]); // used to break
+                    for_count--;
+
+//-------------------------------------------------------------------
+//<<<<<<<<<<<<<<<<<<<<<<<  " END OF LOOP "  >>>>>>>>>>>>>>>>>>>>>>>>>
+//-------------------------------------------------------------------
+
+loop_level--;
+                }// if (l->tok == ')' && see(l)=='{')
+                else
+                Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
             }
             else Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
-return;
-        }
+
+        }// if (i != -1)
         else Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
-*/
-    }
+
+    }// } else {
 
 }//: word_for ()
 
@@ -1197,7 +1269,7 @@ static void expr1 (LEXER *l, ASM *a) { // '+' '-' : ADDITION | SUBTRACTION
     while ((op=l->tok) == '+' || op == '-') {
         lex(l);
         expr2(l,a);
-        if (main_variable_type==TYPE_FLOAT) {
+        if (var_type==TYPE_FLOAT) {
             if (op=='+') emit_add_float (a);
         } else { // INT
             if (op=='+') emit_add_int (a);
@@ -1212,7 +1284,7 @@ static void expr2 (LEXER *l, ASM *a) { // '*' '/' : MULTIPLICATION | DIVISION
     while ((op=l->tok) == '*' || op == '/') {
         lex(l);
         expr3(l,a);
-        if (main_variable_type==TYPE_FLOAT) {
+        if (var_type==TYPE_FLOAT) {
             if (op=='*') emit_mul_float (a);
         } else { // INT
             if (op=='*') emit_mul_int (a);
@@ -1264,13 +1336,19 @@ static void atom (LEXER *l, ASM *a) { // expres
         else
 #endif
         if ((i=VarFind(l->token))!=-1) {
-            main_variable_type = var_type = Gvar[i].type;
+            var_type = Gvar[i].type;
 
             #ifdef USE_JIT
-            if (var_type == TYPE_FLOAT) {
-                asm_float_flds (a, &Gvar[i].value.f);
+            if (main_variable_type == TYPE_FLOAT && var_type != TYPE_FLOAT) {
+                // db 05    70 40 40 00    	fildl  0x404070
+                //g2(a,0xdb,0x05); asm_get_addr(a, &Gvar[i].value.i);
+                Erro ("%s: %d: Float and Integer ... Not Permited: '%s' ;)\n", l->name, l->line, Gvar[i].name);
             } else {
-                emit_push_var (a, &Gvar[i].value.i);
+                if (var_type == TYPE_FLOAT) {
+                    asm_float_flds (a, &Gvar[i].value.f);
+                } else {
+                    emit_push_var (a, &Gvar[i].value.i);
+                }
             }
             #endif
             #ifdef USE_VM
@@ -1284,7 +1362,7 @@ static void atom (LEXER *l, ASM *a) { // expres
     }
     else if (l->tok==TOK_NUMBER) {
         if (strchr(l->token, '.'))
-            main_variable_type = var_type = TYPE_FLOAT;
+            var_type = TYPE_FLOAT;
 
         if (var_type==TYPE_FLOAT) {
             emit_push_float (a, atof(l->token));
@@ -1582,4 +1660,82 @@ char *ErroGet (void) {
 void ErroReset (void) {
     erro = 0;
     strErro[0] = 0;
+}
+
+void lib_compile (char *name) { // 32 bits only
+#if !defined(__x86_64__)
+    TFunc *f;
+    int i = 0;
+    UCHAR *o;
+
+    struct ONE { UCHAR c; char *text; } one[] = {
+    { 0x50, "push\t%eax"},
+    { 0x51, "push\t%ecx"},
+    { 0x55, "push\t%ebp"},
+    { 0x58, "pop\t%eax"},
+    { 0x5a, "pop\t%edx"},
+    { 0xc9, "leave"},
+    { 0xc3, "ret"},
+    { 0, NULL }
+    };
+    struct TWO { UCHAR c1; UCHAR c2; char *text;} two[] = {
+    { 0x89, 0xe5, "mov\t%esp,%ebp"},
+    { 0x85, 0xc0, "test\t%eax,%eax"},
+    { 0xff, 0xd0, "call\t*%eax"},
+    { 0x39, 0xc0, "cmp\t%eax,%eax"},
+    { 0x39, 0xc1, "cmp\t%eax,%ecx"},
+    { 0x39, 0xc2, "cmp\t%eax,%edx"},
+    { 0, 0, NULL }
+    };
+
+    // b8   7a 13 40 00       mov    $0x40137a,%eax
+    // ff d0                	call   *%eax
+
+    int show1 (UCHAR c) {
+        struct ONE *p = one;
+        while (p->text) {
+            if (p->c == c) {
+                printf ("%s\n", p->text);
+                return 1;
+            }
+            p++;
+        }
+        return 0;
+    }
+    int show2 (UCHAR c1, UCHAR c2) {
+        struct TWO *p = two;
+        while (p->text) {
+            if(p->c1 == c1 && p->c2 == c2){
+                printf ("%s\n", p->text);
+                o++; i++;
+                return 1;
+            }
+            p++;
+        }
+        return 0;
+    }
+
+    if (!name) {
+        printf ("Usage: compile('func_name');\n");
+  return;
+    }
+
+    if ((f = FuncFind (name)) != NULL && f->type == FUNC_TYPE_COMPILED) {
+        o = f->code;
+        printf ("Function(%s) | len: %d TYPE: %d\n", f->name, f->len, f->type);
+        printf ("-----------------------------------\n");
+        for (i = 0; i < f->len; i++) {
+            if (show1(*o)) {}
+            else
+            if (show2(*o,o[1])) {}
+            else
+            printf ("0x%x, ", (UCHAR)*o);
+            o++;
+        }
+        printf ("\n-----------------------------------\n");
+  return;
+    }
+    printf ("Function Not Found(%s) ... Please use only Function Created.\n", name);
+
+#endif
 }

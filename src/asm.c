@@ -179,6 +179,30 @@ static void asm_change_jump (ASM *a) {
                     }
                     }
                     break;//: case ASM_JUMP_JG:
+//------------------------------------------------------------
+
+// 7c fe                	jl     401293 <label>
+// 0f 8c    5a ff ff ff    	jl     401293 <label>
+                case ASM_JUMP_JL:
+                    {
+                    int r = label_pos - jump_pos - 2;
+
+                    if (r == (char)r) { // 2 bytes
+                        //  7c fe     jl    40129e <_my_loop+0xe>
+                        //
+                        *(char*)(a->code+jump_pos) = 0x7c;
+                        *(char*)(a->code+jump_pos+1) = r;
+                    } else {
+                        // 0f 8c    96 00 00 00    jl   40133e <_my_loop+0xa9>
+                        //
+                        *(char*)(a->code+jump_pos) = 0x0f;
+                        *(char*)(a->code+jump_pos+1) = 0x8c;
+                        *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
+                    }
+                    }
+                    break;
+
+//------------------------------------------------------------
 
                 case ASM_JUMP_JGE:
                     {
@@ -406,6 +430,14 @@ void emit_jump_jle (ASM *a, char *name) {
 }
 void emit_jump_jge (ASM *a, char *name) {
     asm_conditional_jump (a, name, ASM_JUMP_JGE);
+}
+
+
+void emit_jump_jg (ASM *a, char *name) {
+    asm_conditional_jump (a, name, ASM_JUMP_JG);
+}
+void emit_jump_jl (ASM *a, char *name) {
+    asm_conditional_jump (a, name, ASM_JUMP_JL);
 }
 
 // push number on: %esp:
@@ -758,6 +790,22 @@ void emit_expression_pop_64_float (ASM *a) {
     g(a,0xb8); asm_get_addr(a,"%f\n");
     g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
 }
+
+void emit_cmp_eax_var (ASM *a, void *var) {
+    //	39 05      60 40 40 00    	cmp    %eax,0x404060
+    //
+    g2(a,0x39,0x05);
+    *(void**)a->p = var;
+    a->p += 4; // ! OK
+}
+void asm_mov_value_eax (ASM *a, long value) {
+    // b8   e8 03 00 00       	mov    $0x3e8,%eax
+    //
+    g(a,0xb8);
+    *(long*)a->p = value;
+    a->p += 4; // ! OK
+}
+
 
 void emit_mov_eax_edi (ASM *a) { g2(a,G2_MOV_EAX_EDI); }
 void emit_mov_eax_esi (ASM *a) { g2(a,G2_MOV_EAX_ESI); }

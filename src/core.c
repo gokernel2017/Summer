@@ -1610,6 +1610,7 @@ void lib_printf (char *format, ...) {
     char msg[1024] = { 0 };
     register unsigned int i;
     va_list ap;
+    int new_line = 0;
 
     va_start (ap,format);
     vsprintf (msg, format, ap);
@@ -1618,6 +1619,7 @@ void lib_printf (char *format, ...) {
     for (i = 0; i < strlen(msg); i++) {
         if (msg[i] == '\\' && msg[i+1] == 'n') { // new line
             putc (10, stdout); // new line
+            new_line = 1;
             i++;
         }
         else if (msg[i] == '\\' && msg[i+1] == 't') { // tab
@@ -1627,6 +1629,8 @@ void lib_printf (char *format, ...) {
             putc (msg[i], stdout);
         }
     }
+    if (new_line==0)
+        printf ("\n");
 }
 
 TFunc *lib_get_func (char *name) {

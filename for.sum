@@ -1,0 +1,14 @@
+
+var a, b;
+
+  for (a = 1; a < 10; a++) {
+
+      console.log ("Value a: %d", a);
+
+      for (b = 0; b < 5; b++) {
+
+          console.log ("B: %d", b);
+
+      }
+
+  }

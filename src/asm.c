@@ -792,11 +792,16 @@ void emit_expression_pop_64_float (ASM *a) {
 }
 
 void emit_cmp_eax_var (ASM *a, void *var) {
+    #if defined(__x86_64__)
+    g3(a,0x39,0x04,0x25);
+    *(void**)a->p = var;
+    a->p += 4; // ! OK
+    #else
     //	39 05      60 40 40 00    	cmp    %eax,0x404060
-    //
     g2(a,0x39,0x05);
     *(void**)a->p = var;
     a->p += 4; // ! OK
+    #endif
 }
 void asm_mov_value_eax (ASM *a, long value) {
     // b8   e8 03 00 00       	mov    $0x3e8,%eax

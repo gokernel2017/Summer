@@ -65,13 +65,14 @@ int   lib_arg     (int a, int b, int c, int d, int e);
 void  lib_printf  (char *format, ...);
 void  lib_log (char *s); // console.log();
 TFunc *lib_get_func (char *name);
-void lib_compile (char *name); // 32 bits only
+void disasm (char *name);
 
 //-----------------------------------------------
 //------------------  VARIABLES  ----------------
 //-----------------------------------------------
 //
 TVar              Gvar [GVAR_SIZE]; // global:
+int               asm_mode;
 //
 static MODULE   * Gmodule = NULL; // ... console.log(); ...
 static TFunc    * Gfunc = NULL;  // store the user functions
@@ -81,6 +82,9 @@ static ARG        argument [20];
 static F_STRING * fs = NULL;
 
 static float      _Fvalue_;
+
+char            write_var_name[100];
+char            write_func_name[100];
 
 static char
     strErro     [STR_ERRO_SIZE],
@@ -104,16 +108,27 @@ static TFunc stdlib[]={
   // char*        char*   UCHAR*/ASM*             int   int   FUNC*
   // name         proto   code                    type  len   next
   //-----------------------------------------------------------------
-  { "info",       "0i",     (UCHAR*)lib_info,       0,    0,    NULL },
-  { "addi",       "iii",    (UCHAR*)lib_addi,       0,    0,    NULL },
-  { "addf",       "fff",    (UCHAR*)lib_addf,       0,    0,    NULL },
-  { "arg",        "iiiiii", (UCHAR*)lib_arg,        0,    0,    NULL },
-  { "printf",     "0s",     (UCHAR*)lib_printf,     0,    0,    NULL },
-  { "get_func",   "ps",     (UCHAR*)lib_get_func,   0,    0,    NULL },
-  { "compile",    "0s",     (UCHAR*)lib_compile,    0,    0,    NULL },
-  { NULL,         NULL,     NULL,                   0,    0,    NULL }
+  { "info",         "0i",       (UCHAR*)lib_info,       0,    0,    NULL },
+  { "addi",         "iii",      (UCHAR*)lib_addi,       0,    0,    NULL },
+  { "addf",         "fff",      (UCHAR*)lib_addf,       0,    0,    NULL },
+  { "arg",          "iiiiii",   (UCHAR*)lib_arg,        0,    0,    NULL },
+  { "printf",       "0s",       (UCHAR*)lib_printf,     0,    0,    NULL },
+  { "get_func",     "ps",       (UCHAR*)lib_get_func,   0,    0,    NULL },
+#ifdef USE_DISASM
+  { "disasm",       "0s",       (UCHAR*)disasm,         0,    0,    NULL },
+#endif
+  //
+  // Application API ... Only WIN32 ...:
+  //
+#ifdef USE_APPLICATION
+  { "AppInit",      "iis",      (UCHAR*)AppInit,        0,    0,    NULL },
+  { "AppRun",       "00",       (UCHAR*)AppRun,         0,    0,    NULL },
+  { "AppNewWindow", "ppiiiis",  (UCHAR*)AppNewWindow,   0,    0,    NULL },
+  { "AppNewButton", "ppiiiis",  (UCHAR*)AppNewButton,   0,    0,    NULL },
+  { "AppSetCall",   "0pp",      (UCHAR*)AppSetCall,     0,    0,    NULL },
+#endif
+  { NULL,           NULL,       NULL,                   0,    0,    NULL }
 };
-
 
 void func_null (void) { printf ("FUNCTION: func_null\n"); }
 TFunc func_null_default = { "func_null", "00", (UCHAR*)func_null, 0, 0, NULL };
@@ -326,6 +341,8 @@ static void expression (LEXER *l, ASM *a) {
             int next = see(l);
 
             main_variable_type = var_type = Gvar[i].type;
+
+            sprintf (write_var_name, "%s", Gvar[i].name);
 
             // increment var type int: a++;
             //
@@ -665,8 +682,6 @@ loop_level++;  // <<<<<<<<<<  ! PUSH  >>>>>>>>>>
 
 loop_level--;  // <<<<<<<<<<  ! POP  >>>>>>>>>>
     } else {
-//        Erro ("%s: %d: USAGE: for (;;) { ... }\n", l->name, l->line);
-
         int i; // var index
         int type = 0; // <  >  ==  !=
         int inc = 0; // ++, --
@@ -696,18 +711,21 @@ loop_level++;
                     for_count_total++;
                     sprintf (array[for_count], "FOR_%d", for_count_total);
                     sprintf (array_break[loop_level], "FOR_END%d", for_count_total); // used for break
-                    asm_label (a, array[for_count]);
 
 //-------------------------------------------------------------------
 //<<<<<<<<<<<<<<<<<<<<<<<  " TOP OF LOOP "  >>>>>>>>>>>>>>>>>>>>>>>>>
 //-------------------------------------------------------------------
 
+                    asm_label (a, array[for_count]);
+
                     if (var_count == -1) {
                         asm_mov_value_eax (a, number_count);
                     } else {
+                        sprintf (write_var_name, "%s", Gvar[var_count].name);
                         emit_mov_var_reg (a, &Gvar[var_count].value.i, EAX);
                     }
 
+                    sprintf (write_var_name, "%s", Gvar[i].name);
                     emit_cmp_eax_var (a, &Gvar[i].value.i);
 
                     //
@@ -722,11 +740,17 @@ loop_level++;
                         Erro ("< > == !=");
                     }
 
+#ifdef USE_ASM
+write_asm(" //<<<< for block >>>>");
+#endif
+
                     //---------------------------------------------------------------
                     // process the block starting from string char: '{'
                     //---------------------------------------------------------------
                     //
                     stmt (l,a);  //<<<<<<<<<<  block  >>>>>>>>>>
+
+                    sprintf (write_var_name, "%s", Gvar[i].name);
 
                     if (inc == TOK_PLUS_PLUS)
                         emit_incl (a, &Gvar[i].value.i);
@@ -993,6 +1017,10 @@ static void word_function (LEXER *l, ASM *a) {
     local_count = 0;
     strcpy (func_name, name);
 
+#ifdef USE_ASM
+write_asm(".globl %s\n%s:", name, name);
+#endif
+
     // compiling to buffer ( f ):
     //
     asm_reset (asm_function);
@@ -1155,6 +1183,8 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                         emit_mov_eax_ecx (a);
                     } else if (count==4) {  // argument 5
                         emit_mov_eax_r8d (a);
+                    } else if (count==5) {  // argument 6
+                        emit_mov_eax_r9d (a);
                     }
                 } else {
                     if (is_float==0) { // Function argument float
@@ -1201,10 +1231,12 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
         }
     }
 
-    if (count > 5) {
+    if (count > 6) {
         Erro ("%s:%d: - Call Function(%s) the max arguments is: 5\n", l->name, l->line, func->name);
   return;
     }
+
+    sprintf (write_func_name, "%s", func->name);
 
     if (func->proto) {
         if (func->proto[0] == '0') return_type = TYPE_NO_RETURN;
@@ -1241,6 +1273,7 @@ static int expr0 (LEXER *l, ASM *a) {
                 if (lex(l) == '=') {
                     lex(l);
                     expr1(l,a);
+                    sprintf (write_var_name, "%s", Gvar[i].name);
                     #ifdef USE_VM
                     // Copia o TOPO DA PILHA ( sp ) para a variavel ... e decrementa sp++.
                     emit_pop_var (a,i);
@@ -1328,10 +1361,21 @@ static void atom (LEXER *l, ASM *a) { // expres
         //
         // NO CALL THE FUNCTION
         //
-        if ((fi = FuncFind (l->token)) != NULL && see(l) != '(') {
-            emit_mov_var_reg (a, &fi->code, EAX);
-            g (a,0x50);// 50   push   %eax
-            lex (l);
+        if ((fi = FuncFind (l->token)) != NULL) {
+            if (see(l) == '(') {
+                // "execute the function"
+                execute_call (l,a,fi);
+                // and ... push the result
+                emit_push_eax(a);
+                lex (l);
+            } else if (see(l) != '(') {
+                //
+                // push the real function pointer
+                //
+                emit_mov_var_reg (a, &fi->code, EAX);
+                emit_push_eax(a);
+                lex (l);
+            } 
         }
         else
 #endif
@@ -1643,6 +1687,19 @@ printf ("f existe\n");
     return NULL;
 }
 
+
+void write_asm (char *format, ...) {
+    if (is_function && asm_mode) {
+        char msg[1024] = { 0 };
+        va_list ap;
+        va_start (ap,format);
+        vsprintf (msg, format, ap);
+        va_end (ap);
+        printf ("%s\n", msg);
+    }
+}
+
+
 void Erro (char *format, ...) {
     char msg[1024] = { 0 };
     va_list ap;
@@ -1666,80 +1723,3 @@ void ErroReset (void) {
     strErro[0] = 0;
 }
 
-void lib_compile (char *name) { // 32 bits only
-#if !defined(__x86_64__)
-    TFunc *f;
-    int i = 0;
-    UCHAR *o;
-
-    struct ONE { UCHAR c; char *text; } one[] = {
-    { 0x50, "push\t%eax"},
-    { 0x51, "push\t%ecx"},
-    { 0x55, "push\t%ebp"},
-    { 0x58, "pop\t%eax"},
-    { 0x5a, "pop\t%edx"},
-    { 0xc9, "leave"},
-    { 0xc3, "ret"},
-    { 0, NULL }
-    };
-    struct TWO { UCHAR c1; UCHAR c2; char *text;} two[] = {
-    { 0x89, 0xe5, "mov\t%esp,%ebp"},
-    { 0x85, 0xc0, "test\t%eax,%eax"},
-    { 0xff, 0xd0, "call\t*%eax"},
-    { 0x39, 0xc0, "cmp\t%eax,%eax"},
-    { 0x39, 0xc1, "cmp\t%eax,%ecx"},
-    { 0x39, 0xc2, "cmp\t%eax,%edx"},
-    { 0, 0, NULL }
-    };
-
-    // b8   7a 13 40 00       mov    $0x40137a,%eax
-    // ff d0                	call   *%eax
-
-    int show1 (UCHAR c) {
-        struct ONE *p = one;
-        while (p->text) {
-            if (p->c == c) {
-                printf ("%s\n", p->text);
-                return 1;
-            }
-            p++;
-        }
-        return 0;
-    }
-    int show2 (UCHAR c1, UCHAR c2) {
-        struct TWO *p = two;
-        while (p->text) {
-            if(p->c1 == c1 && p->c2 == c2){
-                printf ("%s\n", p->text);
-                o++; i++;
-                return 1;
-            }
-            p++;
-        }
-        return 0;
-    }
-
-    if (!name) {
-        printf ("Usage: compile('func_name');\n");
-  return;
-    }
-
-    if ((f = FuncFind (name)) != NULL && f->type == FUNC_TYPE_COMPILED) {
-        o = f->code;
-        printf ("Function(%s) | len: %d TYPE: %d\n", f->name, f->len, f->type);
-        printf ("-----------------------------------\n");
-        for (i = 0; i < f->len; i++) {
-            if (show1(*o)) {}
-            else
-            if (show2(*o,o[1])) {}
-            else
-            printf ("0x%x, ", (UCHAR)*o);
-            o++;
-        }
-        printf ("\n-----------------------------------\n");
-  return;
-    }
-    printf ("Function Not Found(%s) ... Please use only Function Created.\n", name);
-
-#endif
-}

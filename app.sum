@@ -1,0 +1,55 @@
+//-------------------------------------------------------------------
+//
+// Summer Application API ( C & WEB ):
+//
+//
+// FILE:
+//   app.sum
+//
+//
+// USAGE SUMMER WINDOWS:
+//   summer app.sum
+//
+//
+// USAGE WEB (... Open the WEB CONSOLE ...):
+//   index.html
+//
+//
+// USAGE NodeWebKit ( see package.json ):
+//   nw ./
+//
+//
+// BY: Francisco - gokernel@hotmail.com
+//
+//-------------------------------------------------------------------
+//
+var count = 0;
+var count2 = 0;
+
+var win1, win2, button1, button2;
+
+function call1 (event) {
+    console.log ("BUTTON 1 CALL - count: %d", count);
+    count++;
+}
+
+function call2 (event) {
+    console.log ("Button 2: %d", count2);
+    count2++;
+}
+
+
+if (AppInit(0,0)) {
+
+    win1 = AppNewWindow (0, 200, 100, 320, 240, "Application API: BETA");
+    win2 = AppNewWindow (0, 400, 200, 320, 240, "Window 2");
+
+    button1 = AppNewButton (win1, 70, 50,  150, 40,  "Button 1: Count");
+    button2 = AppNewButton (win1, 70, 120, 150, 40,  "Button 2: Simple");
+
+    AppSetCall (button1, call1);
+    AppSetCall (button2, call2);
+
+    AppRun ();
+}
+

@@ -9,17 +9,18 @@
 //
 int i = 0, a = 25, b, c, d;
 
-//var f1 = 2000.50, f2 = 5000.50, result = 0.0;
+var f1 = 2000.50, f2 = 5000.50, result = 0.0;
 
 function hello () {
 
-    if (!c && i > a) {
+    if (i > a) {
 
         printf ("Function Hello, Value i: %d\n\n", i);
 
     }
 }
 
+/*
   printf ("\nValue Float: %f\n\n", f1 + f2);
 
   printf ("\nValue FLOAT: %f\n\n", 2000.50 + 3000.50);
@@ -28,3 +29,6 @@ function hello () {
 
   result = f1 + f2;
   result;
+*/
+
+  disasm ("hello");

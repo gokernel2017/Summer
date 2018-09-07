@@ -128,6 +128,10 @@ void asm_label (ASM *a, char *name) {
             l = l->next;
         }
 
+#ifdef USE_ASM
+write_asm("%s:", name);
+#endif
+
         if ((lab = (ASM_label*)malloc (sizeof(ASM_label))) != NULL) {
 
             lab->name = strdup (name);
@@ -297,8 +301,11 @@ static void asm_change_jump (ASM *a) {
 //--------------------------  GEN / EMIT  ---------------------------
 //-------------------------------------------------------------------
 //
-void asm_begin (ASM *a) { ///: 32/64 BITS OK
+void asm_begin (ASM *a) { //: 32/64 BITS OK
     #if defined(__x86_64__)
+#ifdef USE_ASM
+write_asm(" push\t%%rbp\n mov\t%%rsp,%%rbp");
+#endif
     // 55         : push  %rbp
     // 48 89 e5   : mov   %rsp,%rbp
     //-----------------------------
@@ -309,19 +316,17 @@ void asm_begin (ASM *a) { ///: 32/64 BITS OK
     a->p += 4;
     emit_sub_esp (a,16);
     #else
+#ifdef USE_ASM
+write_asm(" push\t%%ebp\n mov\t%%esp,%%ebp");
+#endif
     // 55     : push  %ebp
     // 89 e5  : mov   %esp,%ebp
     //-----------------------------
     a->p[0] = 0x55;
     a->p[1] = 0x89;
     a->p[2] = 0xe5;
-    //
-    // 83 ec 100  : sub  $100, %esp
-    //-----------------------------
-    a->p[3] = 0x83;
-    a->p[4] = 0xec;
-    a->p[5] = 100;
-    a->p += 6;
+    a->p += 3;
+    emit_sub_esp (a,100);
     #endif
 }
 void asm_end (ASM *a) { ///: 32/64 BITS OK
@@ -330,6 +335,9 @@ void asm_end (ASM *a) { ///: 32/64 BITS OK
     a->p[1] = 0xc3; // c3 : retq
     a->p += 2;
     #else
+#ifdef USE_ASM
+write_asm(" leave\n ret\n");
+#endif
     a->p[0] = 0xc9; // c9 : leave
     a->p[1] = 0xc3; // c3 : ret
     a->p += 2;
@@ -366,6 +374,10 @@ void emit_jump_jmp (ASM *a, char *name) {
     ASM_jump *jump;
 
     if (name && (jump = (ASM_jump*)malloc (sizeof(ASM_jump))) != NULL) {
+
+#ifdef USE_ASM
+write_asm(" jmp\t%s", name);
+#endif
 
         g(a,OP_NOP); // change this in ( asm_change_jump ) to OPCODE: 0xe9
 
@@ -426,9 +438,15 @@ void emit_jump_jne (ASM *a, char *name) {
 }
 
 void emit_jump_jle (ASM *a, char *name) {
+#ifdef USE_ASM
+write_asm(" jle\t%s", name);
+#endif
     asm_conditional_jump (a, name, ASM_JUMP_JLE);
 }
 void emit_jump_jge (ASM *a, char *name) {
+#ifdef USE_ASM
+write_asm(" jge\t%s", name);
+#endif
     asm_conditional_jump (a, name, ASM_JUMP_JGE);
 }
 
@@ -443,6 +461,9 @@ void emit_jump_jl (ASM *a, char *name) {
 // push number on: %esp:
 //
 void emit_push_int (ASM *a, int value) {
+#ifdef USE_ASM
+write_asm(" push\t$%d", value);
+#endif
     stack++;
     if (value == (char)value) {
         g(a,0x6a);  // 6a   64    push   $0x64
@@ -458,6 +479,9 @@ void emit_push_int (ASM *a, int value) {
 // push variable on: %esp:
 //
 void emit_push_var (ASM *a, void *var) { //: 32/64 BITS OK
+#ifdef USE_ASM
+write_asm(" push\t%s", write_var_name);
+#endif
     stack++;
     #if defined(__x86_64__)
     g3(a,0xff,0x34,0x25); asm_get_addr(a,var);  // ff 34 25   60 40 40 00   pushq   0x404060
@@ -466,6 +490,9 @@ void emit_push_var (ASM *a, void *var) { //: 32/64 BITS OK
     #endif
 }
 void emit_pop_var (ASM *a, void *var) { ///: 32/64 BITS OK
+#ifdef USE_ASM
+write_asm(" pop\t%s", write_var_name);
+#endif
     stack--;
     #if defined(__x86_64__)
     g3(a,0x8f,0x04,0x25); asm_get_addr(a,var);  // 8f 04 25   60 40 40 00    popq   0x404060
@@ -643,33 +670,40 @@ void asm_float_fstps (ASM *a, void *var) {
 
 
 void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
+#ifdef USE_ASM
+write_asm(" call\t%s", write_func_name);
+#endif
     //
     // b8   7a 13 40 00       mov    $0x40137a,%eax
     // ff d0                	call   *%eax
     //
-    // ba   7a 13 40 00     mov $0x40137a,%edx
-    // ff d2                call   *%edx
-    //
-//    g(a,0xba); asm_get_addr(a, func); // %edx
-//    g2(a,0xff,0xd2);                  // %edx
-
     g(a,0xb8); asm_get_addr(a, func); // %eax
     g2(a,0xff,0xd0);                  // %eax
 
 }
 
+void emit_push_eax (ASM *a) {
+#ifdef USE_ASM
+write_asm(" push\t%%eax");
+#endif
+    stack--;
+    g(a,0x50); // 50   push   %eax
+}
+
 void emit_pop_eax (ASM *a) {
+#ifdef USE_ASM
+write_asm(" pop\t%%eax");
+#endif
     stack--;
     g(a,0x58);  // 58     pop   %eax
 }
-
 void emit_pop_edx (ASM *a) {
+#ifdef USE_ASM
+write_asm(" pop\t%%edx");
+#endif
     stack--;
     g(a,0x5a);// 5a     pop   %edx
 }
-
-
-
 
 void emit_movl_ESP (ASM *a, long value, UCHAR index) {
     // c7 44 24   04   dc 05 00 00 	  movl    $0x5dc,0x4(%esp)
@@ -703,6 +737,9 @@ void emit_mov_var_reg (ASM *a, void *var, int reg) { ///: 32/64 BITS OK: Move va
         }
         asm_get_addr (a, var);
         #endif
+#ifdef USE_ASM
+write_asm(" mov\t%s,%%eax", write_var_name);
+#endif
     }
 }
 
@@ -731,6 +768,9 @@ void emit_mov_reg_var (ASM *a, int reg, void *var) { ///: 32/64 BITS OK: Move %r
 }
 
 void emit_sub_esp (ASM *a, char c) { // 32/64 BITS OK
+#ifdef USE_ASM
+write_asm(" sub\t$%d,%%esp", c);
+#endif
     #if defined(__x86_64__)
     g4(a,0x48,0x83,0xec,(char)c); // 48 83 ec   08   sub   $0x8,%rsp
     #else
@@ -740,10 +780,16 @@ void emit_sub_esp (ASM *a, char c) { // 32/64 BITS OK
 
 
 void emit_cmp_eax_edx (ASM *a) {
+#ifdef USE_ASM
+write_asm(" cmp\t%%eax,%%edx");
+#endif
     g2(a,0x39,0xc2); // 39 c2  : cmp   %eax,%edx
 }
 
 void emit_incl (ASM *a, void *var) { //: 32/64 BITS OK
+#ifdef USE_ASM
+write_asm(" incl\t%s", write_var_name);
+#endif
     #if defined(__x86_64__)
     g3(a,0xff,0x04,0x25); asm_get_addr(a,var);  // ff 04 25   00 0a 60 00   : incl   0x600a00
     #else
@@ -792,6 +838,9 @@ void emit_expression_pop_64_float (ASM *a) {
 }
 
 void emit_cmp_eax_var (ASM *a, void *var) {
+#ifdef USE_ASM
+write_asm(" cmp\t%%eax,%s", write_var_name);
+#endif
     #if defined(__x86_64__)
     g3(a,0x39,0x04,0x25);
     *(void**)a->p = var;
@@ -804,6 +853,9 @@ void emit_cmp_eax_var (ASM *a, void *var) {
     #endif
 }
 void asm_mov_value_eax (ASM *a, long value) {
+#ifdef USE_ASM
+write_asm(" mov\t$%d,%%eax", value);
+#endif
     // b8   e8 03 00 00       	mov    $0x3e8,%eax
     //
     g(a,0xb8);
@@ -817,3 +869,4 @@ void emit_mov_eax_esi (ASM *a) { g2(a,G2_MOV_EAX_ESI); }
 void emit_mov_eax_edx (ASM *a) { g2(a,G2_MOV_EAX_EDX); }
 void emit_mov_eax_ecx (ASM *a) { g2(a,G2_MOV_EAX_ECX); }
 void emit_mov_eax_r8d (ASM *a) { g3(a,G3_MOV_EAX_r8d); }
+void emit_mov_eax_r9d (ASM *a) { g3(a,G3_MOV_EAX_r9d); }

@@ -32,11 +32,21 @@
 #include <stdarg.h>
 #ifdef WIN32
     #include <windows.h>
+
+    #define USE_APPLICATION
+
+    typedef HWND OBJECT;
+
 #endif
 #ifdef __linux__
     #include <unistd.h>
     #include <sys/mman.h> // to: mprotect()
     #include <dlfcn.h>    // to: dlopen(), dlsym(), ... in file: cs_library.c
+
+    #ifdef USE_APPLICATION
+    typedef Window OBJECT;
+    #endif
+
 #endif
 
 #include "lex.h"
@@ -81,6 +91,7 @@ extern "C" {
 #define G2_MOV_EAX_EDX    0x89, 0xc2        // 89 c2      : mov   %eax, %edx
 #define G2_MOV_EAX_ECX    0x89, 0xc1        // 89 c1      : mov   %eax, %ecx
 #define G3_MOV_EAX_r8d    0x41, 0x89, 0xc0  // 41 89 c0   : mov %eax, %r8d
+#define G3_MOV_EAX_r9d    0x41, 0x89, 0xc1  // 41 89 c1   : mov %eax, %r9d
 
 enum {
     TYPE_INT = 0,
@@ -175,6 +186,8 @@ typedef struct F_STRING   F_STRING;
 typedef struct MODULE     MODULE;
 typedef struct DEFINE     DEFINE;
 
+typedef struct TEvent     TEvent;
+
 union VALUE {
     int     i;  //: type integer
     float   f;  //: type float
@@ -254,14 +267,33 @@ struct DEFINE {
     int     value;
     DEFINE  *next;
 };
+struct TEvent {
+    int   type;
+    int   id;
+    int   value;  // mouse_button, key
+    int   x, y;   // position, size
+};
 
 // global:
 LIBIMPORT TVar  Gvar [GVAR_SIZE];
+LIBIMPORT int   asm_mode;
+LIBIMPORT char  write_var_name [100];
+LIBIMPORT char  write_func_name [100];
 
 //-------------------------------------------------------------------
 //---------------------------  PUBLIC API  --------------------------
 //-------------------------------------------------------------------
 //
+// In File: "application.c"
+//
+#ifdef USE_APPLICATION
+LIBIMPORT int     AppInit           (int argc, char **argv);
+LIBIMPORT void    AppRun            (void);
+LIBIMPORT OBJECT  AppNewWindow      (OBJECT parent, int x, int y, int w, int h, char *text);
+LIBIMPORT OBJECT  AppNewButton      (OBJECT parent, int x, int y, int w, int h, char *text);
+LIBIMPORT void    AppSetCall        (OBJECT o, void(*call)(TEvent *evevt));
+#endif
+
 LIBIMPORT void    Run               (ASM *a); // back-end in file: asm.c | vm.c
 //
 // FILE: "core.c"
@@ -339,6 +371,10 @@ LIBIMPORT void    emit_mov_eax_esi  (ASM *a); // 64 BITS: Function argument 2: %
 LIBIMPORT void    emit_mov_eax_edx  (ASM *a); // 64 BITS: Function argument 3: %edx
 LIBIMPORT void    emit_mov_eax_ecx  (ASM *a); // 64 BITS: Function argument 4: %ecx
 LIBIMPORT void    emit_mov_eax_r8d  (ASM *a); // 64 BITS: Function argument 5: %r8d
+LIBIMPORT void    emit_mov_eax_r9d  (ASM *a); // 64 BITS: Function argument 6: %r9d
+#ifdef USE_ASM
+LIBIMPORT void write_asm (char *format, ...);
+#endif
 //
 #endif // #ifdef USE_JIT
 #ifdef USE_VM
@@ -382,7 +418,9 @@ LIBIMPORT void    emit_jump_jge     (ASM *a, char *name);
 //
 LIBIMPORT void    emit_push_int     (ASM *a, int value);
 LIBIMPORT void    emit_push_float   (ASM *a, float value);
+LIBIMPORT void    emit_push_eax     (ASM *a);
 LIBIMPORT void    emit_pop_eax      (ASM *a);
+
 
 #ifdef __cplusplus
 }

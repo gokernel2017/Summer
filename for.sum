@@ -1,14 +1,21 @@
 
-var a, b;
+var a, b, i;
+
+function my_loop () {
 
   for (a = 1; a < 10; a++) {
 
-      console.log ("Value a: %d", a);
+      i++;
 
-      for (b = 0; b < 5; b++) {
+//    printf ("Value a: %d", a);
 
-          console.log ("B: %d", b);
+//      for (b = 0; b < 5; b++) {
 
-      }
+//          console.log ("B: %d", b);
+
+//      }
 
   }
+}
+
+  my_loop();

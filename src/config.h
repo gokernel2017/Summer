@@ -4,6 +4,6 @@
 
 // Write Assembly code ( AT&T syntax ) to "stdout"
 //
-//#define USE_ASM
+#define USE_ASM
 
 #endif

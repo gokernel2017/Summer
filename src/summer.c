@@ -48,6 +48,7 @@ int main (int argc, char **argv) {
 
     for (i = 0; i < argc; i++) {
         if (!strcmp(argv[i], "-s") && argc > i+1) is_string = i+1;
+        if (!strcmp(argv[i], "-asm")) asm_mode = 1;
         if (!strcmp(argv[i], "-h")) {
             printf ("Summer Language Help:\n");
             printf ("OPTIONS:\n");
@@ -88,7 +89,10 @@ int main (int argc, char **argv) {
 
             #ifdef USE_JIT
             if (asm_set_executable(a, asm_get_len(a)) == 0) {
-                Run (a);
+                #ifdef USE_ASM
+                if (asm_mode==0)
+                #endif
+                    Run (a);
             }
             else printf ("ERRO:\n%s\n", ErroGet());
             #endif

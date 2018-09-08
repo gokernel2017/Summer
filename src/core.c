@@ -148,6 +148,19 @@ ASM * core_Init (unsigned int size) {
 
         core_ModuleAdd ("console", "log", "0s", (UCHAR*)lib_printf);
 
+        #ifdef USE_APPLICATION
+        //---------------------------------------
+        // object : Gvar[0] | pointer
+        // mx     : Gvar[1] | int : mouse_x
+        // my     : Gvar[2] | int : mouse_y
+        //---------------------------------------
+        CreateVarInt ("object", 0);
+        CreateVarInt ("mx", 0); // mouse_x
+        CreateVarInt ("my", 0); // mouse_y
+        //
+        CreateVarInt ("MOUSEMOVE", 512); // constant
+        #endif // ! USE_APPLICATION
+
         #ifdef USE_JIT
         core_DefineAdd ("USE_JIT", 1);
         #endif

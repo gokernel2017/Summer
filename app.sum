@@ -7,6 +7,13 @@
 //   app.sum
 //
 //
+// INFO BUILTIN( C ) VARIABLE:
+//
+//   Gvar [0] := object;  // object current
+//   Gvar [1] := mx;      // mouse_x
+//   Gvar [2] := my;      // mouse_y
+//
+//
 // USAGE SUMMER WINDOWS:
 //   summer app.sum
 //
@@ -15,7 +22,7 @@
 //   index.html
 //
 //
-// USAGE NodeWebKit ( see package.json ):
+// USAGE Node WebKit ( see package.json ):
 //   nw ./
 //
 //
@@ -24,18 +31,30 @@
 //-------------------------------------------------------------------
 //
 var count = 0;
-var count2 = 0;
+var count2 = 0, wcount=0;
 
 var win1, win2, button1, button2;
 
-function call1 (event) {
+function button1_OnClick (e) {
     console.log ("BUTTON 1 CALL - count: %d", count);
     count++;
+
 }
 
-function call2 (event) {
+function button2_OnClick (e) {
     console.log ("Button 2: %d", count2);
     count2++;
+}
+
+function win1_OnMouseMove (e) {
+    if (object == win1) {
+        console.log ("mx: %d, my: %d | %d", mx, my, wcount);
+        wcount++;
+    }
+}
+function win2_OnMouseMove (e) {
+    console.log ("WIN2 - wcount %d", wcount);
+    wcount++;
 }
 
 
@@ -47,8 +66,11 @@ if (AppInit(0,0)) {
     button1 = AppNewButton (win1, 70, 50,  150, 40,  "Button 1: Count");
     button2 = AppNewButton (win1, 70, 120, 150, 40,  "Button 2: Simple");
 
-    AppSetCall (button1, call1);
-    AppSetCall (button2, call2);
+    AppSetCall (button1, button1_OnClick, "onclick");
+    AppSetCall (button2, button2_OnClick, "onclick");
+
+    AppSetCall (win1, win1_OnMouseMove, "onmousemove");
+    AppSetCall (win2, win2_OnMouseMove, "onmousemove");
 
     AppRun ();
 }

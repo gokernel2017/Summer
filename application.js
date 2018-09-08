@@ -10,6 +10,16 @@
 var argc = 0;
 var argv = 0;
 //
+//---------------------------
+var object; // Gvar[0] | pointer
+var event = 0;    // Gvar[1] | int
+var mx = 0;       // Gvar[2] | int : mouse_x
+var my = 0;       // Gvar[3] | int : mouse_y
+// Event Type Number:
+const MOUSEMOVE = 512; // WM_MOUSEMOVE
+
+//---------------------------
+//
 var main_widget;
 var zIndex = 1;
 var isTouch = false;
@@ -25,22 +35,22 @@ function AppInit (ac, av) {
 
   if (isTouch==false) {
     // desktop event: no mobile
-    document.onmousemove = function(event) {
+    document.onmousemove = function(e) {
       //-------------------------------------------
       // isDown == true
       // on click in the window title bar.
       //-------------------------------------------
       if (isDown) {
-        event.preventDefault();
+        e.preventDefault();
         //
         // change widget position ( style value )
         //
         //mx = event.clientX;
         //my = event.clientY;
-        main_widget.style.left = (event.clientX + offset[0]) + 'px';
-        main_widget.style.top  = (event.clientY + offset[1]) + 'px';
+        main_widget.style.left = (e.clientX + offset[0]) + 'px';
+        main_widget.style.top  = (e.clientY + offset[1]) + 'px';
       }//: if (isDown)
-    }//: document.onmousemove = function(event)
+    }//: document.onmousemove = function(e)
   }//: if (isTouch==false)
 
   return 1;
@@ -69,18 +79,21 @@ function AppNewWindow (parent,x,y,w,h,txt) {
     // DESKTOP MOUSE EVENT:
     //-------------------------------------------
     //
-    o.addEventListener('mousedown', function(event) {
+    o.addEventListener('mousedown', function(e) {
 
       this.style.zIndex = zIndex++; // move element to top:
       main_widget = this;
 
+      mx = e.clientX-this.offsetLeft;
+      my = e.clientY-this.offsetTop;
+
       // click in title_bar:
       //
-      if (event.clientY-this.offsetTop < 35) {
+      if (e.clientY-this.offsetTop < 35) {
         isDown = true; //<<<<<<<  enable here  >>>>>>>
         offset = [
-          this.offsetLeft - event.clientX,
-          this.offsetTop - event.clientY
+          this.offsetLeft - e.clientX,
+          this.offsetTop - e.clientY
         ];
       }
 
@@ -88,9 +101,11 @@ function AppNewWindow (parent,x,y,w,h,txt) {
 
     o.addEventListener('mouseup', function() { isDown = false; }, true);
 
-    // NONE SEE( document.onmousemove )
-    //
-    // o.addEventListener('mousemove', function(event) {  }, true);
+    o.addEventListener('mousemove', function(e) {
+      object = e.target;
+      mx = e.clientX-this.offsetLeft;
+      my = e.clientY-this.offsetTop;
+    }, true);
 
   }//: events ...
 
@@ -106,8 +121,6 @@ function AppNewButton (parent,x,y,w,h,txt) {
 
   o.innerHTML = txt; // button text
 
-//  o.onclick = call;
-
   o.style.position = "absolute";
   o.style.left = x+'px';
   o.style.top = y+'px';
@@ -117,10 +130,6 @@ function AppNewButton (parent,x,y,w,h,txt) {
   parent.appendChild(o); // add element on parent
 
   return o;
-}
-
-function AppSetCall (o,call) {
-    o.onclick = call;
 }
 
 function app_new_terminal (parent, x, y, w, h) {
@@ -186,6 +195,11 @@ function app_new_terminal (parent, x, y, w, h) {
   parent.appendChild(o); // add element on parent
 
   return o;
+}
+
+function AppSetCall (o,call,type) {
+  if (type=="onclick") o.onclick = call;
+  if (type=="onmousemove") o.onmousemove = call;
 }
 
 function AppRun () {

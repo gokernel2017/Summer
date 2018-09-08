@@ -42,17 +42,75 @@ static int running;
 typedef struct {
     int   type;
 
-    void  (*call) (TEvent *evevt);
+    void  (*call)         (TEvent *evevt);
+    void  (*onclick)      (TEvent *event);
+    void  (*onmousemove)  (TEvent *event);
 
     void  *info; // any information to object
 
 }DATA_OBJECT;
 
+#ifdef WIN32
+LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+
+    switch (msg) {
+    case WM_CREATE:
+        WindowCount++;
+        break;
+
+    case WM_DESTROY:
+        WindowCount--;
+        if (!WindowCount) {
+            running = 0;
+            PostQuitMessage (0); // exit of program if not windows ...
+        }
+        break;
+
+    case WM_MOUSEMOVE:
+        {
+        DATA_OBJECT *data = (DATA_OBJECT*)GetWindowLongPtr (hwnd, GWLP_USERDATA);
+
+        if (data && data->onmousemove) {
+            Gvar [VAR_OBJECT].value.p = hwnd;
+            Gvar [VAR_MX].value.i     = LOWORD(lParam);
+            Gvar [VAR_MY].value.i     = HIWORD(lParam);
+
+            _event_->type = MOUSEMOVE; // WM_MOUSEMOVE;
+            _event_->x = LOWORD(lParam);
+            _event_->y = HIWORD(lParam);
+            data->onmousemove(_event_);
+        }
+        } break;
+
+    case WM_COMMAND:
+        // not a menu
+        if (lParam != 0) break;
+        if (HIWORD(wParam) != 0) break;
+        {
+printf ("WM_COMMAND: %d\n", count++);
+/*
+        DATA_OBJECT *data = (DATA_OBJECT*)GetWindowLongPtr (hwnd, GWLP_USERDATA);
+
+        if (data && data->call) {
+            _event_->type = EV_MENU;
+            _event_->x = LOWORD(wParam); // menu index id
+            data->call(_event_);
+        }
+*/
+        } break;
+
+    default:
+        return DefWindowProc (hwnd, msg, wParam, lParam);
+    }
+
+    return 0;
+
+}// WindowProc()
+#endif // ! WIN32
+
 
 #ifdef WIN32
-
 static LONG_PTR origButtonProc;
-
 static LRESULT CALLBACK ButtonProc (OBJECT hwnd, int msg, WPARAM wParam, LPARAM lParam) {
     if (msg == WM_LBUTTONUP) {
         int mx = (short)LOWORD(lParam);
@@ -64,10 +122,10 @@ static LRESULT CALLBACK ButtonProc (OBJECT hwnd, int msg, WPARAM wParam, LPARAM 
 
             DATA_OBJECT *data = (DATA_OBJECT*)GetWindowLongPtr (hwnd, GWLP_USERDATA);
 
-            if ((mx < r.right-r.left && my < r.bottom-r.top) && data && data->call) {
+            if ((mx < r.right-r.left && my < r.bottom-r.top) && data && data->onclick) {
                 _event_->type = 0;//EV_ZERO;
                 _event_->id = GetDlgCtrlID(hwnd);
-                data->call (_event_);
+                data->onclick (_event_);
             }
         }
     }
@@ -98,6 +156,8 @@ OBJECT AppNewWindow (OBJECT parent, int x, int y, int w, int h, char *text) {
     DATA_OBJECT *data = (DATA_OBJECT*) malloc (sizeof(DATA_OBJECT));
     if (data) {
         data->call = NULL;
+        data->onclick = NULL;
+        data->onmousemove = NULL;
         // Set the DATA
         SetWindowLongPtr (o, GWLP_USERDATA, (LONG_PTR)data);
     }
@@ -133,6 +193,8 @@ OBJECT AppNewButton (OBJECT parent, int x, int y, int w, int h, char *text) {
     DATA_OBJECT *data = (DATA_OBJECT*) malloc (sizeof(DATA_OBJECT));
     if (data) {
         data->call = NULL;
+        data->onclick = NULL;
+        data->onmousemove = NULL;
         // Set the PROC end DATA
         origButtonProc = SetWindowLongPtr (o, GWLP_WNDPROC, (LONG_PTR)ButtonProc);
         SetWindowLongPtr (o, GWLP_USERDATA, (LONG_PTR)data);
@@ -142,54 +204,14 @@ OBJECT AppNewButton (OBJECT parent, int x, int y, int w, int h, char *text) {
     return o;
 }
 
-#ifdef WIN32
-LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
-    switch (msg) {
-    case WM_CREATE:
-        WindowCount++;
-        break;
-
-    case WM_DESTROY:
-        WindowCount--;
-        if (!WindowCount) {
-            running = 0;
-            PostQuitMessage (0); // exit of program if not windows ...
-        }
-        break;
-
-    case WM_COMMAND:
-        // not a menu
-        if (lParam != 0) break;
-        if (HIWORD(wParam) != 0) break;
-        {
-printf ("WM_COMMAND: %d\n", count++);
-/*
-        DATA_OBJECT *data = (DATA_OBJECT*)GetWindowLongPtr (hwnd, GWLP_USERDATA);
-
-        if (data && data->call) {
-            _event_->type = EV_MENU;
-            _event_->x = LOWORD(wParam); // menu index id
-            data->call(_event_);
-        }
-*/
-        } break;
-
-    default:
-        return DefWindowProc (hwnd, msg, wParam, lParam);
-    }
-
-    return 0;
-
-}// WindowProc()
-
-#endif // ! WIN32
-
-void AppSetCall (OBJECT o, void(*call)(TEvent *evevt)) {
-    if (o && call) {
+void AppSetCall (OBJECT o, void(*call)(TEvent *evevt), char *type) {
+    if (o && call && type) {
         DATA_OBJECT *data = (DATA_OBJECT*)GetWindowLongPtr (o, GWLP_USERDATA);
-        if (data)
-            data->call = call;
+        if (data) {
+            if (!strcmp(type, "onclick"))     data->onclick = call;
+            if (!strcmp(type, "onmousemove")) data->onmousemove = call;
+        }
     }
 }
 

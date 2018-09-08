@@ -93,6 +93,12 @@ extern "C" {
 #define G3_MOV_EAX_r8d    0x41, 0x89, 0xc0  // 41 89 c0   : mov %eax, %r8d
 #define G3_MOV_EAX_r9d    0x41, 0x89, 0xc1  // 41 89 c1   : mov %eax, %r9d
 
+// Application API:
+#define VAR_OBJECT        0
+#define VAR_MX            1
+#define VAR_MY            2
+#define MOUSEMOVE         512
+
 enum {
     TYPE_INT = 0,
     TYPE_FLOAT,
@@ -291,7 +297,7 @@ LIBIMPORT int     AppInit           (int argc, char **argv);
 LIBIMPORT void    AppRun            (void);
 LIBIMPORT OBJECT  AppNewWindow      (OBJECT parent, int x, int y, int w, int h, char *text);
 LIBIMPORT OBJECT  AppNewButton      (OBJECT parent, int x, int y, int w, int h, char *text);
-LIBIMPORT void    AppSetCall        (OBJECT o, void(*call)(TEvent *evevt));
+LIBIMPORT void    AppSetCall        (OBJECT o, void(*call)(TEvent *evevt), char *type);
 #endif
 
 LIBIMPORT void    Run               (ASM *a); // back-end in file: asm.c | vm.c

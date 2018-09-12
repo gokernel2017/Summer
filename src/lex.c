@@ -24,6 +24,7 @@
 //-------------------------------------------------------------------
 //
 #include "lex.h"
+#include <ctype.h>
 
 static char save_token [LEXER_TOKEN_SIZE];
 static int  save_pos;
@@ -158,12 +159,14 @@ top:
         l->tok = TOK_PLUS_PLUS;
         return TOK_PLUS_PLUS;
     }
+/*
     if (c=='-' && next == '-') { // ++
         *p++ = '-'; *p++ = '-'; *p = 0;
         l->pos += 2;
         l->tok = TOK_MINUS_MINUS;
         return TOK_MINUS_MINUS;
     }
+*/
     if (c=='=' && next == '=') { // ==
         *p++ = '='; *p++ = '='; *p = 0;
         l->pos += 2;
@@ -175,6 +178,38 @@ top:
         l->pos += 2;
         l->tok = TOK_AND_AND;
         return TOK_AND_AND;
+    }
+    if (c=='-') {
+        if (next=='-') {
+            *p++ = '-'; *p++ = '-'; *p=0;
+            l->pos += 2;
+            l->tok = TOK_MINUS_MINUS;
+            return TOK_MINUS_MINUS;
+        }
+/*
+        if (isdigit(next)) { // number: -100
+                str++;
+                while ((*str >= '0' && *str <= '9') || *str == '.')
+                    *p++ = *str++;
+                *p = 0;
+
+                return TOK_NUMBER;
+        }
+*/
+        if (isdigit(next)) { // number: -100
+            l->pos++;
+            *p++ = c;
+            for (;;) {
+                c = l->text[l->pos];
+                if ((c >= '0' && c <= '9') || c == '.') {
+                    l->pos++;
+                    *p++ = c;
+                } else break;
+            }
+            *p = 0;
+            l->tok = TOK_NUMBER;
+            return TOK_NUMBER;
+        }
     }
 
     *p++ = c;

@@ -154,5 +154,7 @@ int main (int argc, char **argv) {
 
     printf ("Exiting With Sucess:\n");
 
+//#define GL_COLOR_BUFFER_BIT                     0x00004000
+
     return 0;
 }

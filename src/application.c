@@ -23,7 +23,10 @@
 //
 //-------------------------------------------------------------------
 //
+// Windows Max Mem: 22.140
+//
 #include "summer.h"
+#include <GL/gl.h>
 
 //
 // Only WIN32 Implementation ... Please Wait for LInux ...
@@ -31,20 +34,52 @@
 
 #ifdef USE_APPLICATION
 
+//HINSTANCE WindowInstance = nullptr;
+//void *nullptr;
+
 static TEvent *_event_;
-
 static int count;
-
 static const char ClassName[] = "Summer_Object_Class";
 static int  WindowCount;
 static int running;
+static HDC hDC;
+static HGLRC hRC;        
+
+OBJECT win;
+
+void EnableOpenGL (HWND hWnd, HDC *hDC, HGLRC *hRC) {
+    PIXELFORMATDESCRIPTOR pfd;
+    int iFormat;
+
+    /* get the device context (DC) */
+    *hDC = GetDC (hWnd);
+
+    /* set the pixel format for the DC */
+    ZeroMemory (&pfd, sizeof (pfd));
+    pfd.nSize = sizeof (pfd);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | 
+      PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = 24;
+    pfd.cDepthBits = 16;
+    pfd.iLayerType = PFD_MAIN_PLANE;
+    iFormat = ChoosePixelFormat (*hDC, &pfd);
+    SetPixelFormat (*hDC, iFormat, &pfd);
+
+    /* create and enable the render context (RC) */
+    *hRC = wglCreateContext( *hDC );
+    wglMakeCurrent(*hDC, *hRC);
+}
 
 typedef struct {
     int   type;
 
-    void  (*call)         (TEvent *evevt);
+//    void  (*call)         (TEvent *evevt);
     void  (*onclick)      (TEvent *event);
     void  (*onmousemove)  (TEvent *event);
+    void  (*onmousedown)  (TEvent *event);
+    void  (*onmouseup)    (TEvent *event);
 
     void  *info; // any information to object
 
@@ -65,6 +100,44 @@ LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             PostQuitMessage (0); // exit of program if not windows ...
         }
         break;
+
+
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+        {
+        DATA_OBJECT *data = (DATA_OBJECT*)GetWindowLongPtr (hwnd, GWLP_USERDATA);
+        if (data) {
+            POINT p;
+            if (msg==WM_LBUTTONDOWN) SetCapture(hwnd);
+            if (msg==WM_LBUTTONUP) ReleaseCapture();
+
+//					int x=lParam&0xffff;
+//					int y=(lParam&0xffff0000)>>16;
+
+            GetCursorPos(&p);
+//            _event_->x = lParam&0xffff;//LOWORD(lParam);
+//            _event_->y = (lParam&0xffff0000)>>16;//HIWORD(lParam);
+
+            _event_->x = p.x;
+            _event_->y = p.y;
+
+            if (data->onmousedown && (msg==WM_LBUTTONDOWN || msg==WM_RBUTTONDOWN)) {
+                if (msg==WM_LBUTTONDOWN)
+                    Gvar [VAR_MB].value.i = 1;
+                else
+                    Gvar [VAR_MB].value.i = 2;
+                data->onmousedown(_event_);
+            }
+            else
+            if (data->onmouseup && (msg==WM_LBUTTONUP || msg==WM_RBUTTONUP)) {
+                Gvar [VAR_MB].value.i = 0;
+                data->onmouseup(_event_);
+            }
+        }
+        } break;
+
 
     case WM_MOUSEMOVE:
         {
@@ -155,9 +228,10 @@ OBJECT AppNewWindow (OBJECT parent, int x, int y, int w, int h, char *text) {
 
     DATA_OBJECT *data = (DATA_OBJECT*) malloc (sizeof(DATA_OBJECT));
     if (data) {
-        data->call = NULL;
-        data->onclick = NULL;
+        data->onclick     = NULL;
         data->onmousemove = NULL;
+        data->onmousedown = NULL;
+        data->onmouseup   = NULL;
         // Set the DATA
         SetWindowLongPtr (o, GWLP_USERDATA, (LONG_PTR)data);
     }
@@ -169,6 +243,48 @@ OBJECT AppNewWindow (OBJECT parent, int x, int y, int w, int h, char *text) {
 
     return o;
 }
+OBJECT AppNewRenderGL (OBJECT parent, int x, int y, int w, int h, char *text) {
+//    OBJECT o;
+
+#ifdef WIN32
+
+    int style = WS_POPUP|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE; //WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX;
+    int styleFS = WS_POPUP|WS_VISIBLE; //WS_POPUP
+    int flags = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
+
+    win = CreateWindowEx (
+      0,
+      ClassName, // classname
+      text,             // Title text
+//      WS_POPUP | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_VISIBLE,
+      style,
+      x,y, w, h,
+      HWND_DESKTOP,     // parent
+      NULL,             // id
+      GetModuleHandle(NULL),    // Program Instance handler
+      NULL              // No Window Creation data
+      );
+
+    EnableOpenGL (win, &hDC, &hRC);
+
+    DATA_OBJECT *data = (DATA_OBJECT*) malloc (sizeof(DATA_OBJECT));
+    if (data) {
+        data->onclick     = NULL;
+        data->onmousemove = NULL;
+        data->onmousedown = NULL;
+        data->onmouseup   = NULL;
+        // Set the DATA
+        SetWindowLongPtr (win, GWLP_USERDATA, (LONG_PTR)data);
+    }
+
+#endif
+#ifdef __linux__
+    printf ("AppNewWindow no implemented in Linux\n");
+#endif
+
+    return win;
+}
+
 
 OBJECT AppNewButton (OBJECT parent, int x, int y, int w, int h, char *text) {
     OBJECT o;
@@ -192,9 +308,10 @@ OBJECT AppNewButton (OBJECT parent, int x, int y, int w, int h, char *text) {
 
     DATA_OBJECT *data = (DATA_OBJECT*) malloc (sizeof(DATA_OBJECT));
     if (data) {
-        data->call = NULL;
-        data->onclick = NULL;
+        data->onclick     = NULL;
         data->onmousemove = NULL;
+        data->onmousedown = NULL;
+        data->onmouseup   = NULL;
         // Set the PROC end DATA
         origButtonProc = SetWindowLongPtr (o, GWLP_WNDPROC, (LONG_PTR)ButtonProc);
         SetWindowLongPtr (o, GWLP_USERDATA, (LONG_PTR)data);
@@ -211,6 +328,8 @@ void AppSetCall (OBJECT o, void(*call)(TEvent *evevt), char *type) {
         if (data) {
             if (!strcmp(type, "onclick"))     data->onclick = call;
             if (!strcmp(type, "onmousemove")) data->onmousemove = call;
+            if (!strcmp(type, "onmousedown")) data->onmousedown = call;
+            if (!strcmp(type, "onmouseup")) data->onmouseup = call;
         }
     }
 }
@@ -221,7 +340,7 @@ int AppInit (int argc, char **argv) {
     if (init) return 1;
     init = 1;
 
-printf ("\nApplication, WIN32 Inplementation: AppInit();\n");
+printf ("\nApplication, WIN32 Inplementation: AppInit(): %d\n", GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if ((_event_ = (TEvent*)malloc(sizeof(TEvent))) == NULL)
         return 0;
@@ -262,25 +381,62 @@ printf ("\nApplication, WIN32 Inplementation: AppInit();\n");
 
     #endif // WIN32
 
+    timeBeginPeriod (1);
+
     return 1;
    
 }// AppInit()
 
-void AppRun (void) {
+void AppRender (void) {
+    SwapBuffers (hDC);
+    glClearColor (0.0, 0.0, 0.0, 0.0);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // GL_COLOR_BUFFER_BIT);
+/*
+    glClearColor (0.0f, 0.0f, 0.0f, 0.0f);
+    glClear (GL_COLOR_BUFFER_BIT);
+*/
+}
+
+void DisableOpenGL (HWND hWnd, HDC hDC, HGLRC hRC) {
+    wglMakeCurrent (NULL, NULL);
+    wglDeleteContext (hRC);
+    ReleaseDC (hWnd, hDC);
+}
+
+void AppRun (void(*idle)(void)) {
 
 printf ("\nApplication, WIN32 Inplementation: AppRun();\n");
+
+    if (running) return;
+
+    running = 1;
 
     #ifdef WIN32
 
     MSG msg;
 
-    while (GetMessage (&msg, NULL, 0, 0)) {
-        TranslateMessage (&msg);
-        DispatchMessage  (&msg);
+    if (idle) {
+        for (;;) {
+            if (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE)) {
+                TranslateMessage (&msg);
+                DispatchMessage (&msg);
+            }
+            if (running==0) return;
+            idle ();
+        }
+    } else {
+        while (GetMessage (&msg, NULL, 0, 0)) {
+            TranslateMessage (&msg);
+            DispatchMessage  (&msg);
+        }
     }
+
+    DisableOpenGL (win, hDC, hRC);
 
     #endif // WIN32
 
 }// AppRun ()
+
+
 
 #endif // ! USE_APPLICATION

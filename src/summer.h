@@ -33,8 +33,9 @@
 #ifdef WIN32
     #include <windows.h>
 
-    #define USE_APPLICATION
+    #define USE_GA    // Graphic Application API ( C & WEB ):
 
+//    #define USE_APPLICATION
     typedef HWND OBJECT;
 
 #endif
@@ -42,6 +43,8 @@
     #include <unistd.h>
     #include <sys/mman.h> // to: mprotect()
     #include <dlfcn.h>    // to: dlopen(), dlsym(), ... in file: cs_library.c
+
+    #define USE_GA    // Graphic Application API ( C & WEB ):
 
     #ifdef USE_APPLICATION
     typedef Window OBJECT;
@@ -97,6 +100,7 @@ extern "C" {
 #define VAR_OBJECT        0
 #define VAR_MX            1
 #define VAR_MY            2
+#define VAR_MB            3
 #define MOUSEMOVE         512
 
 enum {
@@ -193,6 +197,7 @@ typedef struct MODULE     MODULE;
 typedef struct DEFINE     DEFINE;
 
 typedef struct TEvent     TEvent;
+typedef struct EVENT      EVENT;
 
 union VALUE {
     int     i;  //: type integer
@@ -279,6 +284,11 @@ struct TEvent {
     int   value;  // mouse_button, key
     int   x, y;   // position, size
 };
+struct EVENT {
+//    OBJECT  target;
+    int     clientX;
+    int     clientY;
+};
 
 // global:
 LIBIMPORT TVar  Gvar [GVAR_SIZE];
@@ -294,12 +304,20 @@ LIBIMPORT char  write_func_name [100];
 //
 #ifdef USE_APPLICATION
 LIBIMPORT int     AppInit           (int argc, char **argv);
-LIBIMPORT void    AppRun            (void);
+LIBIMPORT void    AppRun            (void(*idle)(void));
 LIBIMPORT OBJECT  AppNewWindow      (OBJECT parent, int x, int y, int w, int h, char *text);
+LIBIMPORT OBJECT  AppNewRenderGL    (OBJECT parent, int x, int y, int w, int h, char *text);
 LIBIMPORT OBJECT  AppNewButton      (OBJECT parent, int x, int y, int w, int h, char *text);
 LIBIMPORT void    AppSetCall        (OBJECT o, void(*call)(TEvent *evevt), char *type);
+LIBIMPORT void    AppRender         (void);
 #endif
-
+//
+#ifdef USE_GA // Graphic Application API(C & WEB)
+//-------------------------------------------------------------------
+LIBIMPORT int     gaInit            (int w, int h, void(*idle)(void));
+LIBIMPORT void    gaRun             (void);
+//-------------------------------------------------------------------
+#endif // USE_GA
 LIBIMPORT void    Run               (ASM *a); // back-end in file: asm.c | vm.c
 //
 // FILE: "core.c"

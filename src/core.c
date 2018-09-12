@@ -25,6 +25,11 @@
 // FILE SIZE: 49.251
 #include "summer.h"
 #include <stdarg.h>
+#include <time.h>
+
+#ifdef USE_APPLICATION
+    #include <GL/gl.h>
+#endif
 
 //-----------------------------------------------
 //-----------------  PROTOTYPES  ----------------
@@ -39,7 +44,7 @@ static void   word_module   (LEXER *l, ASM *a);
 static void   word_import   (LEXER *l, ASM *a);
 static void   word_function (LEXER *l, ASM *a);
 //
-static void   word_DEFINE   (LEXER *l, ASM *a);
+//static void   word_DEFINE   (LEXER *l, ASM *a);
 static void   word_IFDEF    (LEXER *l, ASM *a);
 //
 static void   expression    (LEXER *l, ASM *a);
@@ -66,6 +71,7 @@ void  lib_printf  (char *format, ...);
 void  lib_log (char *s); // console.log();
 TFunc *lib_get_func (char *name);
 void disasm (char *name);
+void time_fps (void);
 
 //-----------------------------------------------
 //------------------  VARIABLES  ----------------
@@ -80,8 +86,6 @@ static DEFINE   * Gdefine = NULL;
 static ASM      * asm_function;
 static ARG        argument [20];
 static F_STRING * fs = NULL;
-
-static float      _Fvalue_;
 
 char            write_var_name[100];
 char            write_func_name[100];
@@ -114,20 +118,38 @@ static TFunc stdlib[]={
   { "arg",          "iiiiii",   (UCHAR*)lib_arg,        0,    0,    NULL },
   { "printf",       "0s",       (UCHAR*)lib_printf,     0,    0,    NULL },
   { "get_func",     "ps",       (UCHAR*)lib_get_func,   0,    0,    NULL },
+  { "fps",          "00",       (UCHAR*)time_fps,       0,    0,    NULL },
 #ifdef USE_DISASM
   { "disasm",       "0s",       (UCHAR*)disasm,         0,    0,    NULL },
+#endif
+#ifdef USE_GA // Graphic Application API:
+  { "gaInit",       "iiip",     (UCHAR*)gaInit,         0,    0,    NULL },
+  { "gaRun",        "00",       (UCHAR*)gaRun,          0,    0,    NULL },
 #endif
   //
   // Application API ... Only WIN32 ...:
   //
 #ifdef USE_APPLICATION
-  { "AppInit",      "iis",      (UCHAR*)AppInit,        0,    0,    NULL },
-  { "AppRun",       "00",       (UCHAR*)AppRun,         0,    0,    NULL },
-  { "AppNewWindow", "ppiiiis",  (UCHAR*)AppNewWindow,   0,    0,    NULL },
-  { "AppNewButton", "ppiiiis",  (UCHAR*)AppNewButton,   0,    0,    NULL },
-  { "AppSetCall",   "0pp",      (UCHAR*)AppSetCall,     0,    0,    NULL },
+  { "AppInit",        "iis",      (UCHAR*)AppInit,        0,    0,    NULL },
+  { "AppRun",         "0p",       (UCHAR*)AppRun,         0,    0,    NULL },
+  { "AppNewWindow",   "ppiiiis",  (UCHAR*)AppNewWindow,   0,    0,    NULL },
+  { "AppNewRenderGL", "ppiiiis",  (UCHAR*)AppNewRenderGL, 0,    0,    NULL },
+  { "AppNewButton",   "ppiiiis",  (UCHAR*)AppNewButton,   0,    0,    NULL },
+  { "AppSetCall",     "0pp",      (UCHAR*)AppSetCall,     0,    0,    NULL },
+  { "AppRender",      "00",       (UCHAR*)AppRender,      0,    0,    NULL },
+  { "Sleep",          "0i",       (UCHAR*)Sleep,          0,    0,    NULL },
+  // OpenGL:
+  { "glBegin",        "0i",       (UCHAR*)glBegin,        0,    0,    NULL },
+  { "glEnd",          "00",       (UCHAR*)glEnd,          0,    0,    NULL },
+  { "glVertex2f",     "0ff",      (UCHAR*)glVertex2f,     0,    0,    NULL },
+  { "glColor3f",      "0ff",      (UCHAR*)glColor3f,      0,    0,    NULL },
+  { "glRotatef",      "0ffff",    (UCHAR*)glRotatef,      0,    0,    NULL },
+  { "glPushMatrix",   "00",       (UCHAR*)glPushMatrix,   0,    0,    NULL },
+  { "glPopMatrix",    "00",       (UCHAR*)glPopMatrix,    0,    0,    NULL },
+  { "glClearColor",   "0ffff",    (UCHAR*)glClearColor,   0,    0,    NULL },
+  { "glClear",        "0i",       (UCHAR*)glClear,        0,    0,    NULL },
 #endif
-  { NULL,           NULL,       NULL,                   0,    0,    NULL }
+  { NULL,             NULL,       NULL,                   0,    0,    NULL }
 };
 
 void func_null (void) { printf ("FUNCTION: func_null\n"); }
@@ -157,6 +179,7 @@ ASM * core_Init (unsigned int size) {
         CreateVarInt ("object", 0);
         CreateVarInt ("mx", 0); // mouse_x
         CreateVarInt ("my", 0); // mouse_y
+        CreateVarInt ("mb", 0); // mouse_button
         //
         CreateVarInt ("MOUSEMOVE", 512); // constant
         #endif // ! USE_APPLICATION
@@ -802,7 +825,7 @@ static void word_break (LEXER *l, ASM *a) {
     }
     else Erro ("%s: %d: word 'break' need a loop", l->name, l->line);
 }
-
+/*
 //
 // define TOK_ID    100
 //
@@ -814,6 +837,7 @@ static void word_DEFINE (LEXER *l, ASM *a) {
         core_DefineAdd(name,atoi(l->token));
     } else Erro("%s: %d: word (define) suport only number\n", l->name, l->line);
 }
+*/
 
 static void word_IFDEF (LEXER *l, ASM *a) {
     char text[100];
@@ -1046,6 +1070,10 @@ write_asm(".globl %s\n%s:", name, name);
 
     int len = asm_get_len (asm_function);
 
+#ifdef USE_ASM
+write_asm("// %s | len: %d", name, len);
+#endif
+
 #ifdef USE_JIT
 
     // new function:
@@ -1159,7 +1187,7 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
         while (lex(l)) {
 
             if (l->tok==TOK_ID || l->tok==TOK_NUMBER || l->tok==TOK_STRING || l->tok=='(') {
-
+            
                 if (l->tok==TOK_STRING)
                     is_string = 1;
 
@@ -1230,8 +1258,13 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 
                     // send the result of (float expression) to: 4(%esp)
                     //
-                    // dd 5c 24   04          	fstpl  0x4(%esp)
-                    g4 (a,0xdd,0x5c,0x24, (char)pos); // pass argument
+                    // dd 5c 24   04    fstpl  0x4(%esp)
+                    // d9 5c 24   04    fstps  0x4(%esp)
+                    //
+                    if (is_string)
+                        g4 (a,0xdd,0x5c,0x24, (char)pos); // fstpl
+                    else
+                        g4 (a,0xd9,0x5c,0x24, (char)pos); // fstps
                     if (is_string) size = 8;
                     pos += size;
                 }
@@ -1423,6 +1456,7 @@ static void atom (LEXER *l, ASM *a) { // expres
 
         if (var_type==TYPE_FLOAT) {
             emit_push_float (a, atof(l->token));
+//printf ("NUMBER FLOAT(%f)\n", atof(l->token));
         } else {
             emit_push_int (a, atoi(l->token));
         }
@@ -1712,6 +1746,15 @@ void write_asm (char *format, ...) {
     }
 }
 
+int fps, old, t;
+void time_fps (void) {
+    fps++;
+    t = time (NULL);
+    if (old != t) {
+        old = t;
+        printf ("FPS: %d\n", fps); fps = 0;
+    }
+}
 
 void Erro (char *format, ...) {
     char msg[1024] = { 0 };

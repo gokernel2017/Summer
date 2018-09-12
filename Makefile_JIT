@@ -2,14 +2,14 @@
 
 CPP  = g++
 CC   = gcc
-OBJ  = obj/core.o obj/lex.o obj/asm.o obj/application.o obj/summer.o
+OBJ  = obj/core.o obj/lex.o obj/asm.o obj/ga.o obj/summer.o
 BIN  = summer
 CFLAGS = -O2 -Wall -DUSE_JIT
 ifeq ($(OS),Windows_NT)
 	LIBS =
   RES  = obj/resource.o
 else
-  LIBS = -ldl
+  LIBS = -ldl -lX11
   RES =
 endif
 RM = rm -f
@@ -33,8 +33,8 @@ obj/lex.o: src/lex.c
 obj/asm.o: src/asm.c
 	$(CC) $(CFLAGS) -c src/asm.c -o obj/asm.o
 
-obj/application.o: src/application.c
-	$(CC) $(CFLAGS) -c src/application.c -o obj/application.o
+obj/ga.o: src/ga.c
+	$(CC) $(CFLAGS) -c src/ga.c -o obj/ga.o
 
 obj/summer.o: src/summer.c
 	$(CC) $(CFLAGS) -c src/summer.c -o obj/summer.o

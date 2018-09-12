@@ -1,11 +1,11 @@
 {
-  "name": "Application API",
+  "name": "Graphic Application API",
   "main": "index.html",
   "window": {
     "toolbar": false,
     "resizable": false,
-    "width": 800,
-    "height": 600
+    "width": 815,
+    "height": 615
   },
   "scripts": {
     "start": "nw ."

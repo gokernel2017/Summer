@@ -11,6 +11,7 @@
 var a = 0;
 
   console.log ("\nPlease Wait Long Loop: 0 ... 100 000 000\n");
+//  console.log (Date.now());
 
   for (;;) {
 
@@ -21,4 +22,5 @@ var a = 0;
       }
   }
 
+//  console.log (Date.now());
   console.log ("\nValue a: %d\n", a);

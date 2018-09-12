@@ -1,21 +1,13 @@
 //-------------------------------------------------------------------
 //
-// GA: Graphic Application API.
+// Graphic Application API:
 //
 //   A portable graphic API ( C & WEB ) ... OpenGL, DirectX, HTML_Canvas.
 //
-// Simple Example:
+// FILE:
+//   gapplication.css
+//
+// START DATE: 12/09//2017 - 07:25
 //
 //-------------------------------------------------------------------
 //
-var count=0;
-
-function idle () {
-    console.log("Idle Count: %d", count);
-    count++;
-}
-
-if (gaInit(800,600,idle)) {
-
-    gaRun ();
-}

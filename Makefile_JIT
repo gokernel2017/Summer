@@ -6,7 +6,7 @@ OBJ  = obj/core.o obj/lex.o obj/asm.o obj/ga.o obj/summer.o
 BIN  = summer
 CFLAGS = -O2 -Wall -DUSE_JIT
 ifeq ($(OS),Windows_NT)
-	LIBS =
+	LIBS = -lgdi32 -lopengl32 -lwinmm
   RES  = obj/resource.o
 else
   LIBS = -ldl -lX11

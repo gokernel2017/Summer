@@ -1,13 +1,14 @@
-//-------------------------------------------------------------------
-//
-// Graphic Application API:
-//
-//   A portable graphic API ( C & WEB ) ... OpenGL, DirectX, HTML_Canvas.
-//
-// FILE:
-//   gapplication.css
-//
-// START DATE: 12/09//2017 - 07:25
-//
-//-------------------------------------------------------------------
-//
+
+widget { /* window widget */
+  position: absolute;
+  overflow: hidden;
+  top: 100px;
+  left: 100px;
+  width: 100px;
+  height: 100px;
+  /* opacity: 0.7;  Transparencia */
+  background: rgb(254,238,204);
+  border: 1px solid #acacac;
+  border-radius: 6px;
+}
+

@@ -316,6 +316,9 @@ LIBIMPORT void    AppRender         (void);
 //-------------------------------------------------------------------
 LIBIMPORT int     gaInit            (int w, int h, void(*idle)(void));
 LIBIMPORT void    gaRun             (void);
+LIBIMPORT void    gaBeginScene      (void);
+LIBIMPORT void    gaEndScene        (void);
+LIBIMPORT int     gaFPS             (void);
 //-------------------------------------------------------------------
 #endif // USE_GA
 LIBIMPORT void    Run               (ASM *a); // back-end in file: asm.c | vm.c

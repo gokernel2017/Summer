@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------
 //
-// GA: Graphic Application API.
+// GA: Graphic API.
 //
 //   A portable graphic API ( C & WEB ) ... OpenGL, DirectX, HTML_Canvas.
 //
@@ -8,11 +8,14 @@
 //
 //-------------------------------------------------------------------
 //
-var count=0;
 
 function idle () {
-    console.log("Idle Count: %d", count);
-    count++;
+
+    gaBeginScene();
+
+    gaFPS(); // display FPS count
+
+    gaEndScene();
 }
 
 if (gaInit(800,600,idle)) {

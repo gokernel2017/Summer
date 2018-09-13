@@ -125,6 +125,9 @@ static TFunc stdlib[]={
 #ifdef USE_GA // Graphic Application API:
   { "gaInit",       "iiip",     (UCHAR*)gaInit,         0,    0,    NULL },
   { "gaRun",        "00",       (UCHAR*)gaRun,          0,    0,    NULL },
+  { "gaBeginScene", "00",       (UCHAR*)gaBeginScene,   0,    0,    NULL },
+  { "gaEndScene",   "00",       (UCHAR*)gaEndScene,     0,    0,    NULL },
+  { "gaFPS",        "i0",       (UCHAR*)gaFPS,          0,    0,    NULL },
 #endif
   //
   // Application API ... Only WIN32 ...:
@@ -1614,7 +1617,7 @@ int Parse (LEXER *l, ASM *a, char *text, char *name) {
     }
     asm_end (a);
     if (l->level) { // { ... }
-        Erro ("ERRO: LEXER->level { ... }: %d\n", l->level);
+        Erro ("\nERRO: LEXER->level { ... }: %d\n", l->level);
     }
     return erro;
 }

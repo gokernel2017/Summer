@@ -11,7 +11,15 @@
 //
 //-------------------------------------------------------------------
 //
-var screen; // <<<<<<<<<<  The Canvas  >>>>>>>>>>
+var _CANVAS_;   // <<<<<<<<<<  The Real Canvas  >>>>>>>>>>
+var _CONTEXT_;  // The context to real canvas
+//
+var canvas;   // Off Screen Canvas
+var bmp;      // The context of Off Screen Canvas | <<<<<<<<<<  DRAW IN THIS  >>>>>>>>>>
+
+var _fps_ = 0;
+var _value_fps_ = 0;
+var _count_ = 0;
 
 function main_idle () { }
 
@@ -22,19 +30,52 @@ function gaInit (w,h,idle) {
     return 0;
   }
 
-  screen=document.createElement("canvas");
-  screen.style.width = w+'px';
-  screen.style.height = h+'px';
-  screen.style.border = "2px solid orange"; 
-  document.body.appendChild(screen); // add here
+  _CANVAS_ = document.createElement("canvas"); // append this
+  canvas = document.createElement("canvas"); // ... not append ... off screen
+
+	_CANVAS_.width = w;
+	_CANVAS_.height = h;
+  canvas.width = w;
+	canvas.height = h;
+  _CANVAS_.style.border = "2px solid orange"; 
+
+  _CONTEXT_ = _CANVAS_.getContext ("2d");
+  bmp       = canvas.getContext ("2d"); // draw in this
+
+  bmp.font = "15px sans-serif";
+  bmp.fillStyle = "orange";
+
+  document.body.appendChild (_CANVAS_); // add here
 
   if (idle)
     main_idle = idle;
 
+  setInterval(function () { // setInterval
+    _value_fps_ = _fps_;
+    _fps_ = 0;
+    _count_++;
+  }, 1000);
+
   return 1;
-}
+
+}// gaInit()
 
 function gaRun () {
   main_idle ();
+  _fps_++;
   requestAnimationFrame (gaRun);
 }
+
+function gaBeginScene(){
+  bmp.fillStyle = "#000000"; // black
+  bmp.fillRect(0,0,canvas.width,canvas.height);
+}
+function gaEndScene(){
+  _CONTEXT_.drawImage (canvas, 0, 0);
+}
+
+function gaFPS () {
+  bmp.fillStyle = "orange";
+  bmp.fillText ("FPS: "+_value_fps_,7,18);
+}
+

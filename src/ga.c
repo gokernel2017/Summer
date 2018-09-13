@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------
 //
-// Graphic Application API:
+// Graphic API:
 //
 //   A portable graphic API ( C & WEB ) ... OpenGL, DirectX, HTML_Canvas.
 //
@@ -12,6 +12,7 @@
 //-------------------------------------------------------------------
 //
 #include "summer.h"
+#include <time.h>
 
 // Implementation: Windows & Linux
 
@@ -53,11 +54,17 @@ XEvent                  xev;
 
 #endif
 
+
 #ifdef WIN32
+//-------------------------------------------------------------------
+#include <GL/gl.h>
+
 static const char ClassName[] = "Graphic_Application_Class";
 static int    WindowCount;
 static int    running, count;
 static HWND   win;
+static HDC    hDC;
+static HGLRC  hRC;
 
 LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
@@ -90,7 +97,64 @@ LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
 }// WindowProc()
 
-#endif
+void EnableOpenGL (HWND hWnd, HDC *hDC, HGLRC *hRC) {
+    PIXELFORMATDESCRIPTOR pfd;
+    int iFormat;
+
+    /* get the device context (DC) */
+    *hDC = GetDC (hWnd);
+
+    /* set the pixel format for the DC */
+    ZeroMemory (&pfd, sizeof (pfd));
+    pfd.nSize = sizeof (pfd);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | 
+      PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = 24;
+    pfd.cDepthBits = 16;
+    pfd.iLayerType = PFD_MAIN_PLANE;
+    iFormat = ChoosePixelFormat (*hDC, &pfd);
+    SetPixelFormat (*hDC, iFormat, &pfd);
+
+    /* create and enable the render context (RC) */
+    *hRC = wglCreateContext( *hDC );
+    wglMakeCurrent(*hDC, *hRC);
+}
+
+//-------------------------------------------------------------------
+#endif // ! WIN32
+
+//-------------------------------------------------------------------
+//------------------------  ALL PLATFORMS  --------------------------
+//-------------------------------------------------------------------
+//
+int gaFPS (void) {
+    static int fps=0, t1=0, t2=0;
+    fps++;
+    t1 = time(NULL);
+    if (t1 != t2) {
+        t2 = t1;
+//        printf ("FPS: %d TIME: %d\n", fps, t1);
+        printf ("FPS: %d\n", fps);
+        fps=0;
+        return 1;
+    }
+    return 0;
+}
+
+void gaBeginScene (void) {
+    #ifdef WIN32
+    glClearColor (0.0, 0.0, 0.0, 0.0);
+    glClear (GL_COLOR_BUFFER_BIT);
+    //glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // GL_COLOR_BUFFER_BIT);
+    #endif
+}
+void gaEndScene (void) {
+    #ifdef WIN32
+    SwapBuffers (hDC);
+    #endif
+}
 
 int gaInit (int w, int h, void(*call)(void)) {
     static int init = 0;
@@ -136,7 +200,11 @@ int gaInit (int w, int h, void(*call)(void)) {
         NULL                      // No Window Creation data
         );
 
+    EnableOpenGL (win, &hDC, &hRC);
+
     ShowWindow (win, 1);
+
+    timeBeginPeriod (1);
 
     #endif // ! WIN32
 

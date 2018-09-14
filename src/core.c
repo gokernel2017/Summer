@@ -73,6 +73,8 @@ TFunc *lib_get_func (char *name);
 void disasm (char *name);
 void time_fps (void);
 
+extern void testDrawTriangle (void);
+
 //-----------------------------------------------
 //------------------  VARIABLES  ----------------
 //-----------------------------------------------
@@ -107,6 +109,8 @@ static int
     local_count
     ;
 
+float _Fvalue_;
+
 static TFunc stdlib[]={
   //-----------------------------------------------------------------
   // char*        char*   UCHAR*/ASM*             int   int   FUNC*
@@ -127,7 +131,10 @@ static TFunc stdlib[]={
   { "gaRun",        "00",       (UCHAR*)gaRun,          0,    0,    NULL },
   { "gaBeginScene", "00",       (UCHAR*)gaBeginScene,   0,    0,    NULL },
   { "gaEndScene",   "00",       (UCHAR*)gaEndScene,     0,    0,    NULL },
+  { "gaText",       "0sii",     (UCHAR*)gaText,         0,    0,    NULL },
   { "gaFPS",        "i0",       (UCHAR*)gaFPS,          0,    0,    NULL },
+//  { "testDrawTriangle","00",    (UCHAR*)testDrawTriangle,0,   0,    NULL },
+
 #endif
   //
   // Application API ... Only WIN32 ...:

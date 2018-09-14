@@ -318,6 +318,7 @@ LIBIMPORT int     gaInit            (int w, int h, void(*idle)(void));
 LIBIMPORT void    gaRun             (void);
 LIBIMPORT void    gaBeginScene      (void);
 LIBIMPORT void    gaEndScene        (void);
+LIBIMPORT void    gaText            (char *str, int x, int y);
 LIBIMPORT int     gaFPS             (void);
 //-------------------------------------------------------------------
 #endif // USE_GA

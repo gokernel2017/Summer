@@ -42,7 +42,7 @@ function gaInit (w,h,idle) {
   _CONTEXT_ = _CANVAS_.getContext ("2d");
   bmp       = canvas.getContext ("2d"); // draw in this
 
-  bmp.font = "15px sans-serif";
+  bmp.font = "12px sans-serif";
   bmp.fillStyle = "orange";
 
   document.body.appendChild (_CANVAS_); // add here
@@ -59,6 +59,17 @@ function gaInit (w,h,idle) {
   return 1;
 
 }// gaInit()
+
+function testDrawTriangle() {
+  bmp.strokeStyle = 'orange';
+  bmp.stroke();
+
+  bmp.beginPath();
+  bmp.moveTo(200, 100);
+  bmp.lineTo(100, 300);
+  bmp.lineTo(300, 300);
+  bmp.closePath();
+}
 
 function gaRun () {
   main_idle ();
@@ -77,5 +88,7 @@ function gaEndScene(){
 function gaFPS () {
   bmp.fillStyle = "orange";
   bmp.fillText ("FPS: "+_value_fps_,7,18);
+//  if (_fps_==0) return 1;
+//  else          return 0;
 }
 

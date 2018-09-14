@@ -2,14 +2,14 @@
 
 CPP  = g++
 CC   = gcc
-OBJ  = obj/core.o obj/lex.o obj/asm.o obj/ga.o obj/summer.o
+OBJ  = obj/core.o obj/lex.o obj/asm.o obj/ga.o obj/opengl_text.o obj/summer.o
 BIN  = summer
 CFLAGS = -O2 -Wall -DUSE_JIT
 ifeq ($(OS),Windows_NT)
 	LIBS = -lgdi32 -lopengl32 -lwinmm
   RES  = obj/resource.o
 else
-  LIBS = -ldl -lX11
+  LIBS = -ldl -lX11 -lGL
   RES =
 endif
 RM = rm -f
@@ -35,6 +35,9 @@ obj/asm.o: src/asm.c
 
 obj/ga.o: src/ga.c
 	$(CC) $(CFLAGS) -c src/ga.c -o obj/ga.o
+
+obj/opengl_text.o: src/opengl_text.c
+	$(CC) $(CFLAGS) -c src/opengl_text.c -o obj/opengl_text.o
 
 obj/summer.o: src/summer.c
 	$(CC) $(CFLAGS) -c src/summer.c -o obj/summer.o

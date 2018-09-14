@@ -18,7 +18,10 @@
 
 #ifdef USE_GA
 
+extern void openglMakeFont8x13 (void);
+
 void (*idle)(void) = NULL;
+int   width, height;
 
 #ifdef __linux__
 // gcc -o quad quad.c -lX11 -lGL -lGLU
@@ -26,8 +29,8 @@ void (*idle)(void) = NULL;
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 //#include<X11/X.h>
-//#include<GL/gl.h>
-//#include<GL/glx.h>
+#include<GL/gl.h>
+#include<GL/glx.h>
 //#include<GL/glu.h>
 
 static Display  *display;
@@ -39,18 +42,12 @@ static int      screen;
 int             black;
 int             white;
 
-/*
-//Display                 *dpy;
-//Window                  root;
-//GLint                   att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
+GLint                   att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
 XVisualInfo             *vi;
 Colormap                cmap;
 XSetWindowAttributes    swa;
-//Window                  win;
-//GLXContext              glc;
+GLXContext              glc;
 XWindowAttributes       gwa;
-XEvent                  xev;
-*/
 
 #endif
 
@@ -59,12 +56,15 @@ XEvent                  xev;
 //-------------------------------------------------------------------
 #include <GL/gl.h>
 
+
 static const char ClassName[] = "Graphic_Application_Class";
 static int    WindowCount;
 static int    running, count;
 static HWND   win;
 static HDC    hDC;
 static HGLRC  hRC;
+
+void set2D (int w, int h);
 
 LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
@@ -129,14 +129,17 @@ void EnableOpenGL (HWND hWnd, HDC *hDC, HGLRC *hRC) {
 //------------------------  ALL PLATFORMS  --------------------------
 //-------------------------------------------------------------------
 //
+char buf[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
 int gaFPS (void) {
     static int fps=0, t1=0, t2=0;
+//    set2D(width, height);
+    gaText (buf, 10, 37);
     fps++;
     t1 = time(NULL);
     if (t1 != t2) {
         t2 = t1;
-//        printf ("FPS: %d TIME: %d\n", fps, t1);
-        printf ("FPS: %d\n", fps);
+        sprintf (buf, "FPS: %d", fps);
+//        printf ("FPS: %d\n", fps);
         fps=0;
         return 1;
     }
@@ -146,15 +149,74 @@ int gaFPS (void) {
 void gaBeginScene (void) {
     #ifdef WIN32
     glClearColor (0.0, 0.0, 0.0, 0.0);
-    glClear (GL_COLOR_BUFFER_BIT);
-    //glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // GL_COLOR_BUFFER_BIT);
+//    glClear (GL_COLOR_BUFFER_BIT);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // GL_COLOR_BUFFER_BIT);
     #endif
 }
+
 void gaEndScene (void) {
     #ifdef WIN32
     SwapBuffers (hDC);
     #endif
+    #ifdef __linux__
+    glXSwapBuffers(display, win);
+    #endif
 }
+
+void set2D (int w, int h) {
+/*
+  	glDisable (GL_DEPTH_TEST);
+    glDisable (GL_CULL_FACE);
+
+    glViewport(0, 0, w, h);
+
+    // set ortho projection
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    glOrtho(0, (float)w, (float)h, 0, 1.0f, -1.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+*/
+//  Note, there may be other things you need to change,
+//	   depending on how you have your OpenGL state set up.
+//
+	glPushAttrib(GL_ENABLE_BIT);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glEnable(GL_TEXTURE_2D);
+
+	// This allows alpha blending of 2D textures with the scene
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glViewport(0, 0, w, h);
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glOrtho(0.0, (GLdouble)w, (GLdouble)h, 0.0, 0.0, 1.0);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+}
+
+void Leave2DMode () {
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+
+	glPopAttrib();
+}
+
+
 
 int gaInit (int w, int h, void(*call)(void)) {
     static int init = 0;
@@ -214,6 +276,7 @@ int gaInit (int w, int h, void(*call)(void)) {
         printf ("X Display not found\n");
         return 0;
     }
+/*
     screen = DefaultScreen (display);
 
     black = BlackPixel (display, screen);
@@ -226,7 +289,7 @@ int gaInit (int w, int h, void(*call)(void)) {
     //
     win = XCreateSimpleWindow (
       display, DefaultRootWindow(display),
-      100,100,800,600,
+      100,100, w, h,
       1, black, white
       );
     XStoreName (display, win, "Graphic Application API: BETA");
@@ -234,9 +297,40 @@ int gaInit (int w, int h, void(*call)(void)) {
     XSelectInput (display, win, StructureNotifyMask | ExposureMask | KeyPressMask
       			| LeaveWindowMask | EnterWindowMask);
     XMapWindow (display, win);
+//
+*/
+    root = DefaultRootWindow(display);
+
+    vi = glXChooseVisual(display, 0, att);
+
+    if(vi == NULL) {
+        printf("\n\tno appropriate visual found\n\n");
+        exit(0);
+    } else {
+        printf("\n\tvisual %p selected\n", (void *)vi->visualid); /* %p creates hexadecimal output like in glxinfo */
+    }
+
+    cmap = XCreateColormap(display, root, vi->visual, AllocNone);
+
+    swa.colormap = cmap;
+    swa.event_mask = ExposureMask | KeyPressMask;
+ 
+    win = XCreateWindow(display, root, 0, 0, w, h, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+
+    XMapWindow(display, win);
+    XStoreName(display, win, "Graphic Application API: BETA");
+ 
+    glc = glXCreateContext(display, vi, NULL, GL_TRUE);
+    glXMakeCurrent(display, win, glc);
+ 
+//    glEnable(GL_DEPTH_TEST); 
+
 
     #endif // ! __linux__
 
+    openglMakeFont8x13 ();
+    set2D (w, h);
+    width = w; height = h;
     idle = call;
 
     return 1;
@@ -254,7 +348,11 @@ void gaRun (void) {
 
     if (idle) {
         for (;;) {
+
+
             if (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE)) {
+                if(msg.message == WM_QUIT)
+                    break;
                 TranslateMessage (&msg);
                 DispatchMessage (&msg);
             }
@@ -297,5 +395,19 @@ void gaRun (void) {
     #endif // __linux__
 
 }// gaRun ();
+
+/*
+void testDrawTriangle (void) {
+    Leave2DMode();
+
+    glBegin(GL_LINE_LOOP);// GL_TRIANGLES);
+
+    glVertex2f (0.0, 1.0);
+    glVertex2f (0.87, -0.5);
+    glVertex2f (-0.87, -0.5);
+
+    glEnd();
+}
+*/
   
 #endif // ! USE_GA

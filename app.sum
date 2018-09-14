@@ -16,9 +16,11 @@ function idle () {
     gaFPS(); // display FPS count
 
     gaEndScene();
+
 }
 
 if (gaInit(800,600,idle)) {
 
     gaRun ();
+
 }

@@ -109,7 +109,8 @@ enum {
     TYPE_STRING,
     TYPE_POINTER,
     TYPE_STRUCT,
-    TYPE_PSTRUCT  // struct data *p;
+    TYPE_PSTRUCT,  // struct data *p;
+    TYPE_UNKNOW
 };
 enum {
     FUNC_TYPE_NATIVE_C = 0,
@@ -270,7 +271,8 @@ struct MODULE {
     MODULE  *next;
 };
 typedef struct {
-    char  type[20]; // "int", "float", "data_struct"
+    // type[0] := '-' ... Is EVENT
+    char  type[20]; //  "int", "float", "data_struct"
     char  name[20];
 }ARG;
 struct DEFINE {
@@ -284,10 +286,10 @@ struct TEvent {
     int   value;  // mouse_button, key
     int   x, y;   // position, size
 };
-struct EVENT {
-//    OBJECT  target;
-    int     clientX;
-    int     clientY;
+struct EVENT { // Graphic Application API: Event
+    void    *target;  // OBJECT or Pointer to "object"
+    int     offsetX;  // mouse x
+    int     offsetY;  // mouse y
 };
 
 // global:
@@ -320,6 +322,8 @@ LIBIMPORT void    gaBeginScene      (void);
 LIBIMPORT void    gaEndScene        (void);
 LIBIMPORT void    gaText            (char *str, int x, int y);
 LIBIMPORT int     gaFPS             (void);
+LIBIMPORT void    gaSetCall         (void(*call)(EVENT *evevt), char *type);
+LIBIMPORT void    gaDisplayMouse    (int x, int y);
 //-------------------------------------------------------------------
 #endif // USE_GA
 LIBIMPORT void    Run               (ASM *a); // back-end in file: asm.c | vm.c

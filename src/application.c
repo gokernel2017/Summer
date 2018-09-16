@@ -326,7 +326,6 @@ void AppSetCall (OBJECT o, void(*call)(TEvent *evevt), char *type) {
     if (o && call && type) {
         DATA_OBJECT *data = (DATA_OBJECT*)GetWindowLongPtr (o, GWLP_USERDATA);
         if (data) {
-            if (!strcmp(type, "onclick"))     data->onclick = call;
             if (!strcmp(type, "onmousemove")) data->onmousemove = call;
             if (!strcmp(type, "onmousedown")) data->onmousedown = call;
             if (!strcmp(type, "onmouseup")) data->onmouseup = call;

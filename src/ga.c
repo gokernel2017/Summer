@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------
 //
-// Graphic API:
+// GA: Graphic Application API:
 //
 //   A portable graphic API ( C & WEB ) ... OpenGL, DirectX, HTML_Canvas.
 //
@@ -17,6 +17,15 @@
 // Implementation: Windows & Linux
 
 #ifdef USE_GA
+
+typedef struct {
+    void  (*onmousemove)  (EVENT *event);
+    void  (*onmousedown)  (EVENT *event);
+    void  (*onmouseup)    (EVENT *event);
+}DATA;
+
+static EVENT  *_event_ = NULL;
+static DATA   *_data_ = NULL;
 
 extern void openglMakeFont8x13 (void);
 
@@ -81,6 +90,15 @@ LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         }
         break;
 
+    case WM_MOUSEMOVE:
+        {
+        if (_data_ && _data_->onmousemove) {
+            _event_->offsetX = LOWORD(lParam);
+            _event_->offsetY = HIWORD(lParam);
+            _data_->onmousemove(_event_);
+        }
+        } break;
+
     case WM_COMMAND:
         // not a menu
         if (lParam != 0) break;
@@ -129,8 +147,8 @@ void EnableOpenGL (HWND hWnd, HDC *hDC, HGLRC *hRC) {
 //------------------------  ALL PLATFORMS  --------------------------
 //-------------------------------------------------------------------
 //
-char buf[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
 int gaFPS (void) {
+    char buf[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
     static int fps=0, t1=0, t2=0;
 //    set2D(width, height);
     gaText (buf, 10, 37);
@@ -144,6 +162,12 @@ int gaFPS (void) {
         return 1;
     }
     return 0;
+}
+
+void gaDisplayMouse (int x, int y) {
+    char buf[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
+    sprintf (buf, "X: %d Y: %d", x, y);
+    gaText (buf, 100, 100);
 }
 
 void gaBeginScene (void) {
@@ -217,12 +241,35 @@ void Leave2DMode () {
 }
 
 
+void gaSetCall (void(*call)(EVENT *evevt), char *type) {
+    if (call && _data_ && type) {
+        if (!strcmp(type, "onmousemove")) _data_->onmousemove = call;
+        if (!strcmp(type, "onmousedown")) _data_->onmousedown = call;
+        if (!strcmp(type, "onmouseup")) _data_->onmouseup = call;
+    }
+}
 
 int gaInit (int w, int h, void(*call)(void)) {
     static int init = 0;
 
     if (init) return 0;
     init = 1;
+
+    //
+    // TYPE JAVA SCRIPT EVENT:
+    //
+    if ((_event_ = (EVENT*)malloc(sizeof(EVENT))) == NULL)
+        return 0;
+
+    _event_->target = NULL;
+    _event_->offsetX =  _event_->offsetY = 0;
+
+    _data_ = (DATA*) malloc (sizeof(DATA));
+    if (_data_) {
+        _data_->onmousemove = NULL;
+        _data_->onmousedown = NULL;
+        _data_->onmouseup   = NULL;
+    }
 
     #ifdef WIN32
     WNDCLASSEX wc;
@@ -250,12 +297,15 @@ int gaInit (int w, int h, void(*call)(void)) {
         return 0;
     }
 
+    int x = (GetSystemMetrics(SM_CXSCREEN) - w) / 2;
+    int y = ((GetSystemMetrics(SM_CYSCREEN) - h) / 2) - (GetSystemMetrics(SM_CYCAPTION)/2);
+
     win = CreateWindowEx (
         0,                        // Extended possibilites for variation
         ClassName,                // Classname
         "Graphic Application API: BETA",
         WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX,
-        100, 100, w, h,
+        x, y, w, h,
         HWND_DESKTOP,             // The window is a child-window to desktop
         NULL,                     // No menu
         GetModuleHandle (NULL),   // Program Instance handler
@@ -313,7 +363,7 @@ int gaInit (int w, int h, void(*call)(void)) {
     cmap = XCreateColormap(display, root, vi->visual, AllocNone);
 
     swa.colormap = cmap;
-    swa.event_mask = ExposureMask | KeyPressMask;
+    swa.event_mask = ExposureMask | KeyPressMask | PointerMotionMask;
  
     win = XCreateWindow(display, root, 0, 0, w, h, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
 
@@ -384,6 +434,15 @@ void gaRun (void) {
                 if (keysym == XK_F12)
                     quit = 1;
             }
+            else
+            if (event.type == MotionNotify) {
+                if (_data_ && _data_->onmousemove) {
+                    _event_->offsetX = event.xmotion.x;
+                    _event_->offsetY = event.xmotion.y;
+                    _data_->onmousemove(_event_);
+                }
+            }
+
         }// while (XPending(display))
 
         if (idle) idle ();
@@ -396,8 +455,14 @@ void gaRun (void) {
 
 }// gaRun ();
 
-/*
 void testDrawTriangle (void) {
+    int i;
+glColor3f (0.0, 1.0, 0.0);
+    glBegin(GL_POINTS);
+    for (i = 0; i < 10; i++) {
+        glVertex2i(10+5*i,110);
+    }
+/*
     Leave2DMode();
 
     glBegin(GL_LINE_LOOP);// GL_TRIANGLES);
@@ -407,7 +472,7 @@ void testDrawTriangle (void) {
     glVertex2f (-0.87, -0.5);
 
     glEnd();
-}
 */
+}
   
 #endif // ! USE_GA

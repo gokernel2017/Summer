@@ -45,6 +45,25 @@ function gaInit (w,h,idle) {
   bmp.font = "12px sans-serif";
   bmp.fillStyle = "orange";
 
+/*
+	canvas.canvas.addEventListener('mousemove',_mousemove);
+/// mouse move event handler
+function _mousemove(e)
+{
+	mouse_x = e.offsetX;
+	mouse_y = e.offsetY;
+	e.preventDefault();
+}
+
+    o.addEventListener('mousemove', function(e) {
+      object = e.target;
+      mx = e.clientX-this.offsetLeft;
+      my = e.clientY-this.offsetTop;
+      e.preventDefault();
+    }, true);
+*/
+
+
   document.body.appendChild (_CANVAS_); // add here
 
   if (idle)
@@ -92,3 +111,10 @@ function gaFPS () {
 //  else          return 0;
 }
 
+function gaDisplayMouse (x,y) {
+  bmp.fillStyle = "orange";
+  bmp.fillText ("X: "+x+" Y: "+y,100,100);
+}
+function gaSetCall (call,type) {
+  if (type=="onmousemove") _CANVAS_.onmousemove = call;
+}

@@ -133,8 +133,10 @@ static TFunc stdlib[]={
   { "gaEndScene",   "00",       (UCHAR*)gaEndScene,     0,    0,    NULL },
   { "gaText",       "0sii",     (UCHAR*)gaText,         0,    0,    NULL },
   { "gaFPS",        "i0",       (UCHAR*)gaFPS,          0,    0,    NULL },
-//  { "testDrawTriangle","00",    (UCHAR*)testDrawTriangle,0,   0,    NULL },
+  { "gaSetCall",    "0ps",      (UCHAR*)gaSetCall,      0,    0,    NULL },
+  { "gaDisplayMouse","0ii",     (UCHAR*)gaDisplayMouse, 0,    0,    NULL },
 
+//  { "testDrawTriangle","00",    (UCHAR*)testDrawTriangle,0,   0,    NULL },
 #endif
   //
   // Application API ... Only WIN32 ...:
@@ -309,6 +311,12 @@ TFunc *FuncFind (char *name) {
         func = func->next;
     }
     return NULL;
+}
+int ArgumentFind (char *name) {
+    int i;
+    for(i=0;i<argument_count;i++)
+        if (!strcmp(argument[i].name, name)) return i;
+    return -1;
 }
 
 TFunc *ModuleFind (char *LibName, char *FuncName) {
@@ -1046,7 +1054,7 @@ static void word_function (LEXER *l, ASM *a) {
         }
 */
         else if (l->tok==TOK_ID) {
-            argument[argument_count].type[0] = TYPE_INT;
+            argument[argument_count].type[0] = TYPE_UNKNOW;
             strcpy (argument[argument_count].name, l->token);
             strcat (proto, "i");
             argument_count++;
@@ -1435,7 +1443,61 @@ static void atom (LEXER *l, ASM *a) { // expres
         }
         else
 #endif
-        if ((i=VarFind(l->token))!=-1) {
+        // push a argument function:
+        //
+        if (is_function && (i=ArgumentFind(l->token))!=-1) {
+            // argument:
+            //
+            // e.offsetX;
+            //
+            if (argument[i].type[0]==TYPE_UNKNOW && see(l)=='.') {
+                if (lex(l) && lex(l)) { // .offsetX;
+                    if (!strcmp(l->token, "offsetX")) {
+printf ("push argument (%s.%s)\n", argument[i].name, l->token);
+                        #if defined(__x86_64__)
+// 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
+// 48 8b 45 f8          	mov    -0x8(%rbp),%rax
+// 8b 40 08             	mov    0x8(%rax),%eax
+                        g4(a,0x48,0x89,0x7d,0xf8);
+                        g4(a,0x48,0x8b,0x45,0xf8);
+                        g3(a,0x8b,0x40,8);
+                        emit_push_eax(a);
+                        #else
+                        // 8b 45 08             	mov    8(%ebp),%eax
+                        // 8b 40 04             	mov    4(%eax),%eax
+                        g3(a,0x8b,0x45,8);
+                        g3(a,0x8b,0x40,4);
+                        emit_push_eax(a);
+                        #endif
+                    }
+                    else
+                    if (!strcmp(l->token, "offsetY")) {
+printf ("push argument (%s.%s)\n", argument[i].name, l->token);
+                        #if defined(__x86_64__)
+// 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
+//48 8b 45 f8          	mov    -0x8(%rbp),%rax
+// 8b 40 0c             	mov    0xc(%rax),%eax
+                        g4(a,0x48,0x89,0x7d,0xf8);
+                        g4(a,0x48,0x8b,0x45,0xf8);
+                        g3(a,0x8b,0x40,12);
+                        emit_push_eax(a);
+                        #else
+                        // 8b 45 08             	mov    8(%ebp),%eax
+                        // 8b 40 04             	mov    8(%eax),%eax
+                        g3(a,0x8b,0x45,8);
+                        g3(a,0x8b,0x40,8);
+                        emit_push_eax(a);
+                        #endif
+                    }
+                    else Erro("%s %d | ERRO(%s.%s) - Only implemented( .offsetX, .offsetY )", l->name, l->line, argument[i].name, l->token);
+                }
+            }
+            else {
+//            emit_push_arg (a, i);
+                lex(l);
+            }
+        }
+        else if ((i=VarFind(l->token))!=-1) {
             var_type = Gvar[i].type;
 
             #ifdef USE_JIT

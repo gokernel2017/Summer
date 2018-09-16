@@ -1,25 +1,55 @@
 //-------------------------------------------------------------------
 //
-// GA: Graphic API.
+// GA: Graphic Application API.
 //
 //   A portable graphic API ( C & WEB ) ... OpenGL, DirectX, HTML_Canvas.
 //
-// Simple Example:
+// Usage SUMMER:
+//   summer app.sum
+//
+// Usage WEB:
+//   index.html
+// 
+// Usage NODE WEBKIT ( see package.json ):
+//   nw .
+// 
+// BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
 //
+var mx = 0;
+var my = 0;
+
+//-----------------------------------------------
+// NOTE:
+//   Implemented Function Argument (EVENT) only:
+//
+//   .offsetX;
+//   .offsetY;
+//
+// Please Wait ...
+//
+//-----------------------------------------------
+//
+function onMouseMove (e) {
+    mx = e.offsetX;
+    my = e.offsetY;
+}
 
 function idle () {
 
-    gaBeginScene();
+    gaBeginScene();  //<<<<<<<<<<  DRAW START  >>>>>>>>>>
 
     gaFPS(); // display FPS count
 
-    gaEndScene();
+    gaDisplayMouse (mx, my);
 
+    gaEndScene(); //<<<<<<<<<<  DRAW END  >>>>>>>>>>
 }
 
 if (gaInit(800,600,idle)) {
+
+    gaSetCall (onMouseMove, "onmousemove");
 
     gaRun ();
 

@@ -1,6 +1,0 @@
-
-#define HELLO   100
-#define TOK_ID  12345
-
-  console.log("define TOK_ID = %d\n", TOK_ID);
-

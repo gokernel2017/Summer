@@ -147,16 +147,16 @@ void EnableOpenGL (HWND hWnd, HDC *hDC, HGLRC *hRC) {
 //------------------------  ALL PLATFORMS  --------------------------
 //-------------------------------------------------------------------
 //
+char buf1[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
 int gaFPS (void) {
-    char buf[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
     static int fps=0, t1=0, t2=0;
 //    set2D(width, height);
-    gaText (buf, 10, 37);
+    gaText (buf1, 10, 37);
     fps++;
     t1 = time(NULL);
     if (t1 != t2) {
         t2 = t1;
-        sprintf (buf, "FPS: %d", fps);
+        sprintf (buf1, "FPS: %d", fps);
 //        printf ("FPS: %d\n", fps);
         fps=0;
         return 1;
@@ -164,10 +164,10 @@ int gaFPS (void) {
     return 0;
 }
 
+char buf2[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
 void gaDisplayMouse (int x, int y) {
-    char buf[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
-    sprintf (buf, "X: %d Y: %d", x, y);
-    gaText (buf, 100, 100);
+    sprintf (buf2, "X: %d Y: %d", x, y);
+    gaText (buf2, 100, 100);
 }
 
 void gaBeginScene (void) {

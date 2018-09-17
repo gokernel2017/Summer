@@ -35,9 +35,6 @@
 
     #define USE_GA    // Graphic Application API ( C & WEB ):
 
-//    #define USE_APPLICATION
-    typedef HWND OBJECT;
-
 #endif
 #ifdef __linux__
     #include <unistd.h>
@@ -45,10 +42,6 @@
     #include <dlfcn.h>    // to: dlopen(), dlsym(), ... in file: cs_library.c
 
     #define USE_GA    // Graphic Application API ( C & WEB ):
-
-    #ifdef USE_APPLICATION
-    typedef Window OBJECT;
-    #endif
 
 #endif
 
@@ -452,7 +445,6 @@ LIBIMPORT void    emit_push_int     (ASM *a, int value);
 LIBIMPORT void    emit_push_float   (ASM *a, float value);
 LIBIMPORT void    emit_push_eax     (ASM *a);
 LIBIMPORT void    emit_pop_eax      (ASM *a);
-
 
 #ifdef __cplusplus
 }

@@ -6,4 +6,7 @@
 //
 #define USE_ASM
 
+#define USE_SDL
+//#define USE_DIRECTX
+
 #endif

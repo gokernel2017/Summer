@@ -48,8 +48,10 @@
 #include "lex.h"
 #include "config.h"
 
-#if defined(__x86_64__)
-//    #error "ERRO: ##########  This example suport only 32 BITS  ##########"
+#if defined(USE_SDL) && defined(USE_DIRECTX)
+    #error "--------------------------------------------------"
+    #error "ERRO: Please use only one: USE_SDL or USE_DIRECTX"
+    #error "--------------------------------------------------"
 #endif
 
 #ifdef __cplusplus
@@ -445,6 +447,10 @@ LIBIMPORT void    emit_push_int     (ASM *a, int value);
 LIBIMPORT void    emit_push_float   (ASM *a, float value);
 LIBIMPORT void    emit_push_eax     (ASM *a);
 LIBIMPORT void    emit_pop_eax      (ASM *a);
+
+#ifdef USE_DIRECTX
+LIBIMPORT int   DirectX_CreateDevice (HWND hwnd, int FullScreen);
+#endif
 
 #ifdef __cplusplus
 }

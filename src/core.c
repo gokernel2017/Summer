@@ -975,7 +975,7 @@ static void word_import (LEXER *l, ASM *a) {
                     func->proto = strdup (proto);
                     func->type = FUNC_TYPE_NATIVE_C;
                     func->len = 0;
-                    func->code = fp;
+                    func->code = (UCHAR*)fp;
 
                     // add function on top
                     func->next = p->func;

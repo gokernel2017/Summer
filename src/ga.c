@@ -17,11 +17,33 @@
 // Implementation: Windows & Linux
 
 #ifdef USE_GA
+
+typedef struct {
+    void  (*onmousemove)  (EVENT *event);
+    void  (*onmousedown)  (EVENT *event);
+    void  (*onmouseup)    (EVENT *event);
+}DATA;
+
+static EVENT  *_event_ = NULL;
+static DATA   *_data_ = NULL;
+
+void basic() {}
+void (*idle)(void) = basic;
+int   width, height;
+
+#ifdef USE_SDL
+//
+//-------------------------------------------------------------------
+//
 #include <SDL/SDL.h>
 
 #define ASBITMAP      SDL_Surface
 #define CHAR_SPACE    32
 #define COLOR_ORANGE  64515
+
+SDL_Surface *screen;
+
+void base_text (ASBITMAP *bmp, char *text, short x, short y, int color);
 
 static const unsigned char fixed_font[14][764] = {
   "                                   xx                                                                                                                                                                                                                                                                                                                                                                                                                                                                              xx             xxx                                                                                                                                                                                                                                                      ",
@@ -40,20 +62,16 @@ static const unsigned char fixed_font[14][764] = {
   "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          xxxx            xxxx          xxxxxxxx                                                         xxxxx                   xxxx                                            xx          xx                                                         xxxx                       xx                      ",
 };
 
-typedef struct {
-    void  (*onmousemove)  (EVENT *event);
-    void  (*onmousedown)  (EVENT *event);
-    void  (*onmouseup)    (EVENT *event);
-}DATA;
-
-SDL_Surface *screen;
-static EVENT  *_event_ = NULL;
-static DATA   *_data_ = NULL;
-
-void basic() {}
-void (*idle)(void) = basic;
-int   width, height;
-
+void gaBeginScene (void) {
+    SDL_Rect r = { 0,0, width, height };
+    SDL_FillRect (screen, &r, 0);
+}
+void gaEndScene (void) {
+    SDL_UpdateRect (screen,0,0,width, height);
+}
+void gaText (char *text, int x, int y) {
+    base_text (screen, text, x, y, COLOR_ORANGE);
+}
 
 void putpixel (
     ASBITMAP *bmp,
@@ -89,7 +107,6 @@ void putpixel (
     }
 
 }//END: AS_base_putpixel()
-
 
 void AS_base_draw_char_8x13_16 (
     ASBITMAP *bmp,
@@ -144,14 +161,32 @@ void base_text (ASBITMAP *bmp, char *text, short x, short y, int color) {
         }
     }
 }
-
-
-#ifdef WIN32
+//
 //-------------------------------------------------------------------
+//
+#endif // ! USE_SDL
+
+#ifdef USE_DIRECTX
+//
+//-------------------------------------------------------------------
+//
+static const char ClassName[] = "Graphic_Application_Class";
+static HWND       win;
+static int        WindowCount;
 
 LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
     switch (msg) {
+    case WM_CREATE:
+        WindowCount++;
+        break;
+
+    case WM_DESTROY:
+        WindowCount--;
+        if (!WindowCount) {
+            PostQuitMessage (0); // exit of program if not windows ...
+        }
+        break;
 
     case WM_MOUSEMOVE:
         {
@@ -178,8 +213,10 @@ LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
 }// WindowProc()
 
+//
 //-------------------------------------------------------------------
-#endif // ! WIN32
+//
+#endif // ! USE_DIRECTX
 
 //-------------------------------------------------------------------
 //------------------------  ALL PLATFORMS  --------------------------
@@ -205,20 +242,6 @@ void gaDisplayMouse (int x, int y) {
     sprintf (buf2, "X: %d Y: %d", x, y);
     gaText (buf2, 100, 100);
 }
-
-void gaBeginScene (void) {
-    SDL_Rect r = { 0,0, width, height };
-    SDL_FillRect (screen, &r, 0);
-}
-
-void gaEndScene (void) {
-    SDL_UpdateRect (screen,0,0,width, height);
-}
-
-void gaText (char *text, int x, int y) {
-    base_text (screen, text, x, y, COLOR_ORANGE);
-}
-
 
 void gaSetCall (void(*call)(EVENT *evevt), char *type) {
     if (call && _data_ && type) {
@@ -250,12 +273,70 @@ int gaInit (int w, int h, void(*call)(void)) {
         _data_->onmouseup   = NULL;
     }
 
+    #ifdef USE_DIRECTX
+
+    WNDCLASSEX wc;
+
+    ZeroMemory (&wc, sizeof(wc));
+
+    wc.hInstance = GetModuleHandle(NULL);
+    wc.lpszClassName = ClassName;
+    wc.lpfnWndProc = WindowProc;
+    wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    wc.cbSize = sizeof(WNDCLASSEX);
+
+    // Use default icon and mouse-pointer
+    wc.hIcon = LoadIcon (NULL, IDI_APPLICATION);
+    wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.lpszMenuName = NULL;                 // No menu
+    wc.cbClsExtra = 0;                      // No extra bytes after the window class
+    wc.cbWndExtra = 0;                      // structure or the window instance
+    wc.hbrBackground = (HBRUSH) COLOR_BACKGROUND+1;
+
+    // Register the window class, and if it fails quit the program
+    if (!RegisterClassEx(&wc)) {
+        MessageBox (0, "Class Register Nor Found", "Sorry ERRO:", MB_ICONINFORMATION);
+        return 0;
+    }
+
+    int x = (GetSystemMetrics(SM_CXSCREEN) - w) / 2;
+    int y = ((GetSystemMetrics(SM_CYSCREEN) - h) / 2) - (GetSystemMetrics(SM_CYCAPTION)/2);
+
+    win = CreateWindowEx (
+        0,                        // Extended possibilites for variation
+        ClassName,                // Classname
+        "Graphic Application API: BETA",
+        WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX,
+        x, y, w, h,
+        HWND_DESKTOP,             // The window is a child-window to desktop
+        NULL,                     // No menu
+        GetModuleHandle (NULL),   // Program Instance handler
+        NULL                      // No Window Creation data
+        );
+
+    if (DirectX_CreateDevice(win, 1)) {
+        printf ("OK ... DitectX 8 CreateDevice FOUND\n");
+    } else {
+        return 0;
+    }
+
+    ShowWindow (win, 1);
+
+    timeBeginPeriod (1);
+
+    #endif // ! USE_DIRECTX
+
+    #ifdef USE_SDL
+
     SDL_Init (SDL_INIT_VIDEO);
     #ifdef _WIN32
     SDL_putenv ("SDL_VIDEO_CENTERED=center");
     #endif
     SDL_WM_SetCaption ("HELLO: To Exit Press F12 !", NULL);
     screen = SDL_SetVideoMode (w, h, 16, 0); // color 16
+
+    #endif // ! USE_SDL
 
     width = w; height = h;
     idle = call;
@@ -265,6 +346,32 @@ int gaInit (int w, int h, void(*call)(void)) {
 }// gaInit ();
 
 void gaRun (void) {
+
+    #ifdef USE_DIRECTX
+
+    MSG msg;
+
+    if (idle) {
+        for (;;) {
+            if (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE)) {
+                if(msg.message == WM_QUIT)
+                    break;
+                TranslateMessage (&msg);
+                DispatchMessage (&msg);
+            }
+            idle ();
+        }
+    } else {
+        while (GetMessage (&msg, NULL, 0, 0)) {
+            TranslateMessage (&msg);
+            DispatchMessage  (&msg);
+        }
+    }
+
+    #endif // ! USE_DIRECTX
+
+    #ifdef USE_SDL
+
     SDL_Event e;
     int quit = 0;
 
@@ -295,6 +402,8 @@ void gaRun (void) {
     }// while (!quit)
 
     SDL_Quit();
+
+    #endif // ! USE_SDL
 
 }// gaRun ();
 

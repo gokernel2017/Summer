@@ -810,7 +810,7 @@ void emit_expression_pop_64_int (ASM *a) {
     // argument 1:
     // this is a constans :
     // b8    00 20 40 00       	mov    $0x402000,%eax
-    g(a,0xb8); asm_get_addr(a,"%d\n");
+    g(a,0xb8); asm_get_addr(a,(void*)"%d\n");
     g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
 
     // argument 2:

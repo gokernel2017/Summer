@@ -2,10 +2,12 @@
 
 CPP  = g++
 CC   = gcc
-OBJ  = obj/core.o obj/lex.o obj/asm.o obj/ga.o obj/summer.o
+OBJ  = obj/core.o obj/lex.o obj/asm.o obj/ga.o obj/DirectX.o obj/summer.o
 BIN  = summer
 CFLAGS = -O2 -Wall -DUSE_JIT
 ifeq ($(OS),Windows_NT)
+  # DirectX
+	#LIBS = -ld3dx8d -ld3d8 -lgdi32 -lwinmm
 	LIBS = -lSDL
 #  RES  = obj/resource.o
   RES =
@@ -34,8 +36,8 @@ obj/lex.o: src/lex.c
 obj/asm.o: src/asm.c
 	$(CC) $(CFLAGS) -c src/asm.c -o obj/asm.o
 
-#obj/DirectX.o: src/DirectX.cpp
-#	$(CPP) $(CFLAGS) -c src/DirectX.cpp -o obj/DirectX.o
+obj/DirectX.o: src/DirectX.cpp
+	$(CPP) $(CFLAGS) -c src/DirectX.cpp -o obj/DirectX.o
 
 obj/ga.o: src/ga.c
 	$(CC) $(CFLAGS) -c src/ga.c -o obj/ga.o

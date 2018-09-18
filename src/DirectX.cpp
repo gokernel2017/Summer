@@ -19,7 +19,7 @@
 static LPDIRECT3D D3D = NULL;
 static LPDIRECT3DDEVICE  device = NULL;
 //
-static HFONT hFont;// =  (HFONT)GetStockObject (DEFAULT_GUI_FONT);//SYSTEM_FONT);
+static HFONT hFont;
 static LPD3DXFONT pFont = NULL;
 static HRESULT r=0;
 int color = D3DCOLOR_XRGB(255,130,30);
@@ -54,10 +54,7 @@ int DirectX_CreateDevice (HWND hwnd, int FullScreen) {
         return 0;
 
     // Create a D3D font using D3DX
-//    hFont = CreateFont(14, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
-    hFont = CreateFont(10, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
-                              ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                              ANTIALIASED_QUALITY, FF_DONTCARE, "Fixedsys"/* "Arial"*/ );      
+    hFont =  (HFONT)GetStockObject(SYSTEM_FONT);// DEFAULT_GUI_FONT
 
     // Create the D3DX Font
     r = D3DXCreateFont(device, hFont, &pFont);

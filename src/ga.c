@@ -167,6 +167,7 @@ void base_text (ASBITMAP *bmp, char *text, short x, short y, int color) {
 #endif // ! USE_SDL
 
 #ifdef USE_DIRECTX
+#include <windowsx.h>
 //
 //-------------------------------------------------------------------
 //
@@ -188,14 +189,21 @@ LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         }
         break;
 
+    case WM_LBUTTONDOWN:
+				SetCapture(hwnd);
+        break;
+
+		case WM_LBUTTONUP:
+				ReleaseCapture();
+        break;
+
     case WM_MOUSEMOVE:
-        {
         if (_data_ && _data_->onmousemove) {
-            _event_->offsetX = LOWORD(lParam);
-            _event_->offsetY = HIWORD(lParam);
+            _event_->offsetX = GET_X_LPARAM(lParam); //LOWORD(lParam);
+            _event_->offsetY = GET_Y_LPARAM(lParam); //HIWORD(lParam);
             _data_->onmousemove(_event_);
         }
-        } break;
+        break;
 
     case WM_COMMAND:
         // not a menu
@@ -318,6 +326,7 @@ int gaInit (int w, int h, void(*call)(void)) {
     if (DirectX_CreateDevice(win, 1)) {
         printf ("OK ... DitectX 8 CreateDevice FOUND\n");
     } else {
+        printf ("DitectX 8 CreateDevice FAILED\n");
         return 0;
     }
 

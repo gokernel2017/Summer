@@ -131,12 +131,10 @@ static TFunc stdlib[]={
   { "gaRun",        "00",       (UCHAR*)gaRun,          0,    0,    NULL },
   { "gaBeginScene", "00",       (UCHAR*)gaBeginScene,   0,    0,    NULL },
   { "gaEndScene",   "00",       (UCHAR*)gaEndScene,     0,    0,    NULL },
-  { "gaText",       "0sii",     (UCHAR*)gaText,         0,    0,    NULL },
+  { "gaText",       "0siii",    (UCHAR*)gaText,         0,    0,    NULL },
   { "gaFPS",        "i0",       (UCHAR*)gaFPS,          0,    0,    NULL },
   { "gaSetCall",    "0ps",      (UCHAR*)gaSetCall,      0,    0,    NULL },
   { "gaDisplayMouse","0ii",     (UCHAR*)gaDisplayMouse, 0,    0,    NULL },
-
-//  { "testDrawTriangle","00",    (UCHAR*)testDrawTriangle,0,   0,    NULL },
 #endif
   //
   // Application API ... Only WIN32 ...:
@@ -1457,7 +1455,7 @@ printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                         #if defined(__x86_64__)
 // 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
 // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
-// 8b 40 08             	mov    0x8(%rax),%eax
+// 8b 40 08             	mov    8(%rax),%eax
                         g4(a,0x48,0x89,0x7d,0xf8);
                         g4(a,0x48,0x8b,0x45,0xf8);
                         g3(a,0x8b,0x40,8);
@@ -1469,14 +1467,16 @@ printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                         g3(a,0x8b,0x40,4);
                         emit_push_eax(a);
                         #endif
+
+                        lex(l);
                     }
                     else
                     if (!strcmp(l->token, "offsetY")) {
 printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                         #if defined(__x86_64__)
 // 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
-//48 8b 45 f8          	mov    -0x8(%rbp),%rax
-// 8b 40 0c             	mov    0xc(%rax),%eax
+// 48 8b 45 f8          	mov    -0x8(%rbp),%rax
+// 8b 40 0c             	mov    12(%rax),%eax
                         g4(a,0x48,0x89,0x7d,0xf8);
                         g4(a,0x48,0x8b,0x45,0xf8);
                         g3(a,0x8b,0x40,12);
@@ -1488,6 +1488,29 @@ printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                         g3(a,0x8b,0x40,8);
                         emit_push_eax(a);
                         #endif
+
+                        lex(l);
+                    }
+                    else
+                    if (!strcmp(l->token, "which")) {
+printf ("push argument (%s.%s)\n", argument[i].name, l->token);
+                        #if defined(__x86_64__)
+// 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
+// 48 8b 45 f8          	mov    -0x8(%rbp),%rax
+// 8b 40 0c             	mov    16(%rax),%eax
+                        g4(a,0x48,0x89,0x7d,0xf8);
+                        g4(a,0x48,0x8b,0x45,0xf8);
+                        g3(a,0x8b,0x40,16);
+                        emit_push_eax(a);
+                        #else
+                        // 8b 45 08             	mov    8(%ebp),%eax
+                        // 8b 40 04             	mov    12(%eax),%eax
+                        g3(a,0x8b,0x45,8);
+                        g3(a,0x8b,0x40,12);
+                        emit_push_eax(a);
+                        #endif
+
+                        lex(l);
                     }
                     else Erro("%s %d | ERRO(%s.%s) - Only implemented( .offsetX, .offsetY )", l->name, l->line, argument[i].name, l->token);
                 }

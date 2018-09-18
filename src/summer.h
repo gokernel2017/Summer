@@ -285,6 +285,7 @@ struct EVENT { // Graphic Application API: Event
     void    *target;  // OBJECT or Pointer to "object"
     int     offsetX;  // mouse x
     int     offsetY;  // mouse y
+    int     which;    // mouse button: 1 | 3
 };
 
 // global:
@@ -315,7 +316,7 @@ LIBIMPORT int     gaInit            (int w, int h, void(*idle)(void));
 LIBIMPORT void    gaRun             (void);
 LIBIMPORT void    gaBeginScene      (void);
 LIBIMPORT void    gaEndScene        (void);
-LIBIMPORT void    gaText            (char *str, int x, int y);
+LIBIMPORT void    gaText            (char *str, int x, int y, int color);
 LIBIMPORT int     gaFPS             (void);
 LIBIMPORT void    gaSetCall         (void(*call)(EVENT *evevt), char *type);
 LIBIMPORT void    gaDisplayMouse    (int x, int y);

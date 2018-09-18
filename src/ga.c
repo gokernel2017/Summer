@@ -69,8 +69,8 @@ void gaBeginScene (void) {
 void gaEndScene (void) {
     SDL_UpdateRect (screen,0,0,width, height);
 }
-void gaText (char *text, int x, int y) {
-    base_text (screen, text, x, y, COLOR_ORANGE);
+void gaText (char *text, int x, int y, int color) {
+    base_text (screen, text, x, y, color);
 }
 
 void putpixel (
@@ -167,10 +167,12 @@ void base_text (ASBITMAP *bmp, char *text, short x, short y, int color) {
 #endif // ! USE_SDL
 
 #ifdef USE_DIRECTX
-#include <windowsx.h>
 //
 //-------------------------------------------------------------------
 //
+#include <windowsx.h>
+#define COLOR_ORANGE  -32226
+
 static const char ClassName[] = "Graphic_Application_Class";
 static HWND       win;
 static int        WindowCount;
@@ -190,11 +192,27 @@ LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         break;
 
     case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
 				SetCapture(hwnd);
+        if (_data_ && _data_->onmousedown) {
+            if (msg==WM_LBUTTONDOWN)
+                _event_->which = 1;
+            else
+                _event_->which = 3;
+            _data_->onmousedown(_event_);
+        }
         break;
 
 		case WM_LBUTTONUP:
+		case WM_RBUTTONUP:
 				ReleaseCapture();
+        if (_data_ && _data_->onmouseup) {
+            if (msg==WM_LBUTTONUP)
+                _event_->which = 1;
+            else
+                _event_->which = 3;
+            _data_->onmouseup(_event_);
+        }
         break;
 
     case WM_MOUSEMOVE:
@@ -233,7 +251,7 @@ LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 char buf1[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
 int gaFPS (void) {
     static int fps=0, t1=0, t2=0;
-    gaText (buf1, 10, 10);
+    gaText (buf1, 10, 10,COLOR_ORANGE);
     fps++;
     t1 = time(NULL);
     if (t1 != t2) {
@@ -248,7 +266,7 @@ int gaFPS (void) {
 char buf2[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
 void gaDisplayMouse (int x, int y) {
     sprintf (buf2, "X: %d Y: %d", x, y);
-    gaText (buf2, 100, 100);
+    gaText (buf2, 100, 100, COLOR_ORANGE);
 }
 
 void gaSetCall (void(*call)(EVENT *evevt), char *type) {
@@ -272,7 +290,9 @@ int gaInit (int w, int h, void(*call)(void)) {
         return 0;
 
     _event_->target = NULL;
-    _event_->offsetX =  _event_->offsetY = 0;
+    _event_->offsetX = 0;
+    _event_->offsetY = 0;
+    _event_->which = 0;
 
     _data_ = (DATA*) malloc (sizeof(DATA));
     if (_data_) {
@@ -314,7 +334,7 @@ int gaInit (int w, int h, void(*call)(void)) {
     win = CreateWindowEx (
         0,                        // Extended possibilites for variation
         ClassName,                // Classname
-        "Graphic Application API: BETA",
+        "Graphic Application API: DirectX 8",
         WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX,
         x, y, w, h,
         HWND_DESKTOP,             // The window is a child-window to desktop
@@ -342,7 +362,7 @@ int gaInit (int w, int h, void(*call)(void)) {
     #ifdef _WIN32
     SDL_putenv ("SDL_VIDEO_CENTERED=center");
     #endif
-    SDL_WM_SetCaption ("HELLO: To Exit Press F12 !", NULL);
+    SDL_WM_SetCaption ("Graphic Application API: SDL | To Exit Press F12 !", NULL);
     screen = SDL_SetVideoMode (w, h, 16, 0); // color 16
 
     #endif // ! USE_SDL

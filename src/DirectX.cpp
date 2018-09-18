@@ -22,7 +22,7 @@ static LPDIRECT3DDEVICE  device = NULL;
 static HFONT hFont;
 static LPD3DXFONT pFont = NULL;
 static HRESULT r=0;
-int color = D3DCOLOR_XRGB(255,130,30);
+//int color = D3DCOLOR_XRGB(255,130,30);
 static int count;
 
 int DirectX_CreateDevice (HWND hwnd, int FullScreen) {
@@ -68,14 +68,16 @@ int DirectX_CreateDevice (HWND hwnd, int FullScreen) {
 
 void gaBeginScene (void) {
 //    device->Clear (0, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,0,0), 1.0f, 0);
-    device->Clear (0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0);
+//    device->Clear (0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0);
+
+    device->Clear (0, NULL, D3DCLEAR_TARGET, /*D3DCOLOR_XRGB(0,0,0)*/ 0, 1.0f, 0);
     device->BeginScene ();
 }
 void gaEndScene (void) {
     device->EndScene ();
     device->Present (NULL, NULL, NULL, NULL);
 }
-void gaText (char *text, int x, int y) {
+void gaText (char *text, int x, int y, int color) {
     if (pFont) {
     RECT TextRect={x,y,0,0};
 
@@ -86,7 +88,7 @@ void gaText (char *text, int x, int y) {
     //pFont->DrawText(text, -1, &TextRect, DT_CALCRECT, 0 );
 
     // Output the text, left aligned
-    pFont->DrawText(text, -1, &TextRect, DT_LEFT, color );
+    pFont->DrawText(text, -1, &TextRect, DT_LEFT, color);
 
     // Finish up drawing
     pFont->End();

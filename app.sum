@@ -17,23 +17,43 @@
 //
 //-------------------------------------------------------------------
 //
-var mx = 0;
-var my = 0;
-
-//-----------------------------------------------
+//-------------------------------------------------------------------
 // NOTE:
 //   Implemented Function Argument (EVENT) only:
 //
-//   .offsetX;
-//   .offsetY;
+//   .offsetX;  | mouse_x
+//   .offsetY;  | mouse_y
+//   .which;    | mouse_button := 1 or 3
 //
 // Please Wait ...
 //
-//-----------------------------------------------
+//-------------------------------------------------------------------
 //
+
+var mx = 0;
+var my = 0;
+var click = 0;
+
+//
+// e.which := 1 or 3
+//
+function onMouseDown (e) {
+    click = e.which;
+}
+
+//
+// e.which := 1 or 3
+//
+function onMouseUp (e) {
+    click = 0;
+}
+
 function onMouseMove (e) {
     mx = e.offsetX;
     my = e.offsetY;
+    if (click) {
+        console.log("X: %d Y: %d click: %d\n", e.offsetX, e.offsetY, click);
+    }
 }
 
 function idle () {
@@ -45,11 +65,14 @@ function idle () {
     gaDisplayMouse (mx, my);
 
     gaEndScene(); //<<<<<<<<<<  DRAW END  >>>>>>>>>>
+
 }
 
 if (gaInit(800,600,idle)) {
 
     gaSetCall (onMouseMove, "onmousemove");
+    gaSetCall (onMouseDown, "onmousedown");
+    gaSetCall (onMouseUp,   "onmouseup");
 
     gaRun ();
 

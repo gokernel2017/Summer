@@ -320,6 +320,8 @@ LIBIMPORT void    gaText            (char *str, int x, int y, int color);
 LIBIMPORT int     gaFPS             (void);
 LIBIMPORT void    gaSetCall         (void(*call)(EVENT *evevt), char *type);
 LIBIMPORT void    gaDisplayMouse    (int x, int y);
+//LIBIMPORT void    gaRect            (int x, int y, int w, int h, int color);
+
 //-------------------------------------------------------------------
 #endif // USE_GA
 LIBIMPORT void    Run               (ASM *a); // back-end in file: asm.c | vm.c

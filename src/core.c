@@ -127,14 +127,15 @@ static TFunc stdlib[]={
   { "disasm",       "0s",       (UCHAR*)disasm,         0,    0,    NULL },
 #endif
 #ifdef USE_GA // Graphic Application API:
-  { "gaInit",       "iiip",     (UCHAR*)gaInit,         0,    0,    NULL },
-  { "gaRun",        "00",       (UCHAR*)gaRun,          0,    0,    NULL },
-  { "gaBeginScene", "00",       (UCHAR*)gaBeginScene,   0,    0,    NULL },
-  { "gaEndScene",   "00",       (UCHAR*)gaEndScene,     0,    0,    NULL },
-  { "gaText",       "0siii",    (UCHAR*)gaText,         0,    0,    NULL },
-  { "gaFPS",        "i0",       (UCHAR*)gaFPS,          0,    0,    NULL },
-  { "gaSetCall",    "0ps",      (UCHAR*)gaSetCall,      0,    0,    NULL },
-  { "gaDisplayMouse","0ii",     (UCHAR*)gaDisplayMouse, 0,    0,    NULL },
+  { "gaInit",         "iiip",     (UCHAR*)gaInit,         0,    0,    NULL },
+  { "gaRun",          "00",       (UCHAR*)gaRun,          0,    0,    NULL },
+  { "gaBeginScene",   "00",       (UCHAR*)gaBeginScene,   0,    0,    NULL },
+  { "gaEndScene",     "00",       (UCHAR*)gaEndScene,     0,    0,    NULL },
+  { "gaText",         "0siii",    (UCHAR*)gaText,         0,    0,    NULL },
+  { "gaFPS",          "i0",       (UCHAR*)gaFPS,          0,    0,    NULL },
+  { "gaSetCall",      "0ps",      (UCHAR*)gaSetCall,      0,    0,    NULL },
+  { "gaDisplayMouse", "0ii",      (UCHAR*)gaDisplayMouse, 0,    0,    NULL },
+//  { "gaRect",         "0iiiii",   (UCHAR*)gaRect,         0,    0,    NULL },
 #endif
   //
   // Application API ... Only WIN32 ...:

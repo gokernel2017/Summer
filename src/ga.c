@@ -73,12 +73,7 @@ void gaText (char *text, int x, int y, int color) {
     base_text (screen, text, x, y, color);
 }
 
-void putpixel (
-    ASBITMAP *bmp,
-    short x,
-    short y,
-    int color
-) {
+void putpixel (ASBITMAP *bmp, short x, short y, int color) {
     int bpp;
     Uint8 *p;
 
@@ -108,13 +103,84 @@ void putpixel (
 
 }//END: AS_base_putpixel()
 
-void AS_base_draw_char_8x13_16 (
-    ASBITMAP *bmp,
-    unsigned char ch,
-    short x,
-    short y,
-    int color
-) {
+
+void hline (ASBITMAP *bmp, short x, short y, short size, int color) {
+    int i; // counter
+    Uint8 *p; // pixel
+
+    if (y < bmp->clip_rect.y || y > bmp->clip_rect.y + bmp->clip_rect.h-1)
+        return;
+
+    // Set cliping
+    if (x < bmp->clip_rect.x) {
+        size -= bmp->clip_rect.x - x;
+        x = bmp->clip_rect.x;
+    }
+
+//    if (x2 > bmp->clip_rect.x + bmp->clip_rect.w-1) x2 = bmp->clip_rect.x + bmp->clip_rect.w-1;
+    if (size <= 0)
+  return;
+
+    int bpp = bmp->format->BytesPerPixel;
+
+    //Here p is the address to the pixel we want to set
+    p = (Uint8 *)bmp->pixels + y * bmp->pitch + x * bpp;
+
+    switch (bpp){
+    case 2:
+        while (size--) {
+            *(Uint16 *)p = color; // Set color
+            p += bpp;             // Increment
+        }
+        break;
+
+    case 4:
+        while (size--) {
+            *(Uint32 *)p = color; // Set color
+            p += bpp;             // Increment
+        }
+        break;
+
+    }//END: switch()
+}
+
+void vline (ASBITMAP *bmp, short x, short y1, short y2, int color) {
+    const int bpp = bmp->format->BytesPerPixel;
+    int i;
+    Uint8 *p; // pixel
+
+    if ( x < bmp->clip_rect.x || x > bmp->clip_rect.x + bmp->clip_rect.w-1 )
+        return;
+
+    // Set cliping
+    if ( y1 < bmp->clip_rect.y ) y1 = bmp->clip_rect.y;
+    if ( y2 > bmp->clip_rect.y + bmp->clip_rect.h-1 ) y2 = bmp->clip_rect.y + bmp->clip_rect.h-1;
+
+    //Here p is the address to the pixel we want to set
+    p = (Uint8 *)bmp->pixels + y1 * bmp->pitch + x * bpp;
+
+    switch ( bpp )
+    {
+    case 2:
+        for (i = y1; i <= y2; i++) {
+            *(Uint16 *)p = color; // Set color
+            p += bmp->pitch;      // Increment
+        }
+        break;
+
+
+    case 4:
+        for (i = y1; i <= y2; i++) {
+            *(Uint32 *)p = color; // Set color
+            p += bmp->pitch;      // Increment
+        }
+        break;
+    }//END: switch()
+
+}//END: AS_base_vline()
+
+
+void AS_base_draw_char_8x13_16 (ASBITMAP *bmp, unsigned char ch, short x, short y, int color) {
 
   // Only 16 depth
   if (bmp->format->BytesPerPixel == 2 && ch > 32) {
@@ -149,11 +215,10 @@ void base_text (ASBITMAP *bmp, char *text, short x, short y, int color) {
     short orig_x = x;
 
     while (*text) {
-//      if (*text != CHAR_SPACE && *text != 9 && *text != 10 && *text != 13)
-        if( *text > 32 )
+        if(*text > 32)
             AS_base_draw_char_8x13_16 ( bmp, (unsigned char)(*text), x, y, color );
         *text++;
-        x+=8;
+        x += 8;
 
         if (*text == '\n') {
             x = orig_x;
@@ -161,6 +226,12 @@ void base_text (ASBITMAP *bmp, char *text, short x, short y, int color) {
         }
     }
 }
+
+void gaRect (int x, int y, int w, int h, int color) {
+    hline (screen, x, y, w, color);
+    hline (screen, x, y+h, w, color);
+}
+
 //
 //-------------------------------------------------------------------
 //
@@ -411,6 +482,20 @@ void gaRun (void) {
             case SDL_KEYDOWN:
                 if (e.key.keysym.sym == SDLK_F12)
                     quit = 1;
+                break;
+
+            case SDL_MOUSEBUTTONDOWN:
+                if (_data_ && _data_->onmousedown) {
+                    _event_->which = e.button.button;
+                    _data_->onmousedown(_event_);
+                }
+                break;
+
+            case SDL_MOUSEBUTTONUP:
+                if (_data_ && _data_->onmouseup) {
+                    _event_->which = e.button.button;
+                    _data_->onmouseup(_event_);
+                }
                 break;
 
             case SDL_MOUSEMOTION:

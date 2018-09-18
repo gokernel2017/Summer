@@ -54,7 +54,7 @@ int DirectX_CreateDevice (HWND hwnd, int FullScreen) {
         return 0;
 
     // Create a D3D font using D3DX
-    hFont =  (HFONT)GetStockObject(SYSTEM_FONT);// DEFAULT_GUI_FONT
+    hFont =  (HFONT)GetStockObject(SYSTEM_FIXED_FONT); //SYSTEM_FONT);// DEFAULT_GUI_FONT
 
     // Create the D3DX Font
     r = D3DXCreateFont(device, hFont, &pFont);

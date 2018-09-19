@@ -73,11 +73,16 @@ function onMouseMove (e) {
     mx = e.offsetX;
     my = e.offsetY;
     if (click) {
-        console.log("X: %d Y: %d click: %d\n", e.offsetX, e.offsetY, click);
+        console.log("X: %d Y: %d click: %d\n", mx, my, click);
     }
 }
 
-function idle () {
+//
+// Main CallBack:
+//
+function draw () {
+
+    if (LockFrameRate()) {
 
     gaBeginScene();  //<<<<<<<<<<  DRAW START  >>>>>>>>>>
 
@@ -93,9 +98,10 @@ function idle () {
 
     gaEndScene(); //<<<<<<<<<<  DRAW END  >>>>>>>>>>
 
+    }
 }
 
-if (gaInit(800,600,idle)) {
+if (gaInit(800,600,draw)) {
 
     gaSetCall (onMouseMove, "onmousemove");
     gaSetCall (onMouseDown, "onmousedown");

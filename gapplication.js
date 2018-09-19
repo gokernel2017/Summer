@@ -37,12 +37,13 @@ function gaInit (w,h,idle) {
 	_CANVAS_.height = h;
   canvas.width = w;
 	canvas.height = h;
-  _CANVAS_.style.border = "2px solid orange"; 
+  _CANVAS_.style.border = "1px solid orange"; 
 
   _CONTEXT_ = _CANVAS_.getContext ("2d");
   bmp       = canvas.getContext ("2d"); // draw in this
 
-  bmp.font = "12px sans-serif";
+//  bmp.font = "12px sans-serif";
+  bmp.font = "14px fixedsys";
   bmp.fillStyle = "orange";
 
 /*
@@ -97,7 +98,7 @@ function gaRun () {
 }
 
 function gaBeginScene(){
-  bmp.fillStyle = "#000000"; // black
+  bmp.fillStyle = "rgb(254,238,204)";
   bmp.fillRect(0,0,canvas.width,canvas.height);
 }
 function gaEndScene(){
@@ -105,16 +106,42 @@ function gaEndScene(){
 }
 
 function gaFPS () {
-  bmp.fillStyle = "orange";
+  bmp.fillStyle = 'rgb(255,130,30)';
   bmp.fillText ("FPS: "+_value_fps_,7,18);
 //  if (_fps_==0) return 1;
 //  else          return 0;
 }
 
 function gaDisplayMouse (x,y) {
-  bmp.fillStyle = "orange";
-  bmp.fillText ("X: "+x+" Y: "+y,100,100);
+  bmp.fillStyle = 'rgb(255,130,30)';
+  bmp.fillText ("X: "+x+" Y: "+y,300,100);
 }
+
+function toColor(num) {
+    num >>>= 0;
+    var b = num & 0xFF,
+        g = (num & 0xFF00) >>> 8,
+        r = (num & 0xFF0000) >>> 16,
+        a = ( (num & 0xFF000000) >>> 24 ) / 255 ;
+    return "rgba(" + [r, g, b, a].join(",") + ")";
+}
+function toRGB (hex) {
+    var r = hex >> 16;
+    var g = hex >> 8 & 0xFF;
+    var b = hex & 0xFF;
+    return [r,g,b];
+}
+
+function gaButton (x,y,w,h,txt) {
+  bmp.strokeStyle = 'rgb(255,130,30)';
+  bmp.lineWidth = 1;
+  bmp.strokeRect(x,y,w,h);
+//  bmp.fillStyle = "orange";
+  bmp.fillText (txt, x+5,y+20);
+}
+
 function gaSetCall (call,type) {
   if (type=="onmousemove") _CANVAS_.onmousemove = call;
+  if (type=="onmousedown") _CANVAS_.onmousedown = call;
+  if (type=="onmouseup")   _CANVAS_.onmouseup   = call;
 }

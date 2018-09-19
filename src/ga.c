@@ -30,6 +30,7 @@ static DATA   *_data_ = NULL;
 void basic() {}
 void (*idle)(void) = basic;
 int   width, height;
+int color_border, color_bg;
 
 #ifdef USE_SDL
 //
@@ -39,7 +40,9 @@ int   width, height;
 
 #define ASBITMAP      SDL_Surface
 #define CHAR_SPACE    32
-#define COLOR_ORANGE  64515
+// 16 bits #define COLOR_ORANGE  64515
+
+#define COLOR_ORANGE  16744990
 
 SDL_Surface *screen;
 
@@ -64,7 +67,7 @@ static const unsigned char fixed_font[14][764] = {
 
 void gaBeginScene (void) {
     SDL_Rect r = { 0,0, width, height };
-    SDL_FillRect (screen, &r, 0);
+    SDL_FillRect (screen, &r, color_bg);
 }
 void gaEndScene (void) {
     SDL_UpdateRect (screen,0,0,width, height);
@@ -172,8 +175,7 @@ void vline (ASBITMAP *bmp, int x, int y1, int y2, int color) {
 
 void AS_base_draw_char_8x13_16 (ASBITMAP *bmp, unsigned char ch, short x, short y, int color) {
 
-  // Only 16 depth
-  if (bmp->format->BytesPerPixel == 2 && ch > 32) {
+  if (ch > 32) {
     register unsigned char count;
     register int xx;
 
@@ -225,8 +227,20 @@ void drawRect (ASBITMAP *bmp, int x1, int y1, int x2, int y2, int color) {
 
 
 void gaButton (int x, int y, int w, int h, char *txt) {
-    drawRect (screen, x, y, x+w-1, y+h-1, COLOR_ORANGE); // left <
-    base_text (screen, txt, x+5, y+7, COLOR_ORANGE);
+    int i;
+    drawRect (screen, x, y, x+w-1, y+h-1, color_border);
+    for (i = 0; i < h-2; i++) {
+        //        c2                  c1
+        int _r = (236 * i / h) + (254 * (h - i) / h);
+        int _g = (236 * i / h) + (254 * (h - i) / h);
+        int _b = (236 * i / h) + (254 * (h - i) / h);
+
+        //int color = ((_r << 16) | (_g << 8) | _b); // 16 bits
+        int color = _b + (_g << 8) + (_r << 16); // 32 bits
+        hline (screen, x+1, (y+i)+1, x+w-2, color); // pal[y]
+    }
+    int xx = x + w / 2 - ((strlen(txt)*8)/2);
+    base_text (screen, txt, xx, (y+h/2)-7, COLOR_ORANGE);
 }
 
 //
@@ -331,10 +345,32 @@ int gaFPS (void) {
     return 0;
 }
 
+// Locks the frame rate at "frame_rate"
+// Returns true when it's okay to draw, false otherwise
+int LockFrameRate (int frame_rate) {
+    static float lastTime = 0.0f;
+
+    // Get current time in seconds (milliseconds * .001 = seconds)
+    float currentTime = GetTickCount() * 0.001f; 
+
+    // Get the elapsed time by subtracting the current time from the last time
+    // If the desired frame rate amount of seconds has passed -- return true (ie Blit())
+//    if((currentTime - lastTime) > (1.0f / frame_rate)) {
+    if((currentTime - lastTime) > (1.0f / frame_rate)) {
+printf ("Time: %f\n", currentTime - lastTime);
+		    // Reset the last time
+		    lastTime = currentTime;	
+		    return 1;
+    }
+
+    return 0;
+}
+
+
 char buf2[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
 void gaDisplayMouse (int x, int y) {
     sprintf (buf2, "X: %d Y: %d", x, y);
-    gaText (buf2, 320, 100, COLOR_ORANGE);
+    gaText (buf2, 280, 100, COLOR_ORANGE);
 }
 
 void gaSetCall (void(*call)(EVENT *evevt), char *type) {
@@ -431,7 +467,10 @@ int gaInit (int w, int h, void(*call)(void)) {
     SDL_putenv ("SDL_VIDEO_CENTERED=center");
     #endif
     SDL_WM_SetCaption ("Graphic Application API: SDL | To Exit Press F12 !", NULL);
-    screen = SDL_SetVideoMode (w, h, 16, 0); // color 16
+    screen = SDL_SetVideoMode (w, h, 32, 0);
+
+    color_border = SDL_MapRGB (screen->format, 170,170,170);
+    color_bg = SDL_MapRGB (screen->format, 254,238,204);
 
     #endif // ! USE_SDL
 
@@ -457,7 +496,7 @@ void gaRun (void) {
                 DispatchMessage (&msg);
             }
             idle ();
-            Sleep(1);
+//            Sleep(1);
         }
     } else {
         while (GetMessage (&msg, NULL, 0, 0)) {
@@ -508,7 +547,7 @@ void gaRun (void) {
 
         }// while (SDL_PollEvent(&e))
 
-        idle();
+        if (idle) idle();
         SDL_Delay(1);
 
     }// while (!quit)

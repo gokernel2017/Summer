@@ -6,6 +6,10 @@
 //
 #define USE_ASM
 
+// Graphic Application API ( C & WEB ):
+//
+#define USE_GA
+
 #define USE_SDL
 //#define USE_DIRECTX
 

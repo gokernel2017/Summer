@@ -70,7 +70,7 @@ void gaBeginScene (void) {
 //    device->Clear (0, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,0,0), 1.0f, 0);
 //    device->Clear (0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0);
 
-    device->Clear (0, NULL, D3DCLEAR_TARGET, /*D3DCOLOR_XRGB(0,0,0)*/ 0, 1.0f, 0);
+    device->Clear (0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(254,238,204), 1.0f, 0);
     device->BeginScene ();
 }
 void gaEndScene (void) {

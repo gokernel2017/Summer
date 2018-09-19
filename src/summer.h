@@ -32,17 +32,11 @@
 #include <stdarg.h>
 #ifdef WIN32
     #include <windows.h>
-
-    #define USE_GA    // Graphic Application API ( C & WEB ):
-
 #endif
 #ifdef __linux__
     #include <unistd.h>
     #include <sys/mman.h> // to: mprotect()
     #include <dlfcn.h>    // to: dlopen(), dlsym(), ... in file: cs_library.c
-
-    #define USE_GA    // Graphic Application API ( C & WEB ):
-
 #endif
 
 #include "lex.h"
@@ -452,7 +446,8 @@ LIBIMPORT void    emit_push_eax     (ASM *a);
 LIBIMPORT void    emit_pop_eax      (ASM *a);
 
 #ifdef USE_DIRECTX
-LIBIMPORT int   DirectX_CreateDevice (HWND hwnd, int FullScreen);
+LIBIMPORT int DirectX_CreateDevice (HWND hwnd, int FullScreen);
+//LIBIMPORT int LockFrameRate (int frame_rate);
 #endif
 
 #ifdef __cplusplus

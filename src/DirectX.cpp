@@ -22,7 +22,7 @@ static LPDIRECT3DDEVICE  device = NULL;
 static HFONT hFont;
 static LPD3DXFONT pFont = NULL;
 static HRESULT r=0;
-//int color = D3DCOLOR_XRGB(255,130,30);
+int color = D3DCOLOR_XRGB(255,130,30);
 static int count;
 
 int DirectX_CreateDevice (HWND hwnd, int FullScreen) {
@@ -78,7 +78,7 @@ void gaEndScene (void) {
     device->Present (NULL, NULL, NULL, NULL);
 }
 void gaText (char *text, int x, int y, int color) {
-    if (pFont) {
+
     RECT TextRect={x,y,0,0};
 
     // Inform font it is about to be used
@@ -92,9 +92,36 @@ void gaText (char *text, int x, int y, int color) {
 
     // Finish up drawing
     pFont->End();
-    }
+
     // Release the font
 //    pFont->Release();
+}
+
+void drawRect (int x, int y, int w, int h) {
+    struct Vertex {
+        float x, y, z, rhw;
+        DWORD color;
+    } p[] = {
+        { x, y,   0, 1,   color }, { x+w, y,    0, 1,  color },  // --
+        { x+w, y, 0, 1,   color }, { x+w, y+h,  0, 1,  color },  // |
+        { x+w, y+h, 0, 1, color }, { x, y+h,  0, 1,    color },  // --
+        { x, y+h, 0, 1,   color }, { x, y,  0, 1,      color }  // |
+    };
+
+    #define SVertexType D3DFVF_XYZRHW | D3DFVF_DIFFUSE
+
+//    #ifdef DX8
+    device->SetVertexShader (SVertexType);
+//    #endif
+//    #ifdef DX9
+//    device->SetFVF (SVertexType);
+//    #endif
+    device->DrawPrimitiveUP (D3DPT_LINELIST, 4, p, sizeof(Vertex));
+}
+
+void gaButton (int x, int y, int w, int h, char *txt) {
+    drawRect (x,y,w,h);
+    gaText (txt, x+5, y+5, color);
 }
 
 #endif // ! USE_DIRECTX

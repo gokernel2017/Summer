@@ -104,47 +104,39 @@ void putpixel (ASBITMAP *bmp, short x, short y, int color) {
 }//END: AS_base_putpixel()
 
 
-void hline (ASBITMAP *bmp, short x, short y, short size, int color) {
+void hline (ASBITMAP *bmp, int x1, int y, int x2, int color) {
     int i; // counter
     Uint8 *p; // pixel
 
-    if (y < bmp->clip_rect.y || y > bmp->clip_rect.y + bmp->clip_rect.h-1)
+    if ( y < bmp->clip_rect.y || y > bmp->clip_rect.y + bmp->clip_rect.h-1)
         return;
 
     // Set cliping
-    if (x < bmp->clip_rect.x) {
-        size -= bmp->clip_rect.x - x;
-        x = bmp->clip_rect.x;
-    }
-
-//    if (x2 > bmp->clip_rect.x + bmp->clip_rect.w-1) x2 = bmp->clip_rect.x + bmp->clip_rect.w-1;
-    if (size <= 0)
-  return;
+    if (x1 < bmp->clip_rect.x) x1 = bmp->clip_rect.x;
+    if (x2 > bmp->clip_rect.x + bmp->clip_rect.w-1) x2 = bmp->clip_rect.x + bmp->clip_rect.w-1;
 
     int bpp = bmp->format->BytesPerPixel;
 
     //Here p is the address to the pixel we want to set
-    p = (Uint8 *)bmp->pixels + y * bmp->pitch + x * bpp;
+    p = (Uint8 *)bmp->pixels + y * bmp->pitch + x1 * bpp;
 
-    switch (bpp){
+    switch (bpp) {
     case 2:
-        while (size--) {
+        for (i = x1; i <= x2; i++) {
             *(Uint16 *)p = color; // Set color
             p += bpp;             // Increment
         }
         break;
-
     case 4:
-        while (size--) {
+        for (i = x1; i <= x2; i++) {
             *(Uint32 *)p = color; // Set color
             p += bpp;             // Increment
         }
         break;
+    }
+}// hline ();
 
-    }//END: switch()
-}
-
-void vline (ASBITMAP *bmp, short x, short y1, short y2, int color) {
+void vline (ASBITMAP *bmp, int x, int y1, int y2, int color) {
     const int bpp = bmp->format->BytesPerPixel;
     int i;
     Uint8 *p; // pixel
@@ -159,8 +151,7 @@ void vline (ASBITMAP *bmp, short x, short y1, short y2, int color) {
     //Here p is the address to the pixel we want to set
     p = (Uint8 *)bmp->pixels + y1 * bmp->pitch + x * bpp;
 
-    switch ( bpp )
-    {
+    switch (bpp) {
     case 2:
         for (i = y1; i <= y2; i++) {
             *(Uint16 *)p = color; // Set color
@@ -175,9 +166,8 @@ void vline (ASBITMAP *bmp, short x, short y1, short y2, int color) {
             p += bmp->pitch;      // Increment
         }
         break;
-    }//END: switch()
-
-}//END: AS_base_vline()
+    }
+}// vline ();
 
 
 void AS_base_draw_char_8x13_16 (ASBITMAP *bmp, unsigned char ch, short x, short y, int color) {
@@ -226,10 +216,17 @@ void base_text (ASBITMAP *bmp, char *text, short x, short y, int color) {
         }
     }
 }
+void drawRect (ASBITMAP *bmp, int x1, int y1, int x2, int y2, int color) {
+    hline (bmp, x1, y1, x2, color); // top
+    vline (bmp, x2, y1, y2, color); // right >
+    hline (bmp, x1, y2, x2, color); // button
+    vline (bmp, x1, y1, y2, color); // left <
+}
 
-void gaRect (int x, int y, int w, int h, int color) {
-    hline (screen, x, y, w, color);
-    hline (screen, x, y+h, w, color);
+
+void gaButton (int x, int y, int w, int h, char *txt) {
+    drawRect (screen, x, y, x+w-1, y+h-1, COLOR_ORANGE); // left <
+    base_text (screen, txt, x+5, y+7, COLOR_ORANGE);
 }
 
 //
@@ -337,7 +334,7 @@ int gaFPS (void) {
 char buf2[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
 void gaDisplayMouse (int x, int y) {
     sprintf (buf2, "X: %d Y: %d", x, y);
-    gaText (buf2, 100, 100, COLOR_ORANGE);
+    gaText (buf2, 320, 100, COLOR_ORANGE);
 }
 
 void gaSetCall (void(*call)(EVENT *evevt), char *type) {
@@ -460,6 +457,7 @@ void gaRun (void) {
                 DispatchMessage (&msg);
             }
             idle ();
+            Sleep(1);
         }
     } else {
         while (GetMessage (&msg, NULL, 0, 0)) {
@@ -510,8 +508,8 @@ void gaRun (void) {
 
         }// while (SDL_PollEvent(&e))
 
-//        SDL_Delay(10);
         idle();
+        SDL_Delay(1);
 
     }// while (!quit)
 

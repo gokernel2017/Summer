@@ -135,7 +135,7 @@ static TFunc stdlib[]={
   { "gaFPS",          "i0",       (UCHAR*)gaFPS,          0,    0,    NULL },
   { "gaSetCall",      "0ps",      (UCHAR*)gaSetCall,      0,    0,    NULL },
   { "gaDisplayMouse", "0ii",      (UCHAR*)gaDisplayMouse, 0,    0,    NULL },
-//  { "gaRect",         "0iiiii",   (UCHAR*)gaRect,         0,    0,    NULL },
+  { "gaButton",       "0iiiis",   (UCHAR*)gaButton,       0,    0,    NULL },
 #endif
   //
   // Application API ... Only WIN32 ...:

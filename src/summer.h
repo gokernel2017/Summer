@@ -320,7 +320,7 @@ LIBIMPORT void    gaText            (char *str, int x, int y, int color);
 LIBIMPORT int     gaFPS             (void);
 LIBIMPORT void    gaSetCall         (void(*call)(EVENT *evevt), char *type);
 LIBIMPORT void    gaDisplayMouse    (int x, int y);
-//LIBIMPORT void    gaRect            (int x, int y, int w, int h, int color);
+LIBIMPORT void    gaButton          (int x, int y, int w, int h, char *txt);
 
 //-------------------------------------------------------------------
 #endif // USE_GA

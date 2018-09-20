@@ -237,7 +237,7 @@ void gaButton (int x, int y, int w, int h, char *txt) {
 
         //int color = ((_r << 16) | (_g << 8) | _b); // 16 bits
         int color = _b + (_g << 8) + (_r << 16); // 32 bits
-        hline (screen, x+1, (y+i)+1, x+w-2, color); // pal[y]
+        hline (screen, x+1, (y+i)+1, x+w-2, color);
     }
     int xx = x + w / 2 - ((strlen(txt)*8)/2);
     base_text (screen, txt, xx, (y+h/2)-7, COLOR_ORANGE);
@@ -321,6 +321,7 @@ LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
 }// WindowProc()
 
+
 //
 //-------------------------------------------------------------------
 //
@@ -342,27 +343,6 @@ int gaFPS (void) {
         fps=0;
         return 1;
     }
-    return 0;
-}
-
-// Locks the frame rate at "frame_rate"
-// Returns true when it's okay to draw, false otherwise
-int LockFrameRate (int frame_rate) {
-    static float lastTime = 0.0f;
-
-    // Get current time in seconds (milliseconds * .001 = seconds)
-    float currentTime = GetTickCount() * 0.001f; 
-
-    // Get the elapsed time by subtracting the current time from the last time
-    // If the desired frame rate amount of seconds has passed -- return true (ie Blit())
-//    if((currentTime - lastTime) > (1.0f / frame_rate)) {
-    if((currentTime - lastTime) > (1.0f / frame_rate)) {
-printf ("Time: %f\n", currentTime - lastTime);
-		    // Reset the last time
-		    lastTime = currentTime;	
-		    return 1;
-    }
-
     return 0;
 }
 

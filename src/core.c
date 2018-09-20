@@ -106,7 +106,8 @@ static int
     main_variable_type,
     var_type,
     argument_count,
-    local_count
+    local_count,
+    mov64_rdi_RBP
     ;
 
 float _Fvalue_;
@@ -136,8 +137,7 @@ static TFunc stdlib[]={
   { "gaSetCall",      "0ps",      (UCHAR*)gaSetCall,      0,    0,    NULL },
   { "gaDisplayMouse", "0ii",      (UCHAR*)gaDisplayMouse, 0,    0,    NULL },
   { "gaButton",       "0iiiis",   (UCHAR*)gaButton,       0,    0,    NULL },
-//  { "LockFrameRate",  "ii",       (UCHAR*)LockFrameRate,0,    0,    NULL },
-
+//  { "rate",           "ii",       (UCHAR*)rate,           0,    0,    NULL },
 #endif
   //
   // Application API ... Only WIN32 ...:
@@ -1071,6 +1071,7 @@ static void word_function (LEXER *l, ASM *a) {
 
     is_function = 1;
     local_count = 0;
+    mov64_rdi_RBP = 0;
     strcpy (func_name, name);
 
 #ifdef USE_ASM
@@ -1172,7 +1173,7 @@ write_asm("// %s | len: %d", name, len);
         func->code = (UCHAR*)vm;
 
     } else {
-        is_function = is_recursive = argument_count = *func_name = 0;
+        is_function = is_recursive = argument_count = *func_name = mov64_rdi_RBP = 0;
         return;
     }
 #endif
@@ -1181,7 +1182,7 @@ write_asm("// %s | len: %d", name, len);
     func->next = Gfunc;
     Gfunc = func;
 
-    is_function = is_recursive = argument_count = *func_name = 0;
+    is_function = is_recursive = argument_count = *func_name = mov64_rdi_RBP = 0;
 
 }//:word_function ()
 
@@ -1447,19 +1448,26 @@ static void atom (LEXER *l, ASM *a) { // expres
         // push a argument function:
         //
         if (is_function && (i=ArgumentFind(l->token))!=-1) {
-            // argument:
+            // function argument:
             //
-            // e.offsetX;
+            // e.offsetX, e.offsetY, e.which;
             //
             if (argument[i].type[0]==TYPE_UNKNOW && see(l)=='.') {
                 if (lex(l) && lex(l)) { // .offsetX;
+
+                    #if defined(__x86_64__)
+                    if (mov64_rdi_RBP==0) {
+                        mov64_rdi_RBP = 1;
+                        // 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
+                        g4(a,0x48,0x89,0x7d,0xf8);
+                    }
+//                    printf ("push argument (%s.%s)\n", argument[i].name, l->token);
+                    #endif
+
                     if (!strcmp(l->token, "offsetX")) {
-printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                         #if defined(__x86_64__)
-// 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
 // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
 // 8b 40 08             	mov    8(%rax),%eax
-                        g4(a,0x48,0x89,0x7d,0xf8);
                         g4(a,0x48,0x8b,0x45,0xf8);
                         g3(a,0x8b,0x40,8);
                         emit_push_eax(a);
@@ -1475,12 +1483,9 @@ printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                     }
                     else
                     if (!strcmp(l->token, "offsetY")) {
-printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                         #if defined(__x86_64__)
-// 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
 // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
 // 8b 40 0c             	mov    12(%rax),%eax
-                        g4(a,0x48,0x89,0x7d,0xf8);
                         g4(a,0x48,0x8b,0x45,0xf8);
                         g3(a,0x8b,0x40,12);
                         emit_push_eax(a);
@@ -1496,12 +1501,9 @@ printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                     }
                     else
                     if (!strcmp(l->token, "which")) {
-printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                         #if defined(__x86_64__)
-// 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
 // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
 // 8b 40 0c             	mov    16(%rax),%eax
-                        g4(a,0x48,0x89,0x7d,0xf8);
                         g4(a,0x48,0x8b,0x45,0xf8);
                         g3(a,0x8b,0x40,16);
                         emit_push_eax(a);
@@ -1853,6 +1855,7 @@ void time_fps (void) {
         printf ("FPS: %d\n", fps); fps = 0;
     }
 }
+
 
 void Erro (char *format, ...) {
     char msg[1024] = { 0 };

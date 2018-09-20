@@ -447,7 +447,8 @@ LIBIMPORT void    emit_pop_eax      (ASM *a);
 
 #ifdef USE_DIRECTX
 LIBIMPORT int DirectX_CreateDevice (HWND hwnd, int FullScreen);
-//LIBIMPORT int LockFrameRate (int frame_rate);
+LIBIMPORT int LockFrameRate (void);
+//LIBIMPORT void rate (void);
 #endif
 
 #ifdef __cplusplus

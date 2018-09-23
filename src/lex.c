@@ -159,14 +159,6 @@ top:
         l->tok = TOK_PLUS_PLUS;
         return TOK_PLUS_PLUS;
     }
-/*
-    if (c=='-' && next == '-') { // ++
-        *p++ = '-'; *p++ = '-'; *p = 0;
-        l->pos += 2;
-        l->tok = TOK_MINUS_MINUS;
-        return TOK_MINUS_MINUS;
-    }
-*/
     if (c=='=' && next == '=') { // ==
         *p++ = '='; *p++ = '='; *p = 0;
         l->pos += 2;
@@ -186,16 +178,6 @@ top:
             l->tok = TOK_MINUS_MINUS;
             return TOK_MINUS_MINUS;
         }
-/*
-        if (isdigit(next)) { // number: -100
-                str++;
-                while ((*str >= '0' && *str <= '9') || *str == '.')
-                    *p++ = *str++;
-                *p = 0;
-
-                return TOK_NUMBER;
-        }
-*/
         if (isdigit(next)) { // number: -100
             l->pos++;
             *p++ = c;

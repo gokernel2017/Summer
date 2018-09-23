@@ -1,26 +1,14 @@
-//-----------------------------------------------
-//
-// Test word ( for ):
-//
-//-----------------------------------------------
-//
-int i = 15, a = 30;
 
-console.log("----------------\n");
+var a, b;
 
-#ifdef USE_JIT
-    console.log("Tag - USE_JIT:\n");
-#endif
-#ifdef USE_VM
-    console.log("Tag - USE_VM:\n");
-#endif
-console.log("----------------\n");
+  for (a = 1; a < 5; a++) {
 
+      console.log ("Value a: %d\n", a);
 
-  for (i = 15; i < a; i++) {
+      for (b = 1; b < 5; b++) {
 
-      console.log ("Value i: %d\n", i);
+          console.log ("B: %d\n", b);
+
+      }
 
   }
-
-

@@ -331,7 +331,7 @@ LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 //------------------------  ALL PLATFORMS  --------------------------
 //-------------------------------------------------------------------
 //
-char buf1[16] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
+char buf1[32] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
 int gaFPS (void) {
     static int fps=0, t1=0, t2=0;
     gaText (buf1, 10, 10,COLOR_ORANGE);
@@ -339,7 +339,7 @@ int gaFPS (void) {
     t1 = time(NULL);
     if (t1 != t2) {
         t2 = t1;
-        sprintf (buf1, "FPS: %d", fps);
+        sprintf (buf1, "FPS: %d | %d", fps, t1);
         fps=0;
         return 1;
     }

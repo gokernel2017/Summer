@@ -1,34 +1,24 @@
-//-------------------------------------------------------------------
-//
-// SUMMER LANGUAGE:
-//
-// Simple test.
-//
-//
-//-------------------------------------------------------------------
-//
-int i = 0, a = 25, b, c, d;
 
-var f1 = 2000.50, f2 = 5000.50, result = 0.0;
+int i=0, a = 10, b = 20, c = 3, d = 5;
 
-function hello () {
-
-    if (i > a) {
-
-        printf ("Function Hello, Value i: %d\n\n", i);
-
-    }
-}
+//var f = 100.50, f1 = 30.50, f2 = 50.50;
 
 /*
-  printf ("\nValue Float: %f\n\n", f1 + f2);
+  1500 + 1500; // display: 3000
 
-  printf ("\nValue FLOAT: %f\n\n", 2000.50 + 3000.50);
+  a * b + c * d; // display result: 215
 
-  hello ();
+  i = addi (a, b); // builtin function:
 
-  result = f1 + f2;
-  result;
+  f = addf (f1, f2);
 */
 
-  disasm ("hello");
+
+
+function hello () {
+  1000 + 3000;
+//  info (1); // builtin function: display all variables
+}
+
+hello();
+

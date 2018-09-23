@@ -7,7 +7,7 @@ BIN  = summer
 CFLAGS = -O2 -Wall -DUSE_JIT
 ifeq ($(OS),Windows_NT)
   # DirectX
-	#LIBS = -ld3dx8d -ld3d8 -lgdi32 -lwinmm
+  #LIBS = -ld3dx8d -ld3d8 -lgdi32 -lwinmm
 	LIBS = -lSDL
 #  RES  = obj/resource.o
   RES =

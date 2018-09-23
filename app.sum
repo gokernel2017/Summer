@@ -41,20 +41,16 @@ var is_button = 0;
 //
 function onMouseDown (e) {
 
-    is_button = 0;
-
     if (mx > 50 && mx < 170) {
 
         if (my > 50 && my < 80) { // button 1:
-            is_button = 1;
+            click = e.which;
+            console.log("Button: %d", e.which);
+            count++;
         }
         if (my > 100 && my < 130) { // button 2:
-            is_button = 2;
-        }
-
-        if (is_button) {
             click = e.which;
-            console.log("Button: %d | click: %d", is_button, e.which);
+            console.log("Button HELLO: %d", e.which);
             count++;
         }
     }

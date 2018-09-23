@@ -110,6 +110,12 @@ static int
     mov64_rdi_RBP
     ;
 
+#if defined(__x86_64__)
+static EVENT *save_event64;
+#endif
+
+void *var_rdi64;
+
 float _Fvalue_;
 
 static TFunc stdlib[]={
@@ -182,6 +188,10 @@ ASM * core_Init (unsigned int size) {
         if ((asm_function = asm_new (size))==NULL) return NULL;
 
         core_ModuleAdd ("console", "log", "0s", (UCHAR*)lib_printf);
+
+        #if defined(__x86_64__)        
+        save_event64 = (EVENT*)malloc(sizeof(EVENT));
+        #endif
 
         #ifdef USE_APPLICATION
         //---------------------------------------
@@ -489,7 +499,7 @@ static void expression (LEXER *l, ASM *a) {
                 }
                 lex_restore (l); // restore the lexer position
 
-            }//: if (see(l)=='=')
+            }// if (next=='=')
 
         }//: if ((i = VarFind (l->token)) != -1)
 
@@ -1236,6 +1246,7 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                 if (var_type != TYPE_FLOAT) {
                     if (count==0) {         // argument 1
                         emit_mov_eax_edi (a);
+//                        mov64_rdi_RBP = 0;
                     } else if (count==1) {  // argument 2
                         emit_mov_eax_esi (a);
                     } else if (count==2) {  // argument 3
@@ -1401,6 +1412,7 @@ static void expr3 (LEXER *l, ASM *a) { // '('
     }
     else atom(l,a); // atom:
 }
+
 static void atom (LEXER *l, ASM *a) { // expres
 
     if (l->tok==TOK_STRING) {
@@ -1416,8 +1428,10 @@ static void atom (LEXER *l, ASM *a) { // expres
             g(a, 0x68); asm_get_addr(a,s->s);
             #endif
         }
+        lex(l);
   return;
     }
+
     if (l->tok==TOK_ID) {
         int i;
 #ifdef USE_JIT
@@ -1460,12 +1474,19 @@ static void atom (LEXER *l, ASM *a) { // expres
                         mov64_rdi_RBP = 1;
                         // 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
                         g4(a,0x48,0x89,0x7d,0xf8);
+                        //48 89 3c 25   f0 09 60 00 	mov    %rdi,0x6009f0 // save_event64
+                        g4(a,0x48, 0x89, 0x3c, 0x25); asm_get_addr(a, &save_event64);
                     }
 //                    printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                     #endif
 
                     if (!strcmp(l->token, "offsetX")) {
                         #if defined(__x86_64__)
+                        //48 8b 04 25   f0 09 60 00 	mov    0x6009f0,%rax // save_event64
+                        //48 89 45 f8          	mov    %rax,-0x8(%rbp)
+                        g4(a,0x48, 0x8b, 0x04, 0x25); asm_get_addr(a, &save_event64);
+                        g4(a,0x48, 0x89, 0x45, 0xf8);
+                        
 // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
 // 8b 40 08             	mov    8(%rax),%eax
                         g4(a,0x48,0x8b,0x45,0xf8);
@@ -1484,6 +1505,11 @@ static void atom (LEXER *l, ASM *a) { // expres
                     else
                     if (!strcmp(l->token, "offsetY")) {
                         #if defined(__x86_64__)
+                        //48 8b 04 25   f0 09 60 00 	mov    0x6009f0,%rax
+                        //48 89 45 f8          	mov    %rax,-0x8(%rbp)
+                        g4(a,0x48, 0x8b, 0x04, 0x25); asm_get_addr(a, &save_event64);
+                        g4(a,0x48, 0x89, 0x45, 0xf8);
+                        
 // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
 // 8b 40 0c             	mov    12(%rax),%eax
                         g4(a,0x48,0x8b,0x45,0xf8);
@@ -1502,6 +1528,11 @@ static void atom (LEXER *l, ASM *a) { // expres
                     else
                     if (!strcmp(l->token, "which")) {
                         #if defined(__x86_64__)
+                        //48 8b 04 25   f0 09 60 00 	mov    0x6009f0,%rax
+                        //48 89 45 f8          	mov    %rax,-0x8(%rbp)
+                        g4(a,0x48, 0x8b, 0x04, 0x25); asm_get_addr(a, &save_event64);
+                        g4(a,0x48, 0x89, 0x45, 0xf8);
+                        
 // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
 // 8b 40 0c             	mov    16(%rax),%eax
                         g4(a,0x48,0x8b,0x45,0xf8);
@@ -1879,4 +1910,3 @@ void ErroReset (void) {
     erro = 0;
     strErro[0] = 0;
 }
-

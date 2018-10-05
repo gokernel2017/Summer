@@ -1,6 +1,6 @@
 # Summer Language
 
-TANKS TO:
+THANKS TO:
 ----------------------------------------------
   01: God the creator of the heavens and the earth in the name of Jesus Christ.
 

@@ -92,6 +92,9 @@ extern "C" {
 #define VAR_MB            3
 #define MOUSEMOVE         512
 
+#define MMAP_ANON         0x20
+#define FTMODULE          FUNC_TYPE_MODULE
+
 enum {
     TYPE_INT = 0,
     TYPE_FLOAT,
@@ -104,7 +107,8 @@ enum {
 enum {
     FUNC_TYPE_NATIVE_C = 0,
     FUNC_TYPE_COMPILED,
-    FUNC_TYPE_VM
+    FUNC_TYPE_VM,
+    FUNC_TYPE_MODULE     // .dll | .so
 };
 enum {
     EAX = 0,
@@ -183,7 +187,7 @@ typedef struct ASM_jump   ASM_jump;
 typedef struct TVar       TVar;
 typedef struct TFunc      TFunc;
 typedef struct F_STRING   F_STRING;
-typedef struct MODULE     MODULE;
+typedef struct TModule    TModule;
 typedef struct DEFINE     DEFINE;
 
 typedef struct TEvent     TEvent;
@@ -242,10 +246,11 @@ struct TVar {
 };
 struct TFunc {
     char    *name;
-    char    *proto; // prototype
-    UCHAR   *code;  // the function on JIT MODE | or VM in VM MODE
-    int     type;   // FUNC_TYPE_NATIVE_C = 0, FUNC_TYPE_COMPILED, FUNC_TYPE_VM
+    char    *proto;   // prototype
+    UCHAR   *code;    // the function on JIT MODE | or VM in VM MODE
+    int     type;     // FUNC_TYPE_NATIVE_C = 0, FUNC_TYPE_COMPILED, FUNC_TYPE_MODULE
     int     len;
+    int     sub_esp;  // used only in dynamic modules: .dll | .so
     TFunc   *next;
 };
 struct F_STRING {
@@ -253,11 +258,11 @@ struct F_STRING {
     int   i;
     F_STRING *next;
 }; // fixed string
-struct MODULE {
+struct TModule {
     char    *name;
     void    *lib;
     TFunc   *func;
-    MODULE  *next;
+    TModule *next;
 };
 typedef struct {
     // type[0] := '-' ... Is EVENT
@@ -430,6 +435,7 @@ LIBIMPORT int     asm_get_len       (ASM *a);
 LIBIMPORT void    asm_label         (ASM *a, char *name);
 //
 LIBIMPORT void    emit_call         (ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
+LIBIMPORT void    emit_call_direct  (ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
 //
 LIBIMPORT void    emit_jump_jmp     (ASM *a, char *name);
 LIBIMPORT void    emit_jump_je      (ASM *a, char *name);

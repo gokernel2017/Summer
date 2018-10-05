@@ -36,7 +36,13 @@ void Run (ASM *a) {
 
 ASM * asm_new (unsigned int size) {
     ASM *a = (ASM*)malloc(sizeof(ASM));
+
+    #ifdef WIN32
     if (a && (a->code=(UCHAR*)malloc(size)) != NULL) {
+    #endif
+    #ifdef __linux__
+    if (a && (a->code = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MMAP_ANON, -1, 0)) != MAP_FAILED) {
+    #endif
         a->p     = a->code;
         a->label = NULL;
         a->jump  = NULL;
@@ -680,6 +686,17 @@ write_asm(" call\t%s", write_func_name);
     g(a,0xb8); asm_get_addr(a, func); // %eax
     g2(a,0xff,0xd0);                  // %eax
 
+}
+void emit_call_direct (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
+#ifdef __linux__
+#if defined(__x86_64__)
+    // call init
+    //uintptr_t rel = (uintptr_t)func - (uintptr_t)a->p - 5;
+    *a->p++ = 0xe8;
+    *(long*)a->p = ((void*)func - (void*)a->p - 4);
+    a->p += 4;
+#endif
+#endif
 }
 
 void emit_push_eax (ASM *a) {

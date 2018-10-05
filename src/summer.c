@@ -103,7 +103,16 @@ int main (int argc, char **argv) {
         else printf ("ERRO:\n%s\n", ErroGet());
 
         free (text);
-        core_Finalize ();
+//        core_Finalize ();
+        TFunc *init = ModuleFind ("sdl", "SDL_Init");
+        TFunc *quit = ModuleFind ("sdl", "SDL_Quit");
+        if (init && quit) {
+            printf ("-----------Carregando SDL_Init, SDL_Quit -------\n");
+            ((void(*)(int)) init->code ) (32);
+            ((void(*)())    quit->code ) ();
+            printf ("----------- FINALIZANDO SDL_Init, SDL_Quit -------\n");
+        }
+      
 
     } else {
 

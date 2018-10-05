@@ -23,6 +23,7 @@
 //
 //-------------------------------------------------------------------
 // FILE SIZE: 49.251
+
 #include "summer.h"
 #include <stdarg.h>
 #include <time.h>
@@ -82,7 +83,7 @@ extern void testDrawTriangle (void);
 TVar              Gvar [GVAR_SIZE]; // global:
 int               asm_mode;
 //
-static MODULE   * Gmodule = NULL; // ... console.log(); ...
+static TModule  * Gmodule = NULL; // ... console.log(); ...
 static TFunc    * Gfunc = NULL;  // store the user functions
 static DEFINE   * Gdefine = NULL;
 static ASM      * asm_function;
@@ -110,65 +111,71 @@ static int
     mov64_rdi_RBP
     ;
 
-#if defined(__x86_64__)
-static EVENT *save_event64;
-#endif
-
 void *var_rdi64;
 
 float _Fvalue_;
 
 static TFunc stdlib[]={
   //-----------------------------------------------------------------
-  // char*        char*   UCHAR*/ASM*             int   int   FUNC*
-  // name         proto   code                    type  len   next
+  // char*        char*   UCHAR*/ASM*             int   int   int       FUNC*
+  // name         proto   code                    type  len   sub_esp   next
   //-----------------------------------------------------------------
-  { "info",         "0i",       (UCHAR*)lib_info,       0,    0,    NULL },
-  { "addi",         "iii",      (UCHAR*)lib_addi,       0,    0,    NULL },
-  { "addf",         "fff",      (UCHAR*)lib_addf,       0,    0,    NULL },
-  { "arg",          "iiiiii",   (UCHAR*)lib_arg,        0,    0,    NULL },
-  { "printf",       "0s",       (UCHAR*)lib_printf,     0,    0,    NULL },
-  { "get_func",     "ps",       (UCHAR*)lib_get_func,   0,    0,    NULL },
-  { "fps",          "00",       (UCHAR*)time_fps,       0,    0,    NULL },
+  { "info",         "0i",       (UCHAR*)lib_info,       0,    0,  0,  NULL },
+  { "addi",         "iii",      (UCHAR*)lib_addi,       0,    0,  0,  NULL },
+  { "addf",         "fff",      (UCHAR*)lib_addf,       0,    0,  0,  NULL },
+  { "arg",          "iiiiii",   (UCHAR*)lib_arg,        0,    0,  0, NULL },
+  { "printf",       "0s",       (UCHAR*)lib_printf,     0,    0,  0, NULL },
+  { "get_func",     "ps",       (UCHAR*)lib_get_func,   0,    0,  0, NULL },
+  { "fps",          "00",       (UCHAR*)time_fps,       0,    0,  0,  NULL },
 #ifdef USE_DISASM
-  { "disasm",       "0s",       (UCHAR*)disasm,         0,    0,    NULL },
+  { "disasm",       "0s",       (UCHAR*)disasm,         0,    0, 0,   NULL },
 #endif
 #ifdef USE_GA // Graphic Application API:
-  { "gaInit",         "iiip",     (UCHAR*)gaInit,         0,    0,    NULL },
-  { "gaRun",          "00",       (UCHAR*)gaRun,          0,    0,    NULL },
-  { "gaBeginScene",   "00",       (UCHAR*)gaBeginScene,   0,    0,    NULL },
-  { "gaEndScene",     "00",       (UCHAR*)gaEndScene,     0,    0,    NULL },
-  { "gaText",         "0siii",    (UCHAR*)gaText,         0,    0,    NULL },
-  { "gaFPS",          "i0",       (UCHAR*)gaFPS,          0,    0,    NULL },
-  { "gaSetCall",      "0ps",      (UCHAR*)gaSetCall,      0,    0,    NULL },
-  { "gaDisplayMouse", "0ii",      (UCHAR*)gaDisplayMouse, 0,    0,    NULL },
-  { "gaButton",       "0iiiis",   (UCHAR*)gaButton,       0,    0,    NULL },
+  { "gaInit",         "iiip",     (UCHAR*)gaInit,         0,    0, 0,   NULL },
+  { "gaRun",          "00",       (UCHAR*)gaRun,          0,    0, 0,   NULL },
+  { "gaBeginScene",   "00",       (UCHAR*)gaBeginScene,   0,    0, 0,   NULL },
+  { "gaEndScene",     "00",       (UCHAR*)gaEndScene,     0,    0, 0,   NULL },
+  { "gaText",         "0siii",    (UCHAR*)gaText,         0,    0, 0,   NULL },
+  { "gaFPS",          "i0",       (UCHAR*)gaFPS,          0,    0, 0,  NULL },
+  { "gaSetCall",      "0ps",      (UCHAR*)gaSetCall,      0,    0, 0,   NULL },
+  { "gaDisplayMouse", "0ii",      (UCHAR*)gaDisplayMouse, 0,    0, 0,   NULL },
+  { "gaButton",       "0iiiis",   (UCHAR*)gaButton,       0,    0, 0,   NULL },
 //  { "rate",           "ii",       (UCHAR*)rate,           0,    0,    NULL },
 #endif
   //
   // Application API ... Only WIN32 ...:
   //
 #ifdef USE_APPLICATION
-  { "AppInit",        "iis",      (UCHAR*)AppInit,        0,    0,    NULL },
-  { "AppRun",         "0p",       (UCHAR*)AppRun,         0,    0,    NULL },
-  { "AppNewWindow",   "ppiiiis",  (UCHAR*)AppNewWindow,   0,    0,    NULL },
-  { "AppNewRenderGL", "ppiiiis",  (UCHAR*)AppNewRenderGL, 0,    0,    NULL },
-  { "AppNewButton",   "ppiiiis",  (UCHAR*)AppNewButton,   0,    0,    NULL },
-  { "AppSetCall",     "0pp",      (UCHAR*)AppSetCall,     0,    0,    NULL },
-  { "AppRender",      "00",       (UCHAR*)AppRender,      0,    0,    NULL },
-  { "Sleep",          "0i",       (UCHAR*)Sleep,          0,    0,    NULL },
+  { "AppInit",        "iis",      (UCHAR*)AppInit,        0,    0, 0,   NULL },
+  { "AppRun",         "0p",       (UCHAR*)AppRun,         0,    0, 0,   NULL },
+  { "AppNewWindow",   "ppiiiis",  (UCHAR*)AppNewWindow,   0,    0, 0,   NULL },
+  { "AppNewRenderGL", "ppiiiis",  (UCHAR*)AppNewRenderGL, 0,    0, 0,   NULL },
+  { "AppNewButton",   "ppiiiis",  (UCHAR*)AppNewButton,   0,    0, 0,   NULL },
+  { "AppSetCall",     "0pp",      (UCHAR*)AppSetCall,     0,    0, 0,   NULL },
+  { "AppRender",      "00",       (UCHAR*)AppRender,      0,    0, 0,   NULL },
+  { "Sleep",          "0i",       (UCHAR*)Sleep,          0,    0, 0,   NULL },
   // OpenGL:
-  { "glBegin",        "0i",       (UCHAR*)glBegin,        0,    0,    NULL },
-  { "glEnd",          "00",       (UCHAR*)glEnd,          0,    0,    NULL },
-  { "glVertex2f",     "0ff",      (UCHAR*)glVertex2f,     0,    0,    NULL },
-  { "glColor3f",      "0ff",      (UCHAR*)glColor3f,      0,    0,    NULL },
-  { "glRotatef",      "0ffff",    (UCHAR*)glRotatef,      0,    0,    NULL },
-  { "glPushMatrix",   "00",       (UCHAR*)glPushMatrix,   0,    0,    NULL },
-  { "glPopMatrix",    "00",       (UCHAR*)glPopMatrix,    0,    0,    NULL },
-  { "glClearColor",   "0ffff",    (UCHAR*)glClearColor,   0,    0,    NULL },
-  { "glClear",        "0i",       (UCHAR*)glClear,        0,    0,    NULL },
+  { "glBegin",      "0i",   (UCHAR*)glBegin,        FTMODULE, 0, 4,  NULL},
+  { "glEnd",        "00",   (UCHAR*)glEnd,          FTMODULE, 0, 0,  NULL},
+  { "glLoadIdentity","00",  (UCHAR*)glLoadIdentity, FTMODULE, 0, 0,  NULL},
+  { "glEnable",     "0i",   (UCHAR*)glEnable,       FTMODULE, 0, 4,  NULL},
+  { "glDepthFunc",  "0i",   (UCHAR*)glDepthFunc,    FTMODULE, 0, 4,  NULL},
+  { "glClearDepth", "0f",   (UCHAR*)glClearDepth,   FTMODULE, 0, 8,  NULL}, // double
+  { "glColor3f",    "0fff", (UCHAR*)glColor3f,      FTMODULE, 0, 12, NULL},
+  { "glVertex2f",   "0ff",  (UCHAR*)glVertex2f,     FTMODULE, 0, 8,  NULL},
+  { "glVertex3f",   "0fff", (UCHAR*)glVertex3f,     FTMODULE, 0,12,  NULL},
+  { "glPushMatrix", "00",   (UCHAR*)glPushMatrix,   FTMODULE, 0, 0,  NULL},
+  { "glPopMatrix",  "00",   (UCHAR*)glPopMatrix,    FTMODULE, 0, 0,  NULL},
+  { "glMatrixMode", "0i",   (UCHAR*)glMatrixMode,   FTMODULE, 0, 4,  NULL},
+  { "glRotatef",    "0ffff",(UCHAR*)glRotatef,      FTMODULE, 0, 16, NULL},
+  //
+  { "glVertex2fv",  "0f",   (UCHAR*)glVertex2fv,    FTMODULE, 0, 4, NULL},
+  { "glVertex3fv",  "0f",   (UCHAR*)glVertex3fv,    FTMODULE, 0, 4, NULL},
+  { "glColor3fv",   "0f",   (UCHAR*)glColor3fv,     FTMODULE, 0, 4, NULL},
+  { "glViewport",   "0iiii",(UCHAR*)glViewport,     FTMODULE, 0, 16, NULL},
+  { "glTranslatef","0fff",  (UCHAR*)glTranslatef,   FTMODULE, 0, 12, NULL},
 #endif
-  { NULL,             NULL,       NULL,                   0,    0,    NULL }
+  { NULL,             NULL,       NULL,                   0,    0, 0,   NULL }
 };
 
 void func_null (void) { printf ("FUNCTION: func_null\n"); }
@@ -188,10 +195,6 @@ ASM * core_Init (unsigned int size) {
         if ((asm_function = asm_new (size))==NULL) return NULL;
 
         core_ModuleAdd ("console", "log", "0s", (UCHAR*)lib_printf);
-
-        #if defined(__x86_64__)        
-        save_event64 = (EVENT*)malloc(sizeof(EVENT));
-        #endif
 
         #ifdef USE_APPLICATION
         //---------------------------------------
@@ -321,6 +324,33 @@ TFunc *FuncFind (char *name) {
       return func;
         func = func->next;
     }
+/*
+    // find in Gmodule:
+    TModule *p = Gmodule;
+    while (p) {
+        #ifdef WIN32
+        void *fp = (void*)GetProcAddress ((HMODULE)p->lib, name);
+        #endif
+        #ifdef __linux__
+        void *fp = dlsym (p->lib, name);
+        #endif
+        TFunc *fn;
+        if (fp && (fn = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
+            fn->name = strdup (name);
+            fn->proto = strdup ("ii");
+            fn->type = FUNC_TYPE_NATIVE_C;
+            fn->len = 0;
+            fn->code = (UCHAR*)fp;
+            //
+            // add in Gfunc ... on top
+            //
+            fn->next = Gfunc;
+            Gfunc = fn;
+      return fn;
+        }
+        p = p->next;
+    }
+*/
     return NULL;
 }
 int ArgumentFind (char *name) {
@@ -331,10 +361,12 @@ int ArgumentFind (char *name) {
 }
 
 TFunc *ModuleFind (char *LibName, char *FuncName) {
-    MODULE *p = Gmodule;
+    TModule *p = Gmodule;
+    TModule *pnew = NULL;
     while (p) {
         if (!strcmp(p->name, LibName)) {
             TFunc *f = p->func;
+            pnew = p;
             while (f) {
                 if (!strcmp(f->name, FuncName)) {
               return f;
@@ -344,11 +376,37 @@ TFunc *ModuleFind (char *LibName, char *FuncName) {
         }
         p = p->next;
     }
+
+    //
+    // ! create new, if function exist in library:
+    //
+    if (pnew != NULL) {
+        #ifdef WIN32
+        void *fp = (void*)GetProcAddress ((HMODULE)pnew->lib, FuncName);
+        #endif
+        #ifdef __linux__
+        void *fp = dlsym (pnew->lib, FuncName);
+        #endif
+        TFunc *fn;
+        if (fp && (fn = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
+            fn->name = strdup (FuncName);
+            fn->proto = strdup ("ii");
+            fn->type = FUNC_TYPE_MODULE;
+            fn->len = 0;
+            fn->code = (UCHAR*)fp;
+            //
+            // add in Gmodule ... on top
+            //
+            fn->next = pnew->func;
+            pnew->func = fn;
+      return fn;
+        }
+    }
     return NULL;
 }
 
 int ModuleIsLib (char *LibName) {
-    MODULE *p = Gmodule;
+    TModule *p = Gmodule;
     while (p) {
         if (!strcmp(p->name, LibName))
       return 1;
@@ -373,6 +431,7 @@ static void expression (LEXER *l, ASM *a) {
     if (l->tok==TOK_ID || l->tok==TOK_NUMBER) {
         char buf[100];
         TFunc *fi;
+        int next;
         int i;
 
         if (l->tok==TOK_NUMBER && strchr(l->token, '.'))
@@ -380,15 +439,15 @@ static void expression (LEXER *l, ASM *a) {
         else
             main_variable_type = var_type = TYPE_INT; // 0
 
-        if (see(l)=='.') { // console.log();
+        next = see(l);
+
+        if (next=='.' && ModuleIsLib(l->token)) { // ! console.log();
             lex_save(l);
-            sprintf (buf, "%s", l->token);
+            sprintf (buf, "%s", l->token); // TModule.name: := "console"
             lex(l); // .
-            if (lex(l)==TOK_ID) { // ! FuncName:
-                if ((fi = ModuleFind (buf, l->token)) != NULL) {
-                    execute_call (l, a, fi);
-              return;
-                }
+            if (lex(l)==TOK_ID && (fi = ModuleFind (buf, l->token)) != NULL) { // ! FuncName in TModule
+                execute_call (l, a, fi);
+          return;
             }
             else lex_restore(l);
         }
@@ -403,7 +462,6 @@ static void expression (LEXER *l, ASM *a) {
         }
 
         if ((i = VarFind (l->token)) != -1) {
-            int next = see(l);
 
             main_variable_type = var_type = Gvar[i].type;
 
@@ -443,30 +501,28 @@ static void expression (LEXER *l, ASM *a) {
                         lex_save(l); // save the lexer position
                         sprintf (buf, l->token);
                         lex(l); // .
-                        if (lex(l)==TOK_ID) { // Module FuncName
-                            if ((fi = ModuleFind(buf, l->token)) != NULL) {
+                        if (lex(l)==TOK_ID && (fi = ModuleFind(buf, l->token)) != NULL) {
 
-                                execute_call (l, a, fi);
+                            execute_call (l, a, fi);
 
-                                #ifdef USE_VM
-                                // The function return is stored in variable VALUE( eax ) ... see in file: vm.c
-                                emit_mov_eax_var(a,i);
-                                #endif
+                            #ifdef USE_VM
+                            // The function return is stored in variable VALUE( eax ) ... see in file: vm.c
+                            emit_mov_eax_var(a,i);
+                            #endif
 
-                                #ifdef USE_JIT
-                                //
-                                // The function return is stored in register %eax ... types ! TYPE_FLOAT
-                                //
-                                //   HERE: copy the register ( %eax ) to the variable
-                                //
-                                if (main_variable_type != TYPE_FLOAT) {
-                                    emit_mov_reg_var (a, EAX, &Gvar[i].value.i);
-                                } else {
+                            #ifdef USE_JIT
+                            //
+                            // The function return is stored in register %eax ... types ! TYPE_FLOAT
+                            //
+                            //   HERE: copy the register ( %eax ) to the variable
+                            //
+                            if (main_variable_type != TYPE_FLOAT) {
+                                emit_mov_reg_var (a, EAX, &Gvar[i].value.i);
+                            } else {
 
-                                }
-                                #endif //: #ifdef USE_JIT
-                          return;
                             }
+                            #endif //: #ifdef USE_JIT
+                      return;
                         }
                     }
                     //
@@ -919,7 +975,7 @@ static void word_module (LEXER *l, ASM *a) {
     //
     // is module exist then return
     //
-    MODULE *mod, *p = Gmodule;
+    TModule *mod, *p = Gmodule;
     while (p) { // ! if exist
         if (!strcmp(p->name, LibName))
       return;
@@ -930,9 +986,9 @@ static void word_module (LEXER *l, ASM *a) {
     lib = (void *)LoadLibrary (FileName);
     #endif
     #ifdef __linux__
-    lib = dlopen (FileName, RTLD_LAZY); // RTLD_NOW
+    lib = dlopen (FileName, RTLD_NOW); // RTLD_LAZY); // RTLD_NOW
     #endif
-    if (lib && (mod = (MODULE*) malloc(sizeof(MODULE))) != NULL) {
+    if (lib && (mod = (TModule*) malloc(sizeof(TModule))) != NULL) {
         mod->name = strdup(LibName);
         mod->lib = lib;
         mod->func = NULL;
@@ -948,13 +1004,18 @@ static void word_module (LEXER *l, ASM *a) {
 }
 
 //
-// import ("sdl", "SDL_init", "0i");
+// import ("sdl", "SDL_init", "0i", "sub_int_value");
+// import (0, "sdl", "SDL_init", "0i", "sub_int_value");
 //
 static void word_import (LEXER *l, ASM *a) {
-    char LibName[100];
-    char FuncName[100];
-    char proto[100];
-    MODULE *p = Gmodule;
+    char LibName[100] = { 0 };
+    char FuncName[100] = { 0 };
+    char proto[100] = { 0 };
+    int sub = 0;
+    int  library = 1;
+    TModule *p = Gmodule;
+    void *fp = NULL;
+    TFunc *func = NULL;
     int count = 0;
 
     while (lex(l)) {
@@ -965,32 +1026,51 @@ static void word_import (LEXER *l, ASM *a) {
                 sprintf (FuncName, "%s", l->token);
             } else if (count==2) {
                 sprintf(proto, "%s", l->token);
+            } else if (count==3) { // sub_esp
+                sub = atoi(l->token);
             }
             count++;
+        }
+        if (l->tok==TOK_NUMBER) {
+            library = atoi(l->token);
         }
         if (l->tok==')' || l->tok==';') break;
     }
 
+//printf ("library: %d\n", library);
+
     while (p) {
         if (!strcmp(p->name, LibName)) {
             #ifdef WIN32
-            void *fp = (void*)GetProcAddress ((HMODULE)p->lib, FuncName);
+            fp = (void*)GetProcAddress ((HMODULE)p->lib, FuncName);
             #endif
             #ifdef __linux__
-            void *fp = dlsym (p->lib, FuncName);
+            fp = dlsym (p->lib, FuncName);
             #endif
-            if (fp) {
-                TFunc *func;
-                if ((func = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
-                    func->name = strdup (FuncName);
-                    func->proto = strdup (proto);
-                    func->type = FUNC_TYPE_NATIVE_C;
-                    func->len = 0;
-                    func->code = (UCHAR*)fp;
+            if (fp && (func = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
+                func->name = strdup (FuncName);
+                func->proto = strdup (proto);
+                func->type = FUNC_TYPE_MODULE;
+                func->len = 0;
+                func->sub_esp = sub;
+                func->code = fp;
 
-                    // add function on top
+                if (library) {
+                    //
+                    // add in Gmodule ... on top
+                    // USAGE:
+                    //   sdl.SDL_SetVideoMode (...);
+                    //
                     func->next = p->func;
                     p->func = func;
+                } else {
+                    //
+                    // add in Gfunc ... on top
+                    // USAGE:
+                    //   SDL_SetVideoMode (...);
+                    //
+                    func->next = Gfunc;
+                    Gfunc = func;
                 }
             }
             else printf ("Function Not Found: '%s'\n", FuncName);//Erro("%s: %d: USAGE: import(%csdl%c, %SDL_Init%c, %c0i%c\n", '"', '"', '"');
@@ -1113,7 +1193,12 @@ write_asm("// %s | len: %d", name, len);
     func->proto = strdup (proto);
     func->type = FUNC_TYPE_COMPILED;
     func->len = len;
+    #ifdef WIN32
     func->code = (UCHAR*) malloc (func->len);
+    #endif
+    #ifdef __linux__
+    func->code = mmap(NULL, func->len, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MMAP_ANON, -1, 0);
+    #endif
     // NOW: copy the buffer ( f ):
     for (i=0;i<func->len;i++) {
         func->code[i] = asm_function->code[i];
@@ -1246,7 +1331,6 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                 if (var_type != TYPE_FLOAT) {
                     if (count==0) {         // argument 1
                         emit_mov_eax_edi (a);
-//                        mov64_rdi_RBP = 0;
                     } else if (count==1) {  // argument 2
                         emit_mov_eax_esi (a);
                     } else if (count==2) {  // argument 3
@@ -1329,7 +1413,22 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
         emit_call_vm (a, (ASM*)(func->code), (UCHAR)count, return_type);
         #endif
     } else {
-        emit_call (a, (void*)func->code, (UCHAR)count, return_type);
+
+        #ifdef __linux__
+            #if defined(__x86_64__)
+            if (func->type == FUNC_TYPE_MODULE) {
+                emit_call_direct (a, func->code, (UCHAR)count, return_type);
+            } else {
+                emit_call(a, func->code, (UCHAR)count, return_type);
+            }
+            #else
+                emit_call(a, func->code, (UCHAR)count, return_type);
+            #endif
+        #endif
+
+        #ifdef WIN32
+        emit_call (a, func->code, (UCHAR)count, return_type);
+        #endif
     }
 }
 
@@ -1470,23 +1569,16 @@ static void atom (LEXER *l, ASM *a) { // expres
                 if (lex(l) && lex(l)) { // .offsetX;
 
                     #if defined(__x86_64__)
-                    if (mov64_rdi_RBP==0) {
-                        mov64_rdi_RBP = 1;
+//                    if (mov64_rdi_RBP==0) {
+//                        mov64_rdi_RBP = 1;
                         // 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
                         g4(a,0x48,0x89,0x7d,0xf8);
-                        //48 89 3c 25   f0 09 60 00 	mov    %rdi,0x6009f0 // save_event64
-                        g4(a,0x48, 0x89, 0x3c, 0x25); asm_get_addr(a, &save_event64);
-                    }
-//                    printf ("push argument (%s.%s)\n", argument[i].name, l->token);
+//                    }
+                    printf ("push argument (%s.%s)\n", argument[i].name, l->token);
                     #endif
 
                     if (!strcmp(l->token, "offsetX")) {
                         #if defined(__x86_64__)
-                        //48 8b 04 25   f0 09 60 00 	mov    0x6009f0,%rax // save_event64
-                        //48 89 45 f8          	mov    %rax,-0x8(%rbp)
-                        g4(a,0x48, 0x8b, 0x04, 0x25); asm_get_addr(a, &save_event64);
-                        g4(a,0x48, 0x89, 0x45, 0xf8);
-                        
 // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
 // 8b 40 08             	mov    8(%rax),%eax
                         g4(a,0x48,0x8b,0x45,0xf8);
@@ -1505,11 +1597,6 @@ static void atom (LEXER *l, ASM *a) { // expres
                     else
                     if (!strcmp(l->token, "offsetY")) {
                         #if defined(__x86_64__)
-                        //48 8b 04 25   f0 09 60 00 	mov    0x6009f0,%rax
-                        //48 89 45 f8          	mov    %rax,-0x8(%rbp)
-                        g4(a,0x48, 0x8b, 0x04, 0x25); asm_get_addr(a, &save_event64);
-                        g4(a,0x48, 0x89, 0x45, 0xf8);
-                        
 // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
 // 8b 40 0c             	mov    12(%rax),%eax
                         g4(a,0x48,0x8b,0x45,0xf8);
@@ -1528,11 +1615,6 @@ static void atom (LEXER *l, ASM *a) { // expres
                     else
                     if (!strcmp(l->token, "which")) {
                         #if defined(__x86_64__)
-                        //48 8b 04 25   f0 09 60 00 	mov    0x6009f0,%rax
-                        //48 89 45 f8          	mov    %rax,-0x8(%rbp)
-                        g4(a,0x48, 0x8b, 0x04, 0x25); asm_get_addr(a, &save_event64);
-                        g4(a,0x48, 0x89, 0x45, 0xf8);
-                        
 // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
 // 8b 40 0c             	mov    16(%rax),%eax
                         g4(a,0x48,0x8b,0x45,0xf8);
@@ -1675,7 +1757,7 @@ F_STRING *fs_new (char *s) {
 }
 
 void core_ModuleAdd (char *module_name, char *func_name, char *proto, UCHAR *code) {
-    MODULE *mod, *p = Gmodule;
+    TModule *mod, *p = Gmodule;
     TFunc *func;
 
     while (p) {
@@ -1698,7 +1780,7 @@ void core_ModuleAdd (char *module_name, char *func_name, char *proto, UCHAR *cod
     //
     // create: MODULE and FUNCTION.
     //
-    if ((mod = (MODULE*) malloc(sizeof(MODULE))) != NULL) {
+    if ((mod = (TModule*) malloc(sizeof(TModule))) != NULL) {
         if ((func = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
             func->name = strdup (func_name);
             func->proto = strdup (proto);

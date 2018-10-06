@@ -37,12 +37,7 @@ void Run (ASM *a) {
 ASM * asm_new (unsigned int size) {
     ASM *a = (ASM*)malloc(sizeof(ASM));
 
-    #ifdef WIN32
     if (a && (a->code=(UCHAR*)malloc(size)) != NULL) {
-    #endif
-    #ifdef __linux__
-    if (a && (a->code = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MMAP_ANON, -1, 0)) != MAP_FAILED) {
-    #endif
         a->p     = a->code;
         a->label = NULL;
         a->jump  = NULL;
@@ -50,6 +45,18 @@ ASM * asm_new (unsigned int size) {
         //a->ip    = 0; // not used
         return a;
     }
+/*
+    #ifdef __linux__
+    if (a && (a->code = mmap(NULL, size, PROT_READ | PROT_WRITE, MMAP_ANON | MAP_PRIVATE, -1, 0)) != MAP_FAILED) {
+        a->p     = a->code;
+        a->label = NULL;
+        a->jump  = NULL;
+        a->size  = size;
+        //a->ip    = 0; // not used
+        return a;
+    }
+    #endif
+*/
     return NULL;
 }
 void asm_reset (ASM *a) {
@@ -98,6 +105,7 @@ int set_executable (void *ptr, unsigned int size) {
     end = (unsigned long)ptr + size;
     end = (end + PageSize - 1) & ~(PageSize - 1);
     if (mprotect((void *)start, end - start, PROT_READ | PROT_WRITE | PROT_EXEC) == -1) {
+    //if (mprotect((void *)start, end - start, PROT_READ | PROT_EXEC) == -1) {
         Erro ("ERROR: asm_set_executable() ... NOT FOUND - mprotec()\n");
         return 1; // erro
     }

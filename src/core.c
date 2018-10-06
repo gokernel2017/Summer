@@ -1193,12 +1193,12 @@ write_asm("// %s | len: %d", name, len);
     func->proto = strdup (proto);
     func->type = FUNC_TYPE_COMPILED;
     func->len = len;
-    #ifdef WIN32
     func->code = (UCHAR*) malloc (func->len);
-    #endif
+/*
     #ifdef __linux__
     func->code = mmap(NULL, func->len, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MMAP_ANON, -1, 0);
     #endif
+*/
     // NOW: copy the buffer ( f ):
     for (i=0;i<func->len;i++) {
         func->code[i] = asm_function->code[i];
@@ -1569,13 +1569,14 @@ static void atom (LEXER *l, ASM *a) { // expres
                 if (lex(l) && lex(l)) { // .offsetX;
 
                     #if defined(__x86_64__)
-//                    if (mov64_rdi_RBP==0) {
-//                        mov64_rdi_RBP = 1;
+                    if (mov64_rdi_RBP==0) {
+                        mov64_rdi_RBP = 1;
                         // 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
                         g4(a,0x48,0x89,0x7d,0xf8);
-//                    }
-                    printf ("push argument (%s.%s)\n", argument[i].name, l->token);
+                    }
                     #endif
+
+                    printf ("push argument (%s.%s)\n", argument[i].name, l->token);
 
                     if (!strcmp(l->token, "offsetX")) {
                         #if defined(__x86_64__)

@@ -34,14 +34,13 @@ var mx = 0;
 var my = 0;
 var click = 0;
 var count = 0;
-var is_button = 0;
 
 //
 // e.which := 1 or 3
 //
 function onMouseDown (e) {
 
-    if (mx > 50 && mx < 170) {
+    if (e.offsetX > 50 && e.offsetX < 170) {
 
         if (my > 50 && my < 80) { // button 1:
             click = e.which;

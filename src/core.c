@@ -1193,10 +1193,12 @@ write_asm("// %s | len: %d", name, len);
     func->proto = strdup (proto);
     func->type = FUNC_TYPE_COMPILED;
     func->len = len;
+//    #ifdef WIN32
     func->code = (UCHAR*) malloc (func->len);
 /*
+    #endif
     #ifdef __linux__
-    func->code = mmap(NULL, func->len, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MMAP_ANON, -1, 0);
+    func->code = mmap(NULL, func->len, PROT_READ | PROT_WRITE, MAP_PRIVATE | MMAP_ANON, -1, 0);
     #endif
 */
     // NOW: copy the buffer ( f ):

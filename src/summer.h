@@ -351,6 +351,7 @@ LIBIMPORT void emit_expression_pop_64_int (ASM *a);
 LIBIMPORT void emit_expression_pop_64_float (ASM *a);
 //
 LIBIMPORT int     set_executable    (void *ptr, unsigned int size);
+LIBIMPORT int     set_executable2   (void *ptr, unsigned int size);
 LIBIMPORT void    asm_get_addr      (ASM *a, void *ptr); // 32/64 BITS OK
 //-----------------------------------------------
 // int expression math:

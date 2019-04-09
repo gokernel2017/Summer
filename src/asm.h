@@ -57,6 +57,7 @@ extern "C" {
 #define G2_MOV_EAX_ECX	0x89, 0xc1 // 89 c1 : mov   %eax, %ecx
 #define G2_MOV_EAX_EDX	0x89, 0xc2 // 89 c2 : mov   %eax, %edx
 #define G2_MOV_EAX_EDI	0x89, 0xc7        // 89 c7      : mov   %eax, %edi
+#define G2_MOV_EAX_ESI  0x89, 0xc6        // 89 c6      : mov   %eax, %esi
 //
 #define OP_NOP          0x90
 

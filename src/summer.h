@@ -15,8 +15,8 @@
 //
 //-------------------------------------------------------------------
 //
-#ifndef _BEE_H_
-#define _BEE_H_
+#ifndef _SUMMER_H_
+#define _SUMMER_H_
 
 // INFO: Windows X64 BITS functions arguments:
 // arg 0 = %ecx
@@ -31,14 +31,6 @@
 // arg 3 = %ecx
 // arg 4 = %r8
 // arg 5 = %r9
-
-/*
-  89 c1                	mov    %eax, %ecx
-  89 c2                	mov    %eax, %edx
-
-  89 c7                	mov    %eax, %edi
-  89 c6                	mov    %eax, %esi
-*/
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,16 +47,16 @@ extern "C" {
 //---------------  DEFINE / ENUM  ---------------
 //-----------------------------------------------
 //
-#define SUMMER_VERSION					0
-#define SUMMER_VERSION_SUB			10
-#define SUMMER_VERSION_PATCH		0
+#define SUMMER_VERSION            0
+#define SUMMER_VERSION_SUB        10
+#define SUMMER_VERSION_PATCH      0
 #if defined(__x86_64__)
-		#define SUMMER_VERSION_NAME		"BETA 64 BITS"
+    #define SUMMER_VERSION_NAME   "BETA 64 BITS"
 #else
-		#define SUMMER_VERSION_NAME		"BETA 32 BITS"
+    #define SUMMER_VERSION_NAME   "BETA 32 BITS"
 #endif
 
-#define GVAR_SIZE							255
+#define GVAR_SIZE                 255
 
 enum {
     TYPE_LONG = 0,
@@ -90,7 +82,7 @@ enum {
 //
 typedef union  VALUE    VALUE;
 typedef struct TVar     TVar;
-typedef struct TFunc		TFunc;
+typedef struct TFunc    TFunc;
 typedef struct TFstring	TFstring; // fixed string
 typedef struct TDefine	TDefine;
 
@@ -140,24 +132,24 @@ LIBIMPORT int ifdef_index, ifdef_inc, ifndef_true;
 //-----------------  PUBLIC API  ----------------
 //-----------------------------------------------
 //
-LIBIMPORT ASM		*	core_Init 			(unsigned int size);
-LIBIMPORT int			core_Parse			(LEXER *l, ASM *a, char *text, char *name);
-LIBIMPORT void		core_Finalize		(void);
+LIBIMPORT ASM   * core_Init       (unsigned int size);
+LIBIMPORT int     core_Parse      (LEXER *l, ASM *a, char *text, char *name);
+LIBIMPORT void    core_Finalize   (void);
 //
-LIBIMPORT void		Disasm					(UCHAR *code, char *name, int len);
-LIBIMPORT void 		Assemble				(LEXER *l, ASM *a);
+LIBIMPORT void    Disasm          (UCHAR *code, char *name, int len);
+LIBIMPORT void    Assemble        (LEXER *l, ASM *a);
 //
-LIBIMPORT ASM * 	GetAsmMain			(void); // in file: "summer.c"
+LIBIMPORT ASM   * GetAsmMain      (void); // in file: "summer.c"
 //
-LIBIMPORT void		CreateVarLong		(char *name, long l);
-LIBIMPORT void 		FuncAdd					(TFunc *func);
-LIBIMPORT TFunc *	FuncFind 				(char *name);
-LIBIMPORT int			VarFind					(char *name);
-LIBIMPORT void 		proc_ifdef			(char *name);
-LIBIMPORT int 		is_defined 			(char *name);
+LIBIMPORT void    CreateVarLong   (char *name, long l);
+LIBIMPORT void    FuncAdd         (TFunc *func);
+LIBIMPORT TFunc * FuncFind        (char *name);
+LIBIMPORT int     VarFind         (char *name);
+LIBIMPORT void    proc_ifdef      (char *name);
+LIBIMPORT int     is_defined      (char *name);
 
 #ifdef __cplusplus
 }
 #endif
-#endif // ! _BEE_H_
+#endif // ! _SUMMER_H_
 

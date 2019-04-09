@@ -740,102 +740,97 @@ void emit_print_string (ASM *a, char *s) {
 
 void emit_pop_print_result (ASM *a, int var_type, int new_line) {
     #if defined(__x86_64__)
-				#ifdef WIN32
-				// the result of expression is in register: %eax
-				// argument 1 = %ecx
-				// argument 2 = %edx
-				if (var_type == 0) { // TYPE_LONG
-						// argument 1:
-						// b9 		00 20 40 00       	mov    $0x402000,%ecx
-						g(a,0xb9);
-						if (new_line)
-								asm_get_addr(a,(void*)"%d\n");
-						else
-								asm_get_addr(a,(void*)"%d ");
-						// argument 2:
-  					g2(a,0x89,0xc2); //	mov    %eax,%edx
-						emit_call(a,printf,0,0);
-				}
-				if (var_type == 1) { // TYPE_FLOAT | WINDOWS 64
-						emit_float_fstps (a, &asmFvalue); // store expression result | TYPE_FLOAT
-
-						// f3 0f 10 04 25 		20 7a 40 00			movss  0x407a20,%xmm0
-						g5(a,0xf3, 0x0f, 0x10, 0x04, 0x25); asm_get_addr(a, &asmFvalue);
-
-						//---------------------------------------------------
-    				// f3 0f 5a c0          	cvtss2sd %xmm0,%xmm0
-    				g4(a,0xf3, 0x0f, 0x5a, 0xc0);
-
-						// 66 0f 28 c8          	movapd %xmm0,%xmm1
-						g4(a,0x66, 0x0f, 0x28, 0xc8);
-
-						// 66 48 0f 7e c2       	movq   %xmm0,%rdx
-						g5(a,0x66, 0x48, 0x0f, 0x7e, 0xc2);
-						//---------------------------------------------------
-
-    				// argument 1: "string"
-						// b9 		00 20 40 00       	mov    $0x402000,%ecx
-						g(a,0xb9);
-						if (new_line)
-								asm_get_addr(a, &("%f\n"));
-						else
-								asm_get_addr(a, &("%f "));
-						emit_call(a,printf,0,0);
-				}
-				#endif
-				#ifdef __linux__
-				// the result of expression is in register: %eax
-				// argument 1 = %edi
-				// argument 2 = %esi
-				if (var_type == 0) { // TYPE_LONG
-						// b9 		00 20 40 00       	mov    $0x402000,%ecx
-						g(a,0xb9);
-						if (new_line)
+        #ifdef WIN32
+        // the result of expression is in register: %eax
+        // argument 1 = %ecx
+        // argument 2 = %edx
+        if (var_type == 0) { // TYPE_LONG
+            // argument 1:
+            // b9 		00 20 40 00       	mov    $0x402000,%ecx
+            g(a,0xb9);
+            if (new_line)
                 asm_get_addr(a,(void*)"%d\n");
-						else
+            else
                 asm_get_addr(a,(void*)"%d ");
-  					g2(a,0x89,0xc2); //	mov    %eax,%edx
-						emit_call(a,printf,0,0);
-				}
-				if (var_type == 1) { // TYPE_FLOAT | LINUX 64
-						emit_float_fstps (a, &asmFvalue); // store expression result | TYPE_FLOAT
-    				emit_mov_var_reg(a, &asmFvalue, EAX);
+            // argument 2:
+            g2(a,0x89,0xc2); //	mov    %eax,%edx
+            emit_call(a,printf,0,0);
+        }
+        if (var_type == 1) { // TYPE_FLOAT | WINDOWS 64
+            emit_float_fstps (a, &asmFvalue); // store expression result | TYPE_FLOAT
 
-    				// 89 45 fc             	mov    %eax,-0x4(%rbp)
-    				g3(a,0x89, 0x45,0xfc);
+            // f3 0f 10 04 25 		20 7a 40 00			movss  0x407a20,%xmm0
+            g5(a,0xf3, 0x0f, 0x10, 0x04, 0x25); asm_get_addr(a, &asmFvalue);
 
-    				// f3 0f 10 45 fc       	movss  -0x4(%rbp),%xmm0
-    				g5(a,0xf3, 0x0f, 0x10, 0x45, 0xfc);
+            //---------------------------------------------------
+            // f3 0f 5a c0          	cvtss2sd %xmm0,%xmm0
+            g4(a,0xf3, 0x0f, 0x5a, 0xc0);
 
-						//----------------------------------------------
-						// 0f 14 c0             	unpcklps %xmm0,%xmm0
-						//----------------------------------------------
+            // 66 0f 28 c8          	movapd %xmm0,%xmm1
+            g4(a,0x66, 0x0f, 0x28, 0xc8);
 
-    				// 0f 5a c0             	cvtps2pd %xmm0,%xmm0
-    				g3(a,0x0f, 0x5a, 0xc0);
+            // 66 48 0f 7e c2       	movq   %xmm0,%rdx
+            g5(a,0x66, 0x48, 0x0f, 0x7e, 0xc2);
+            //---------------------------------------------------
 
-    				// argument 1:
-    				// b8    00 20 40 00       	mov    $0x402000,%eax
-    				g(a,0xb8);
-						if (new_line)
+            // argument 1: "string"
+            // b9 		00 20 40 00       	mov    $0x402000,%ecx
+            g(a,0xb9);
+            if (new_line)
+                asm_get_addr(a, &("%f\n"));
+            else
+                asm_get_addr(a, &("%f "));
+            emit_call(a,printf,0,0);
+        }
+        #endif
+        #ifdef __linux__
+        // the result of expression is in register: %eax
+        // argument 1 = %edi
+        // argument 2 = %esi
+        if (var_type == 0) { // TYPE_LONG
+            // argument 1:
+            // bf     e8 03 00 00       	mov    $0x3e8,%edi
+            g(a,0xbf);
+            if (new_line)
+                asm_get_addr(a,(void*)"%d\n");
+            else
+                asm_get_addr(a,(void*)"%d ");
+            // argument 2:
+            g2(a,G2_MOV_EAX_ESI);
+            emit_call(a,printf,0,0);
+        }
+        if (var_type == 1) { // TYPE_FLOAT | LINUX 64
+            emit_float_fstps (a, &asmFvalue); // store expression result | TYPE_FLOAT
+            emit_mov_var_reg(a, &asmFvalue, EAX);
+
+            // 89 45 fc             	mov    %eax,-0x4(%rbp)
+            g3(a,0x89, 0x45,0xfc);
+
+            // f3 0f 10 45 fc       	movss  -0x4(%rbp),%xmm0
+            g5(a,0xf3, 0x0f, 0x10, 0x45, 0xfc);
+
+            //----------------------------------------------
+            // 0f 14 c0             	unpcklps %xmm0,%xmm0
+            //----------------------------------------------
+
+            // 0f 5a c0             	cvtps2pd %xmm0,%xmm0
+            g3(a,0x0f, 0x5a, 0xc0);
+
+            // argument 1:
+            // b8    00 20 40 00       	mov    $0x402000,%eax
+            g(a,0xb8);
+            if (new_line)
                 asm_get_addr(a,(void*)"%f\n");
-						else
+            else
                 asm_get_addr(a,(void*)"%f ");
-    				g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
+            g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
 
-						/*
-    				// argument 1:
-						// bf 		00 20 40 00       	mov    $0x402000,%edi
-						g(a,0xbf); asm_get_addr(a,"%f\n");
-						*/
-						emit_call(a,printf,0,0);
-				}
-				#endif
-		#else // 64 bits
-
-		#endif
+            emit_call(a,printf,0,0);
+        }
+        #endif
+    #else // 64 bits
+    #endif
 }
-
 
 void emit_expression_push_long (ASM *a, long value) {
 		emit_mov_long_reg (a, value, reg); // mov $1000, %eax
@@ -870,35 +865,35 @@ void emit_expression_sub_long (ASM *a) {
 
 void emit_expression_mul_long (ASM *a) {
     pop_register();
-		if (reg == ECX && reg-1 == EAX) {
-				EMIT(a,OP_imul_ecx_eax); // imul %ecx, %eax
-		}
-		else
-		if (reg == EDX && reg-1 == ECX) {
-				EMIT(a,OP_imul_edx_ecx); // imul %edx, %ecx
-		}
+    if (reg == ECX && reg-1 == EAX) {
+        EMIT(a,OP_imul_ecx_eax); // imul %ecx, %eax
+    }
+    else
+    if (reg == EDX && reg-1 == ECX) {
+        EMIT(a,OP_imul_edx_ecx); // imul %edx, %ecx
+    }
 }
 
 void emit_expression_div_long (ASM *a) {
     pop_register();
-		if (reg == ECX) {
-				// DEBUG !
-				printf ("  cltd\n");
-    		printf ("  idiv %s\n", REGISTER[reg]);
-				// emit ...
-				g(a,0x99);        // 99       cltd
-				g2(a,0xf7,0xf9);  // f7 f9    idiv   %ecx
-		} else {
-				Erro ("asm Division erro ... please use as first expression !!!\n");
-		}
+    if (reg == ECX) {
+        // DEBUG !
+        printf ("  cltd\n");
+        printf ("  idiv %s\n", REGISTER[reg]);
+        // emit ...
+        g(a,0x99);        // 99       cltd
+        g2(a,0xf7,0xf9);  // f7 f9    idiv   %ecx
+    } else {
+        Erro ("asm Division erro ... please use as first expression !!!\n");
+    }
 }
 
 UCHAR * asm_GetCode (ASM *a) {
-		return a->code;
+    return a->code;
 }
 
 int asm_GetLen (ASM *a) {
-		return (a->p - a->code);
+    return (a->p - a->code);
 }
 
 void emit_cmp_eax_var (ASM *a, void *var) {

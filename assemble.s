@@ -30,23 +30,23 @@ asm hello {
   //
   #ifdef __x86_64__
     #ifdef WIN32
-    mov 	b, %edx
-    mov 	a, %ecx
+    mov   b, %edx
+    mov   a, %ecx
     #endif
     #ifdef __linux__
-    mov 	b, %esi
-    mov 	a, %edi
+    mov   b, %esi
+    mov   a, %edi
     #endif
-    call 	func_add
+    call  func_add
   #endif // ! __x86_64__
 
   #ifdef __x86_32__
-    mov 	b, %eax | mov %eax, 4(%esp)
-    mov 	a, %eax | mov %eax, 0(%esp)
+    mov   b, %eax | mov %eax, 4(%esp)
+    mov   a, %eax | mov %eax, 0(%esp)
     call  func_add
   #endif
 
-  mov   %eax, i // i = a + b := ( 2250 )
+  mov  %eax, i // i = a + b := ( 2250 )
 }
 
   hello();

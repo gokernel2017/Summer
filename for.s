@@ -1,0 +1,46 @@
+//-------------------------------------------------------------------
+//
+// Assembly example ( for ):
+//
+//-------------------------------------------------------------------
+//
+int i = 55, a = 10, b = 30;
+
+//
+// for (i = a; i < b; i++) {
+//   printi i;
+// }
+//
+asm function_for {
+
+  // i = a;
+  mov a, %eax
+  mov %eax, i
+
+  // FIRST check if is true:
+  // i < b
+  mov b, %eax
+  cmp %eax, i
+  jge label_end
+
+label_top:
+
+  // block_begin: {
+  //---------------
+  printi i;
+  incl i // i++
+  //---------------
+  // block_end: }
+
+  // i < b;
+  mov b, %eax
+  cmp %eax, i
+  jl label_top  // <
+  // jle label_top // <=
+
+label_end:
+}
+
+  function_for ();
+
+

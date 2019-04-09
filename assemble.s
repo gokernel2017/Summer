@@ -1,0 +1,55 @@
+//-------------------------------------------------------------------
+//
+// Assembly Example:
+//
+// Defined:
+//   __x86_64__
+//   __x86_32__
+//   WIN32
+//   __linux__
+//   WINDOWS_32
+//   WINDOWS_64
+//   LINUX_32
+//   LINUX_64
+//
+//-------------------------------------------------------------------
+//
+int i = 0, a = 1500, b = 750;
+
+asm hello {
+
+  //---------------------------------------------
+  // INFO: Windows X64 BITS functions arguments:
+  // arg 1 = %ecx
+  // arg 2 = %edx
+  //
+  // INFO: Linux X64 BITS functions arguments:
+  // arg 1 = %edi
+  // arg 2 = %esi
+  //---------------------------------------------
+  //
+  #ifdef __x86_64__
+    #ifdef WIN32
+    mov 	b, %edx
+    mov 	a, %ecx
+    #endif
+    #ifdef __linux__
+    mov 	b, %esi
+    mov 	a, %edi
+    #endif
+    call 	func_add
+  #endif // ! __x86_64__
+
+  #ifdef __x86_32__
+    mov 	b, %eax | mov %eax, 4(%esp)
+    mov 	a, %eax | mov %eax, 0(%esp)
+    call  func_add
+  #endif
+
+  mov   %eax, i // i = a + b := ( 2250 )
+}
+
+  hello();
+  info(1);
+
+

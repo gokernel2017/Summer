@@ -1,8 +1,8 @@
 
-THANKS TO:
+ THANKS TO:
  ----------------------------------------------
 
-   01: God the creator of the heavens and the earth in the name of Jesus Christ.
+   01: The eternal, the creator of the heavens and the earth.
 
    02 - Fabrice Bellard: www.bellard.org
 
@@ -14,11 +14,24 @@ THANKS TO:
 
  ----------------------------------------------
 
- SUMMER LANGUAGE:
+MINI LANGUAGE:
 
- Temporarily Disabled:
- 
- See:
- https://github.com/gokernel2017/summer_language_32_bits
+ To compile type:
+   make clean
+   make
+
+ To test the SUMMER Language(WINDOWS), type:
+   summer.exe test.s
+
+ To test the SUMMER Language(LINUX), type:
+   ./summer test.s
+
+ WORDS:
+   int,
+   var (int, float),
+   asm
+
+ BETA.
 
  BY: Francisco - gokernel@hotmail.com
+

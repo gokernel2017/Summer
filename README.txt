@@ -2,7 +2,7 @@
  THANKS TO:
  ----------------------------------------------
 
-   01: The eternal, the creator of the heavens and the earth.
+   01: The eternal creator of the heavens and the earth.
 
    02 - Fabrice Bellard: www.bellard.org
 

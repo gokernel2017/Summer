@@ -27,8 +27,8 @@ MINI LANGUAGE:
    ./summer test.s
 
  INFO IMPLEMENTED:
-   01: Call Function with max 4 arguments... PLEASE WITH IMPLEMENTATION
-   02: In ASM ( asm { } ) mode Call Function with max 2 arguments... PLEASE WITH IMPLEMENTATION
+   01: Call Function with max 4 arguments... PLEASE WAIT IMPLEMENTATION
+   02: In ASM ( asm { } ) mode Call Function with max 2 arguments... PLEASE WAIT IMPLEMENTATION
    03: Call Function with argument type ( float ) not implemented.
 
  WORDS:

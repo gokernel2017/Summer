@@ -14,7 +14,7 @@
 
  ----------------------------------------------
 
-MINI LANGUAGE:
+SUMMER LANGUAGE:
 
  To compile type:
    make clean

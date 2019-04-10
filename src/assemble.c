@@ -12,6 +12,10 @@
 //   rewrite 01: 20/07/2018 - 11:10
 //   rewrite 02: 23/03/2019 - 08:50
 //
+// IMPLEMENTED:
+//   mov  %eax , 4 ( %esp )
+//   mov  %edx , 4 ( %eax )
+//
 // BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
@@ -387,16 +391,16 @@ void Assemble (LEXER *l, ASM *a) {
     		func->len = asm_GetLen(asm_function);
 				func->code = (UCHAR*) malloc (func->len);
 
-				code = asm_GetCode(asm_function);
+        code = asm_GetCode(asm_function);
 
     		// NOW: copy the buffer ( f ):
     		for (i=0;i<func->len;i++) {
-        		func->code[i] = code[i];
+            func->code[i] = code[i];
     		}
 
-    		asm_SetExecutable_PTR (func->code, func->len);
+        asm_SetExecutable_PTR (func->code, func->len);
 
-				FuncAdd (func);
+        FuncAdd (func);
 
 		} else {
         comment = 0;
@@ -487,18 +491,33 @@ static int parse_assemble_7 (ASM *a) {
                 emit_mov_eax_ESP (a, arg.value[3]);
                 return 1;
             }
+            //
+            // mov  %edx , 4 ( %eax )
+            //
+            if (arg.value[1]==EDX && arg.value[5]==EAX) {
+                emit_mov_edx_EAX (a, arg.value[3]);
+                return 1;
+            }
         }
         o++;
     }
     return 0;
 }
 
-// WINDOWS ARGUMENT:
+// INFO: Windows X64 BITS functions arguments:
 // arg 1 = %ecx
 // arg 2 = %edx
-// LINUX ARGUMENT:
+// arg 3 = %r8d
+// arg 4 = %r9d
+//
+// INFO: Linux X64 BITS functions arguments:
 // arg 1 = %edi
 // arg 2 = %esi
+// arg 3 = %edx
+// arg 4 = %ecx
+// arg 5 = %r8
+// arg 6 = %r9
+
 static void execute_function (LEXER *l, ASM *a) {
     // add 100 200
     if (arg.count > 1) {
@@ -519,6 +538,12 @@ static void execute_function (LEXER *l, ASM *a) {
                     emit_mov_var_reg (a, &Gvar[ arg.value[2] ].value.l, EDX);
             }
             #endif
+
+// 41 b8 e8 03 00 00    	mov    $0x3e8,%r8d
+// 41 b9 88 13 00 00    	mov    $0x1388,%r9d
+// 44 8b 04 25 14 30 40 00	mov    0x403014,%r8d
+// 44 8b 0c 25 18 30 40 00	mov    0x403018,%r9d
+
             #ifdef __linux__
             if (i == 1) {
                 if (arg.tok[1] == T_NUM)

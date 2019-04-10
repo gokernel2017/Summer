@@ -8,5 +8,7 @@ var a = 10, b = 30, i = 1500, f = 170.55;
 
   "\nHello World ... SIMPLE STRING TEST\n\n";
 
+  i = arg4 (a,b,i,4000);
+
   info(1);
 

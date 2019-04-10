@@ -125,8 +125,13 @@ LIBIMPORT void		asm_Run						(ASM *a);
 LIBIMPORT UCHAR * asm_GetCode				(ASM *a);
 LIBIMPORT int 		asm_GetLen				(ASM *a);
 LIBIMPORT void    asm_Label         (ASM *a, char *name);
-// emit:
+// emit / gen:
 LIBIMPORT void 		gen								(ASM *a, UCHAR c); // emit 1 opcode
+LIBIMPORT void    g (ASM *a, UCHAR c);
+LIBIMPORT void    g2 (ASM *a, UCHAR c1, UCHAR c2);
+LIBIMPORT void    g3 (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3);
+LIBIMPORT void    g4 (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3, UCHAR c4);
+LIBIMPORT void    g5 (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3, UCHAR c4, UCHAR c5);
 #define 					EMIT(a,op)				emit(a, op, sizeof(op))
 LIBIMPORT void		emit 							(ASM *a, const UCHAR opcode[], unsigned int len);
 LIBIMPORT void 		emit_begin				(ASM *a);							// 32/64 BITS OK
@@ -138,7 +143,8 @@ LIBIMPORT void		emit_mov_reg_var	(ASM *a, int reg, void *var); // 32/64 BITS OK:
 LIBIMPORT void 		emit_call 				(ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
 LIBIMPORT void 		emit_sub_esp 			(ASM *a, char c); // 32/64 BITS OK
 LIBIMPORT void    emit_movl_ESP     (ASM *a, long value, UCHAR index);
-LIBIMPORT void    emit_mov_eax_ESP  (ASM *a, UCHAR index);
+LIBIMPORT void    emit_mov_eax_ESP  (ASM *a, UCHAR index); // mov  %eax, 4(%esp)
+LIBIMPORT void    emit_mov_edx_EAX  (ASM *a, UCHAR index); // mov  %edx, 4(%eax)
 // compare / jumps:
 LIBIMPORT void    emit_cmp_eax_var  (ASM *a, void *var);
 LIBIMPORT void    emit_jump_jmp     (ASM *a, char *name);

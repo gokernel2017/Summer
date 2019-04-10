@@ -18,19 +18,18 @@
 #include "summer.h"
 
 // INFO: Windows X64 BITS functions arguments:
-// arg 0 = %ecx
-// arg 1 = %edx
-// arg 2 = %r8d
-// arg 3 = %r9d
+// arg 1 = %ecx
+// arg 2 = %edx
+// arg 3 = %r8d
+// arg 4 = %r9d
 //
 // INFO: Linux X64 BITS functions arguments:
-// arg 0 = %edi
-// arg 1 = %esi
-// arg 2 = %edx
-// arg 3 = %ecx
-// arg 4 = %r8
-// arg 5 = %r9
-
+// arg 1 = %edi
+// arg 2 = %esi
+// arg 3 = %edx
+// arg 4 = %ecx
+// arg 5 = %r8
+// arg 6 = %r9
 
 //-----------------------------------------------
 //-----------------  PROTOTYPES  ----------------
@@ -58,6 +57,15 @@ void lib_disasm (char *name);
 int  lib_func_add (int a, int b);
 void lib_prints  (char *s);
 void lib_printi  (int i);
+int arg4(int a, int b, int c, int d);
+
+// SDL:
+#ifdef USE_SDL
+void S_Init (int i);
+void * S_SetVideoMode (int,int,int,int);
+void S_Delay (int i);
+void S_Quit (void);
+#endif
 
 static TFunc stdlib[]={
   //-----------------------------------------------------------------------------
@@ -70,6 +78,14 @@ static TFunc stdlib[]={
   { "func_add",		"iii",		(UCHAR*)lib_func_add,   0,    0,  	0,  			NULL },
   { "prints",			"0s",		  (UCHAR*)lib_prints,    	0,    0,  	0,  			NULL },
   { "printi",			"0i",		  (UCHAR*)lib_printi,    	0,    0,  	0,  			NULL },
+  { "arg4",			  "iiiii",  (UCHAR*)arg4,    	0,    0,  	0,  			NULL },
+  // SDL:
+#ifdef USE_SDL
+  { "SDL_Init",   "0i",		  (UCHAR*)S_Init,    	    0,    0,  	0,  			NULL },
+  { "SDL_SetVideoMode",  "piiii",		  (UCHAR*)S_SetVideoMode,    	    0,    0,  	0,  			NULL },
+  { "SDL_Delay",  "0i",		  (UCHAR*)S_Delay,    	    0,    0,  	0,  			NULL },
+  { "SDL_Quit",   "00",		  (UCHAR*)S_Quit,    	    0,    0,  	0,  			NULL },
+#endif
   { NULL,					NULL,			NULL,                   0,    0, 		0,   			NULL }
 };
 
@@ -397,20 +413,6 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
         // get next: '('
         if (lex(l)!='(') { Erro ("Function need char: '('\n"); return; }
 
-// INFO: Windows X64 BITS functions arguments:
-// arg 0 = %ecx
-// arg 1 = %edx
-// arg 2 = %r8d
-// arg 3 = %r9d
-//
-// INFO: Linux X64 BITS functions arguments:
-// arg 0 = %edi
-// arg 1 = %esi
-// arg 2 = %edx
-// arg 3 = %ecx
-// arg 4 = %r8
-// arg 5 = %r9
-
         while (lex(l)) {
 
             if (l->tok==TOK_ID || l->tok==TOK_NUMBER || l->tok==TOK_STRING || l->tok=='(') {
@@ -455,10 +457,24 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
         }
     }
 
-    if (count > 6) {
-        Erro ("%s:%d: - Call Function(%s) the max arguments is: 5\n", l->name, l->line, func->name);
+    if (count > 4) {
+        Erro ("%s:%d: - IMPLEMENTED MAX ARGUMENTS 4 ... Call Function(%s) the max arguments is: 4\n", l->name, l->line, func->name);
   return;
     }
+
+// INFO: Windows X64 BITS functions arguments:
+// arg 1 = %ecx
+// arg 2 = %edx
+// arg 3 = %r8d
+// arg 4 = %r9d
+//
+// INFO: Linux X64 BITS functions arguments:
+// arg 1 = %edi
+// arg 2 = %esi
+// arg 3 = %edx
+// arg 4 = %ecx
+// arg 5 = %r8
+// arg 6 = %r9
 
 		// pass 64 bits arquments:
 		#if defined(__x86_64__)
@@ -476,6 +492,24 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 								gen(a,POP_EDX);
 								#else
 								gen(a,POP_ESI);
+								#endif
+						}
+						else if (i == 2) { // argument 3
+								#ifdef WIN32
+                // 58                   	pop    %rax
+                // 41 89 c0             	mov    %eax,%r8d
+                g4(a,0x58,0x41,0x89,0xc0);
+								#else
+                g(a,POP_EDX);
+								#endif
+						}
+						else if (i == 3) { // argument 4
+								#ifdef WIN32
+                // 58                   	pop    %rax
+                // 41 89 c1             	mov    %eax,%r9d
+                g4(a,0x58,0x41,0x89,0xc1);
+								#else
+                g(a,POP_ECX);
 								#endif
 						}
 				}
@@ -888,4 +922,19 @@ void lib_prints (char *s) {
 void lib_printi (int i) {
 		printf ("%d\n", i);
 }
+
+int arg4 (int a, int b, int c, int d) {
+    printf ("\nFunction Builtin: 'arg4'\n");
+    printf ("a: %d, b: %d, c: %d, d: %d\n", a,b,c,d);
+    printf ("arg4 result = %d\n\n", a+b+c+d);
+    return a + b + c + d;
+}
+
+
+#ifdef USE_SDL
+void S_Init (int i) { SDL_Init(i); }
+void *S_SetVideoMode (int w, int h, int bpp, int flags) { return SDL_SetVideoMode(w,h,bpp,flags); }
+void S_Delay (int i) { SDL_Delay(i); }
+void S_Quit (void) { SDL_Quit(); }
+#endif
 

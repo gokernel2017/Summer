@@ -79,6 +79,7 @@ label_top:
         if (!strcmp(l->token, "asm"))       return (l->tok = TOK_ASM);
         if (!strcmp(l->token, "if"))        return (l->tok = TOK_IF);
         if (!strcmp(l->token, "function"))  return (l->tok = TOK_FUNCTION);
+        if (!strcmp(l->token, "include"))   return (l->tok = TOK_INCLUDE);
 
         return (l->tok = TOK_ID);
     }

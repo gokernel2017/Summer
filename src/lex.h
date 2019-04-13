@@ -43,6 +43,7 @@ enum {
     TOK_ASM,
     TOK_IF,
     TOK_FUNCTION,
+    TOK_INCLUDE,
 		//
 		TOK_ID,
 		TOK_STRING,

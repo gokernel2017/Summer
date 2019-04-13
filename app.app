@@ -6,28 +6,36 @@
 //
 //-------------------------------------------------------------------
 //
-var win, button, editor, i = 100;
+var win, bt1, bt2, editor, i = 100, count = 1;
 
-//$var i=100,bt1,bt2; function call1(e){LOG("i: %d",i); i=i+1; } bt1=app_NewButton(0,0,30,30,"ADD"); app_SetCall(bt1,call1); function call2(msg){LOG("i: %d",i); i = i - 1; } bt2 = app_NewButton(0,0,150,30,"SUB"); app_SetCall(bt2,call2);
-//$var i=100,bt1,bt2; function call1(e){LOG("i: %d",i); i=i+1; } bt1=app_NewButton(0,0,30,30,"ADD"); app_SetEvent(bt1,call1,"onmouseup"); function call2(msg){LOG("i: %d",i); i = i - 1; } bt2 = app_NewButton(0,0,150,30,"SUB"); app_SetEvent(bt2,call2,"onmouseup");
-
-function call_button (e) {
-  //LOG ("i: %d", i);
-    printi (i);
+function call_add (e) {
+    //printi (i);
     i = i + 1;
+    LOG ("i: %d", i);
+}
+function call_sub (e) {
+    //printi (i);
+    i = i - 1;
+    LOG ("i: %d", i);
 }
 
 if (app_Init(0,0)) {
 
-    button = app_NewButton (0, 0, 20, 20, "Button 1");
+    //
+    // Create only one
+    //
+    if (!bt1) {
+        LOG ("Starting File: 'app.app' ---------- count: %d", count);
+        count = count + 1;
 
-//    app_SetCall (button, call_button);
-    app_SetEvent (button, call_button, "onmouseup");
+        bt1 = app_NewButton (0, 0, 30, 30, "ADD");
+        app_SetCall (bt1, call_add);
 
-    editor = app_NewEditor  (0, 20, 70, "Simple Editor Test\n\n", 5000);
-    
-    app_SetSize (editor, 700, 500);
+        bt2 = app_NewButton (0, 0, 150, 30, "SUB");
+        app_SetCall (bt2, call_sub);
 
-    app_Run (0);
+        app_Run (0);
+    }
+
 }
 

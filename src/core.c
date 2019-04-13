@@ -40,6 +40,7 @@ static void word_var (LEXER *l, ASM *a); // int, float
 static void word_asm (LEXER *l, ASM *a);
 static void word_if (LEXER *l, ASM *a);
 static void word_function (LEXER *l, ASM *a);
+static void word_include (LEXER *l, ASM *a);
 //
 static int 	expr0 (LEXER *l, ASM *a);
 static void	expr1 (LEXER *l, ASM *a);
@@ -94,6 +95,15 @@ static TFunc stdlib[]={
 //------------------  VARIABLES  ----------------
 //-----------------------------------------------
 //
+#define MAX_INCLUDE 7
+typedef struct {
+    ASM     *a;
+    LEXER   l;
+    char    *text;
+}INCLUDE;
+static INCLUDE incl [MAX_INCLUDE + 1];
+static int icount;
+//--------------------------------------
 int value;
 static TFunc *Gfunc = NULL;
 TVar Gvar [GVAR_SIZE]; // global:
@@ -417,9 +427,11 @@ static int stmt (LEXER *l, ASM *a) {
 		case TOK_ASM: word_asm (l,a); return 1;
 		case TOK_IF: word_if (l,a); return 1;
 		case TOK_FUNCTION: word_function (l,a); return 1;
+		case TOK_INCLUDE: word_include (l,a); return 1;
     default: expression (l,a); return 1;
     case '}': l->level--; return 1;
 		case TOK_NEW_LINE:
+    case '#':
     case ';':
     case ',':
 				return 1;
@@ -581,9 +593,18 @@ ASM * core_Init (unsigned int size) {
 		ASM *a;
 		static int init = 0;
 		if (!init) {
+        int count;
 				init = 1;
         if ((a =            asm_New(size)) == NULL) return NULL;
         if ((asm_function = asm_New(size)) == NULL) return NULL;
+        for (count = 0; count < MAX_INCLUDE; count++) {
+            incl[count].a = asm_New (10000);
+//            printf ("Include OK: %d\n", count);
+            if (asm_SetExecutable_ASM(incl[count].a, 10000-1) != 0) {
+                printf ("Include Not Found\n");
+          return 0;
+            }
+        }
 
 				#ifdef WIN32
 				DefineAdd("WIN32", 1);
@@ -740,6 +761,34 @@ void proc_ifdef (char *name) {
 		ifdef_array[ifdef_index] = ifdef_index;
 		ifndef_true++;
 */
+}
+
+char * FileOpen (const char *FileName) {
+    FILE *fp;
+
+    if ((fp = fopen (FileName, "rb")) != NULL) {
+        char *str;
+        int size, i;
+
+        fseek(fp, 0, SEEK_END);
+        size = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
+
+        str = (char *)malloc (size + 5);
+        if(!str){
+            fclose (fp);
+            return NULL;
+        }
+        i = fread(str, 1, size, fp);
+        fclose(fp);
+        str[i] = 0;
+        str[i+1] = 0;
+
+        return str;
+    }
+    else printf ("File Not Found: '%s'\n", FileName);
+
+    return NULL;
 }
 
 TFunc *FuncFind (char *name) {
@@ -1097,6 +1146,27 @@ static void word_if (LEXER *l, ASM *a) {
     if_count--;
 
 }// word_if ()
+
+static void word_include (LEXER *l, ASM *a) {
+    if (lex(l) == TOK_STRING) {
+        if (icount < MAX_INCLUDE) {
+            icount++;
+            if ((incl[icount].text = FileOpen(l->token)) != NULL) {
+//printf ("INCLUDE(%s) %d\n", incl[icount].name, icount);
+                if (core_Parse(&incl[icount].l, incl[icount].a, incl[icount].text, l->token) == 0) {
+                    asm_Run (incl[icount].a); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
+                }
+                else Erro ("%s: %d Max include %d\n", incl[icount].l.name, incl[icount].l.line, icount);
+
+                free(incl[icount].text);
+//printf ("FREE(%s) %d\n", incl[icount].name, icount);
+            }
+            icount--;
+        }
+        else Erro ("%s: %d Max include %d\n", l->name, l->line, icount);
+    }
+    else Erro ("%s: %d - INCLUDE USAGE: include %cfile_name%c\n", l->name, l->line, '"', '"' );
+}
 
 
 void lib_info (int arg) {

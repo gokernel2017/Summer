@@ -38,8 +38,11 @@ extern "C" {
 
 enum {
 		TOK_INT = 255,
+    TOK_FLOAT,
 		TOK_VAR,
     TOK_ASM,
+    TOK_IF,
+    TOK_FUNCTION,
 		//
 		TOK_ID,
 		TOK_STRING,

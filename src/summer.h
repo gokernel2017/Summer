@@ -43,6 +43,11 @@ extern "C" {
 #include "asm.h"
 #include "lex.h"
 
+#ifdef USE_APPLICATION
+    // Application API
+    #include "app/app.h"
+#endif
+
 //-----------------------------------------------
 //---------------  DEFINE / ENUM  ---------------
 //-----------------------------------------------
@@ -85,6 +90,7 @@ typedef struct TVar     TVar;
 typedef struct TFunc    TFunc;
 typedef struct TFstring	TFstring; // fixed string
 typedef struct TDefine	TDefine;
+typedef struct TArg     TArg;
 
 union VALUE {
     long    l;  //: type integer
@@ -117,6 +123,11 @@ struct TDefine {
     int     value;
     TDefine *next;
 };
+struct TArg {
+    // type[0] := '-' ... Is EVENT
+    char  type[20]; //  "int", "float", "data_struct"
+    char  name[20];
+};
 
 //-----------------------------------------------
 //--------------  GLOBAL VARIABLE  --------------
@@ -147,6 +158,10 @@ LIBIMPORT TFunc * FuncFind        (char *name);
 LIBIMPORT int     VarFind         (char *name);
 LIBIMPORT void    proc_ifdef      (char *name);
 LIBIMPORT int     is_defined      (char *name);
+
+#ifdef USE_APPLICATION
+LIBIMPORT void LOG (char *format, ...);
+#endif
 
 #ifdef __cplusplus
 }

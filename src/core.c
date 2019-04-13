@@ -38,12 +38,15 @@
 static void word_int (LEXER *l, ASM *a);
 static void word_var (LEXER *l, ASM *a); // int, float
 static void word_asm (LEXER *l, ASM *a);
+static void word_if (LEXER *l, ASM *a);
+static void word_function (LEXER *l, ASM *a);
 //
 static int 	expr0 (LEXER *l, ASM *a);
 static void	expr1 (LEXER *l, ASM *a);
 static void expr2 (LEXER *l, ASM *a);
 static void expr3	(LEXER *l, ASM *a);
 static void atom 	(LEXER *l, ASM *a);
+static int stmt (LEXER *l, ASM *a);
 static int	see		(LEXER *l);
 //
 static TFstring *fs_new (char *s);
@@ -58,14 +61,7 @@ int  lib_func_add (int a, int b);
 void lib_prints  (char *s);
 void lib_printi  (int i);
 int arg4(int a, int b, int c, int d);
-
-// SDL:
-#ifdef USE_SDL
-void S_Init (int i);
-void * S_SetVideoMode (int,int,int,int);
-void S_Delay (int i);
-void S_Quit (void);
-#endif
+int arg5(int a, int b, int c, int d, int e);
 
 static TFunc stdlib[]={
   //-----------------------------------------------------------------------------
@@ -79,14 +75,19 @@ static TFunc stdlib[]={
   { "prints",			"0s",		  (UCHAR*)lib_prints,    	0,    0,  	0,  			NULL },
   { "printi",			"0i",		  (UCHAR*)lib_printi,    	0,    0,  	0,  			NULL },
   { "arg4",			  "iiiii",  (UCHAR*)arg4,    	0,    0,  	0,  			NULL },
+  { "arg5",			  "iiiiii", (UCHAR*)arg5,    	0,    0,  	0,  			NULL },
   // SDL:
-#ifdef USE_SDL
-  { "SDL_Init",   "0i",		  (UCHAR*)S_Init,    	    0,    0,  	0,  			NULL },
-  { "SDL_SetVideoMode",  "piiii",		  (UCHAR*)S_SetVideoMode,    	    0,    0,  	0,  			NULL },
-  { "SDL_Delay",  "0i",		  (UCHAR*)S_Delay,    	    0,    0,  	0,  			NULL },
-  { "SDL_Quit",   "00",		  (UCHAR*)S_Quit,    	    0,    0,  	0,  			NULL },
-#endif
-  { NULL,					NULL,			NULL,                   0,    0, 		0,   			NULL }
+#ifdef USE_APPLICATION
+  { "app_Init",       "iis",    (UCHAR*)app_Init,    	    0,    0,  	0,  			NULL },
+  { "app_Run",        "0p",		  (UCHAR*)app_Run,    	    0,    0,  	0,  			NULL },
+  { "app_NewButton",  "ppiiis", (UCHAR*)app_NewButton,    0,    0,  	0,  			NULL },
+  { "app_NewEditor",  "ppiisi", (UCHAR*)app_NewEditor,    0,    0,  	0,  			NULL },
+  { "app_SetSize",    "0pii",   (UCHAR*)app_SetSize,      0,    0,  	0,  			NULL },
+  { "app_SetCall",    "0pp",    (UCHAR*)app_SetCall,      0,    0,  	0,  			NULL },
+  { "app_SetEvent",   "0pps",   (UCHAR*)app_SetEvent,      0,    0,  	0,  			NULL },
+  { "LOG",            "0*",     (UCHAR*)LOG,              0,    0,  	0,  			NULL },
+  #endif
+  { NULL, NULL, NULL, 0, 0, 0, NULL }
 };
 
 //-----------------------------------------------
@@ -100,12 +101,16 @@ TVar Gvar [GVAR_SIZE]; // global:
 ASM *asm_function;
 static TFstring *fs = NULL;
 static TDefine *Gdefine = NULL;
+static TArg   argument [20];
 
 static char func_name [100];
 
 static int
 		is_function,
-		main_variable_type, var_type
+    is_recursive,
+		main_variable_type, var_type,
+    argument_count,
+    local_count
 		;
 
 static int expr0 (LEXER *l, ASM *a) {
@@ -212,6 +217,31 @@ static void atom (LEXER *l, ASM *a) { // expres
 
 		if (l->tok == TOK_ID) {
 				int i;
+        TFunc *fi;
+
+        //
+        // push the pointer of function:
+        //
+        // NO CALL THE FUNCTION
+        //
+        if ((fi = FuncFind (l->token)) != NULL) {
+            if (see(l) == '(') {
+                // "execute the function"
+                execute_call (l,a,fi);
+                // and ... push the result
+//                emit_push_eax(a);
+                lex (l);
+            } else if (see(l) != '(') {
+//printf ("push function pointer\n");
+                //
+                // push the real function pointer
+                //
+                emit_mov_var_reg (a, &fi->code, EAX);
+//                emit_push_eax(a);
+                lex (l);
+            } 
+        }
+        else
 				if ((i = VarFind(l->token)) != -1) {
             var_type = Gvar[i].type;
 
@@ -234,7 +264,7 @@ static void atom (LEXER *l, ASM *a) { // expres
 
             lex(l);
         }
-        else Erro ("%s: %d: - Var Not Found '%s'\n", l->name, l->line, l->token);
+        else Erro ("%s: %d: - Ilegal Word '%s'\n", l->name, l->line, l->token);
 		}
 		else if (l->tok == TOK_NUMBER) {
         if (strchr(l->token, '.'))
@@ -365,14 +395,30 @@ void expression (LEXER *l, ASM *a) {
     else Erro("%s: %d | Expression ERRO - Ilegar Word (%s)\n", l->name, l->line, l->token);
 }
 
-int stmt (LEXER *l, ASM *a) {
+static void do_block (LEXER *l, ASM *a) {
+    while (!erro && l->tok && l->tok != '}') {
+        stmt (l,a);
+    }
+    l->tok = ';';
+}
+
+static int stmt (LEXER *l, ASM *a) {
 		lex (l);
 
 		switch (l->tok) {
+    case '{':
+        l->level++;
+        //----------------------------------------------------
+        do_block (l,a); //<<<<<<<<<<  no recursive  >>>>>>>>>>
+        //----------------------------------------------------
+        return 1;
 		case TOK_INT: word_int (l,a); return 1;
 		case TOK_VAR: word_var (l,a); return 1;
 		case TOK_ASM: word_asm (l,a); return 1;
+		case TOK_IF: word_if (l,a); return 1;
+		case TOK_FUNCTION: word_function (l,a); return 1;
     default: expression (l,a); return 1;
+    case '}': l->level--; return 1;
 		case TOK_NEW_LINE:
     case ';':
     case ',':
@@ -425,8 +471,9 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 
                 #if defined(__x86_64__)
 								// 4 arquments
-								if (count <= 3)
+								if (count <= 4) {
 										gen(a,PUSH_EAX);
+                }
                 #else
                 //-----------------------------------
                 // JIT 32 bits
@@ -457,8 +504,8 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
         }
     }
 
-    if (count > 4) {
-        Erro ("%s:%d: - IMPLEMENTED MAX ARGUMENTS 4 ... Call Function(%s) the max arguments is: 4\n", l->name, l->line, func->name);
+    if (count > 5) {
+        Erro ("%s:%d: - IMPLEMENTED MAX ARGUMENTS 5 ... Call Function(%s) the max arguments is: 4\n", l->name, l->line, func->name);
   return;
     }
 
@@ -510,6 +557,17 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                 g4(a,0x58,0x41,0x89,0xc1);
 								#else
                 g(a,POP_ECX);
+								#endif
+						}
+						else if (i == 4) { // argument 5
+								#ifdef WIN32
+                // 58                   	pop    %rax
+                g(a,0x58);
+                // 48 89 44 24    20       	mov    %rax,0x20(%rsp)
+                g5(a,0x48,0x89,0x44,0x24,64); // 32
+								#else
+                // 41 58                	pop    %r8
+                g2(a,0x41,0x58);
 								#endif
 						}
 				}
@@ -800,6 +858,247 @@ static void word_asm (LEXER *l, ASM *a) {
 		Assemble (l,a);
 }
 
+static void word_function (LEXER *l, ASM *a) {
+    TFunc *func;
+    UCHAR *code;
+    char name[255], proto[255] = { '0', 0, 0, 0, 0, 0, 0, 0 };
+    int i;
+
+    lex(l);
+
+    strcpy (name, l->token);
+
+    // if exist ... return
+    //
+    if (FuncFind(name)!=NULL) {
+        int brace = 0;
+
+        printf ("Function exist: ... REBOBINANDO '%s'\n", name);
+
+        while (lex(l) && l->tok != ')');
+
+        if (see(l)=='{') { } else Erro ("word(if) need start block: '{'\n");
+
+        while (lex(l)){
+            if (l->tok == '{') brace++;
+            if (l->tok == '}') brace--;
+            if (brace <= 0) break;
+        }
+
+  return;
+    }
+
+    // PASSA PARAMETROS ... IMPLEMENTADA APENAS ( int ) ... AGUARDE
+    //
+    // O analizador de expressao vai usar esses depois...
+    //
+    // VEJA EM ( expr3() ):
+    // ---------------------
+    // Funcoes usadas:
+    //     ArgumentFind();
+    //     asm_push_argument();
+    // ---------------------
+    //
+    argument_count = 0;
+    while (lex(l)) {
+
+        if (l->tok==TOK_INT) {
+            argument[argument_count].type[0] = TYPE_LONG; // 0
+            //strcpy (argument[argument_count].type, "int");
+            if (lex(l)==TOK_ID) {
+                strcpy (argument[argument_count].name, l->token);
+                strcat (proto, "i");
+                argument_count++;
+            }
+        }
+        else if (l->tok==TOK_FLOAT) {
+            argument[argument_count].type[0] = TYPE_FLOAT; // 1
+            //strcpy (argument[argument_count].type, "int");
+            if (lex(l)==TOK_ID) {
+                strcpy (argument[argument_count].name, l->token);
+                strcat (proto, "f");
+                argument_count++;
+            }
+        }
+        else if (l->tok==TOK_ID) {
+            argument[argument_count].type[0] = TYPE_UNKNOW;
+            strcpy (argument[argument_count].name, l->token);
+            strcat (proto, "i");
+            argument_count++;
+        }
+
+        if (l->tok=='{') break;
+    }
+    if (argument_count==0) {
+        proto[1] = '0';
+        proto[2] = 0;
+    }
+    if (l->tok=='{') l->pos--; else { Erro("Word Function need char: '{'"); return; }
+
+    is_function = 1;
+    local_count = 0;
+    strcpy (func_name, name);
+
+    // compiling to buffer ( f ):
+    //
+    asm_Reset (asm_function);
+    emit_begin (asm_function);
+    stmt (l,asm_function); // here start from char: '{'
+    emit_end (asm_function);
+
+    if (erro) return;
+
+    int len = asm_GetLen (asm_function);
+
+    // new function:
+    //
+    func = (TFunc*) malloc (sizeof(TFunc));
+    func->name = strdup (func_name);
+    func->proto = strdup (proto);
+    func->type = FUNC_TYPE_COMPILED;
+    func->len = len;
+    func->code = (UCHAR*) malloc (func->len);
+
+    code = asm_GetCode(asm_function);
+
+    // NOW: copy the buffer ( f ):
+    for (i=0;i<func->len;i++) {
+        func->code[i] = code[i];
+    }
+
+    //-------------------------------------------
+    // HACKING ... ;)
+    // Resolve Recursive:
+    // change 4 bytes ( func_null ) to this
+    //-------------------------------------------
+/*
+    if (is_recursive)
+    for (i=0;i<func->len;i++) {
+        // b8     7a 13 40 00       mov    $0x40137a,%eax
+        //
+        // unsigned char: 184
+        //
+        if (func->code[i] == 0xb8 && *(void**)(func->code+i+1) == func_null) {
+
+            i++; // ... HERE: 4 bytes ...
+
+            // ff d0    call   *%eax
+            //
+            if (*(func->code+i+4) == 0xff && *(func->code+i+5) == 0xd0) {
+                if (*(void**)(func->code+i) == func_null) {
+                    *(void**)(func->code+i) = func->code; //<<< change here
+                    i += 5;
+                }
+            }
+        }
+    }
+*/
+
+    asm_SetExecutable_PTR (func->code, len);
+
+    // add on top:
+    func->next = Gfunc;
+    Gfunc = func;
+
+    is_function = is_recursive = argument_count = *func_name = 0;
+
+}//:word_function ()
+
+static void word_if (LEXER *l, ASM *a) {
+    //**** to "push/pop"
+    static char array[20][20];
+    static int if_count_total = 0;
+    static int if_count = 0;
+    int is_negative;
+
+    if (lex(l) !='(') { Erro ("ERRO SINTAX (if) need char: '('\n"); return; }
+
+    if_count++;
+    sprintf (array[if_count], "IF%d", if_count_total++);
+
+    while (!erro && lex(l)) { // pass arguments: if (a > b) { ... }
+        is_negative = 0;
+
+        if (l->tok == '!') { is_negative = 1; lex(l); }
+
+        asm_expression_reset(); // reg = 0;
+        expr0(l,a);
+
+        if (erro) {
+            Erro ("<<<<<<<<<<  if erro >>>>>>>>>>>>>\n");
+            return;
+        }
+
+//        if (l->tok == ')' || l->tok == TOK_AND_AND) emit_pop_eax (a); // 58     pop   %eax
+//        else                                        emit_pop_edx (a); // 5a     pop   %edx
+
+        switch (l->tok) {
+        case ')': // if (a) { ... }
+//        case TOK_AND_AND:
+            g2(a,0x85,0xc0); // 85 c0    test   %eax,%eax
+            if (is_negative == 0) emit_jump_je  (a,array[if_count]);
+            else                  emit_jump_jne (a,array[if_count]);
+            break;
+/*
+        case '>':
+            lex(l); expr0(l,a);
+            #ifdef USE_VM
+            emit_cmp_int (a);
+            #endif
+            #ifdef USE_JIT
+            emit_pop_eax(a);
+            emit_cmp_eax_edx(a);
+            #endif
+            emit_jump_jle (a,array[if_count]);
+            break;
+        case '<':
+            lex(l); expr0(l,a);
+            #ifdef USE_VM
+            emit_cmp_int (a);
+            #endif
+            #ifdef USE_JIT
+            emit_pop_eax(a);     // 58     : pop   %eax
+            emit_cmp_eax_edx(a); // 39 c2  : cmp   %eax,%edx
+            #endif
+            emit_jump_jge (a,array[if_count]);
+            break;
+
+        case TOK_EQUAL_EQUAL: // ==
+            lex(l); expr0(l,a);
+            #ifdef USE_VM
+            emit_cmp_int (a);
+            #endif
+            #ifdef USE_JIT
+            emit_pop_eax(a);     // 58     : pop   %eax
+            emit_cmp_eax_edx(a); // 39 c2  : cmp   %eax,%edx
+            #endif
+            emit_jump_jne(a,array[if_count]);
+            break;
+
+        case TOK_NOT_EQUAL: // !=
+            lex(l); expr0(l,a);
+            #ifdef USE_VM
+            emit_cmp_int (a);
+            #endif
+            #ifdef USE_JIT
+            emit_pop_eax(a);
+            emit_cmp_eax_edx(a);
+            #endif
+            emit_jump_je (a,array[if_count]);
+            break;
+*/
+        }//: switch(tok)
+
+        if (l->tok==')') break;
+    }
+    if (see(l)=='{') stmt (l,a); else Erro ("word(if) need start block: '{'\n");
+
+    asm_Label (a, array[if_count]);
+    if_count--;
+
+}// word_if ()
+
+
 void lib_info (int arg) {
     switch (arg) {
     case 1: {
@@ -930,11 +1229,11 @@ int arg4 (int a, int b, int c, int d) {
     return a + b + c + d;
 }
 
+int arg5 (int a, int b, int c, int d, int e) {
+    printf ("\nFunction Builtin: 'arg5'\n");
+    printf ("a: %d, b: %d, c: %d, d: %d, e: %d\n", a,b,c,d,e);
+    printf ("arg5 result = %d\n\n", a+b+c+d+e);
+    return a + b + c + d + e;
+}
 
-#ifdef USE_SDL
-void S_Init (int i) { SDL_Init(i); }
-void *S_SetVideoMode (int w, int h, int bpp, int flags) { return SDL_SetVideoMode(w,h,bpp,flags); }
-void S_Delay (int i) { SDL_Delay(i); }
-void S_Quit (void) { SDL_Quit(); }
-#endif
 

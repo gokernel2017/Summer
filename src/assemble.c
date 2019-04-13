@@ -339,6 +339,8 @@ void Assemble (LEXER *l, ASM *a) {
     p = text;
     *p = 0;
 
+    int line = l->line;
+
     if (lex(l) != '{') { // create function
         char name[255], proto[255] = { '0', '0', 0, 0, 0, 0, 0, 0 };
         int i;
@@ -347,7 +349,7 @@ void Assemble (LEXER *l, ASM *a) {
 
         strcpy (name, l->token);
         if (lex(l) != '{') {
-            Erro ("%s: %d - Need Start Block '{' | ASM USAGE: asm { ... }\n", l->name, l->line);
+            Erro ("%s: %d - Need Start Block '{' | ASM USAGE: asm { ... }\n", l->name, line);
             return;
         }
         // if exist ... return

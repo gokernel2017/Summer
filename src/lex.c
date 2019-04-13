@@ -74,9 +74,11 @@ label_top:
         }
         *p = 0;
 
-        if (!strcmp(l->token, "int"))	return (l->tok = TOK_INT);
-        if (!strcmp(l->token, "var"))	return (l->tok = TOK_VAR);
-        if (!strcmp(l->token, "asm"))	return (l->tok = TOK_ASM);
+        if (!strcmp(l->token, "int"))       return (l->tok = TOK_INT);
+        if (!strcmp(l->token, "var"))       return (l->tok = TOK_VAR);
+        if (!strcmp(l->token, "asm"))       return (l->tok = TOK_ASM);
+        if (!strcmp(l->token, "if"))        return (l->tok = TOK_IF);
+        if (!strcmp(l->token, "function"))  return (l->tok = TOK_FUNCTION);
 
         return (l->tok = TOK_ID);
     }

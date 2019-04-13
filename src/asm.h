@@ -145,6 +145,7 @@ LIBIMPORT void 		emit_sub_esp 			(ASM *a, char c); // 32/64 BITS OK
 LIBIMPORT void    emit_movl_ESP     (ASM *a, long value, UCHAR index);
 LIBIMPORT void    emit_mov_eax_ESP  (ASM *a, UCHAR index); // mov  %eax, 4(%esp)
 LIBIMPORT void    emit_mov_edx_EAX  (ASM *a, UCHAR index); // mov  %edx, 4(%eax)
+//89 43 04             	mov    %eax,0x4(%edx)
 // compare / jumps:
 LIBIMPORT void    emit_cmp_eax_var  (ASM *a, void *var);
 LIBIMPORT void    emit_jump_jmp     (ASM *a, char *name);

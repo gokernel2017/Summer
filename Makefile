@@ -3,7 +3,7 @@
 CPP  = g++
 CC   = gcc
 OBJ  = obj/core.o obj/lex.o obj/asm.o obj/disasm.o obj/assemble.o obj/summer.o
-BIN  = summer
+BIN  = sum
 CFLAGS = -O2 -Wall
 ifeq ($(OS),Windows_NT)
   # DirectX
@@ -19,13 +19,13 @@ RM = rm -f
 
 .PHONY: all all-before all-after clean clean-custom
 
-all: all-before summer all-after
+all: all-before sum all-after
 
 clean: clean-custom
 	${RM} $(OBJ) $(BIN)
 
 $(BIN): $(OBJ)
-	$(CC) $(OBJ) -o "summer" $(LIBS) $(RES)
+	$(CC) $(OBJ) -o "sum" $(LIBS) $(RES)
 
 obj/core.o: src/core.c
 	$(CC) $(CFLAGS) -c src/core.c -o obj/core.o

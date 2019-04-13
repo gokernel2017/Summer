@@ -52,9 +52,9 @@
    int,
    var (int, float),
    asm,
-   if ( NEEW MORE IMPLEMENTATION ),
+   if ( NEED MORE IMPLEMENTATION ),
    function,
-   include
+   include (USAGE: #include "file.sum")
 
  BETA.
 

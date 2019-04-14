@@ -154,6 +154,7 @@ LIBIMPORT ASM   * GetAsmMain      (void); // in file: "summer.c"
 //
 LIBIMPORT void    CreateVarLong   (char *name, long l);
 LIBIMPORT void    FuncAdd         (TFunc *func);
+LIBIMPORT int     ArgumentFind    (char *name);
 LIBIMPORT TFunc * FuncFind        (char *name);
 LIBIMPORT int     VarFind         (char *name);
 LIBIMPORT void    proc_ifdef      (char *name);

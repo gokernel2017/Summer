@@ -112,11 +112,16 @@ static int proc_null (OBJECT *o, int msg, int i) {
     return 0;
 }
 
+void funcao (void) {
+    current->call (MSG_MOUSE_DOWN);
+}
+
 int app_Init (int argc, char **argv) {
     static int init = 0;
     int w = 800, h = 600, i, flags = 0;
 
     if (init) return 1;
+    printf ("app_Init : OBJECT SIZEOF = %d\n", (int)sizeof(OBJECT));
     init = 1;
     SDL_Init (SDL_INIT_VIDEO);
     SDL_WM_SetCaption ("Application API:", NULL);

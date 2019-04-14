@@ -50,6 +50,7 @@ void call_console (int msg) {
         } else {
             if (iten_color) iten_color->color = COLOR_ERRO;
             app_ConsoleAdd(console, ErroGet(), COLOR_WHITE);
+//printf ("%s\n", ErroGet());
         }
         app_ConsoleSetText(console, "$");
     }

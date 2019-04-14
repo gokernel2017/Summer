@@ -54,10 +54,13 @@ extern "C" {
 #define POP_EDI		0X5f // pop   %edi
 #define POP_ESI		0X5e // pop   %esi
 //
-#define G2_MOV_EAX_ECX	0x89, 0xc1 // 89 c1 : mov   %eax, %ecx
-#define G2_MOV_EAX_EDX	0x89, 0xc2 // 89 c2 : mov   %eax, %edx
-#define G2_MOV_EAX_EDI	0x89, 0xc7        // 89 c7      : mov   %eax, %edi
-#define G2_MOV_EAX_ESI  0x89, 0xc6        // 89 c6      : mov   %eax, %esi
+#define G2_MOV_EAX_ECX	0x89, 0xc1 // 89 c1 | mov   %eax, %ecx
+#define G2_MOV_EAX_EDX	0x89, 0xc2 // 89 c2 | mov   %eax, %edx
+#define G2_MOV_EAX_EBX  0X89, 0Xc3 // 89 c3 | mov   %eax, %ebx
+#define G2_MOV_EAX_EDI	0x89, 0xc7 // 89 c7 | mov   %eax, %edi
+#define G2_MOV_EAX_ESI  0x89, 0xc6 // 89 c6 | mov   %eax, %esi
+#define G2_CMP_EAX_EDX  0x39, 0xc2 // 39 c2 |	cmp   %eax, %edx
+#define G2_CMP_EAX_EBX  0X39, 0Xc3 // 39 c3 | cmp   %eax, %ebx
 //
 #define OP_NOP          0x90
 

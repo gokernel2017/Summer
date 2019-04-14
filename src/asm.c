@@ -437,7 +437,8 @@ void emit_begin (ASM *a) { //: 32/64 BITS OK
     a->p[2] = 0x89;
     a->p[3] = 0xe5;
     a->p += 4;
-		emit_sub_esp(a,48); // 48 / 8 := 6
+//		emit_sub_esp(a,48); // 48 / 8 := 6
+		emit_sub_esp(a,32); // 48 / 8 := 6
     #else
     // 55     : push  %ebp
     // 89 e5  : mov   %esp,%ebp
@@ -452,6 +453,18 @@ void emit_begin (ASM *a) { //: 32/64 BITS OK
 
 void emit_end (ASM *a) { ///: 32/64 BITS OK
     #if defined(__x86_64__)
+
+/*
+401555:	90                   	nop
+401556:	48 83 c4 20          	add    $0x20,%rsp
+40155a:	5d                   	pop    %rbp
+40155b:	c3                   	retq   
+*/
+
+//  g5(a,0x90,0x48,0x83,0xc4,0x20);
+//  g2(a,0x5d,0xc3);
+
+
     a->p[0] = 0xc9; // c9 : leaveq
     a->p[1] = 0xc3; // c3 : retq
     a->p += 2;

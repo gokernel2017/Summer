@@ -252,6 +252,56 @@ static void atom (LEXER *l, ASM *a) { // expres
             } 
         }
         else
+        // push a argument function:
+        //
+        if (is_function && (i=ArgumentFind(l->token))!=-1) {
+            // function argument:
+            //
+            // e.offsetX, e.offsetY, e.which;
+            //
+            if (argument[i].type[0]==TYPE_UNKNOW) {
+
+                if (see(l)=='.' && lex(l) && lex(l)) { // .offsetX;
+                    // ... NEED IMPLEMENTATION
+                } else {
+                    if (i == 0 && argument_count == 1 && argument[0].type[0] == TYPE_UNKNOW) {
+                    #if defined(__x86_64__)
+                        #ifdef WIN32
+                        // 48 8b 45 10          	mov    0x10(%rbp),%rax
+                        // 8b 00               	mov    (%rax),%eax
+                        // PONTEIRO
+                        g4(a,0x48,0x8b,0x45,16);
+                        g2(a,0x8b,0x00);
+                        #endif
+                        #ifdef __linux__
+                        //48 8b 45 f8          	mov    -0x8(%rbp),%rax
+                        // 8b 00                	mov    (%rax),%eax
+                        g4(a,0x48,0x8b,0x45,0xf8);
+                        g2(a,0x8b,0x00);
+                        #endif
+                    #endif
+                    }
+                    lex(l);
+                }
+            } // if (argument[i].type[0]==TYPE_UNKNOW)
+            else {
+                if (i==0 && argument[0].type[0]==TYPE_LONG) {
+//                    printf ("----------------- long dentro da funcaoFUNCAO ARGUMETO(INT) (%s)\n", argument[0].name);
+                    #if defined(__x86_64__)
+                        #ifdef WIN32
+                        // 8b 45 10             	mov    0x10(%rbp),%eax // 16
+                        g3(a,0x8b,0x45,16);
+                        #endif
+                        #ifdef __linux__
+                        //8b 45 fc             	mov    -0x4(%rbp),%eax
+                        g3(a,0x8b,0x45,0xfc);
+                        #endif
+                    #endif
+                }
+                lex(l);
+            }
+        }
+        else
 				if ((i = VarFind(l->token)) != -1) {
             var_type = Gvar[i].type;
 
@@ -791,6 +841,13 @@ char * FileOpen (const char *FileName) {
     return NULL;
 }
 
+int ArgumentFind (char *name) {
+    int i;
+    for(i=0;i<argument_count;i++)
+        if (!strcmp(argument[i].name, name)) return i;
+    return -1;
+}
+
 TFunc *FuncFind (char *name) {
     // array:
     TFunc *lib = stdlib;
@@ -981,6 +1038,7 @@ static void word_function (LEXER *l, ASM *a) {
     if (argument_count==0) {
         proto[1] = '0';
         proto[2] = 0;
+    } else {
     }
     if (l->tok=='{') l->pos--; else { Erro("Word Function need char: '{'"); return; }
 
@@ -992,6 +1050,40 @@ static void word_function (LEXER *l, ASM *a) {
     //
     asm_Reset (asm_function);
     emit_begin (asm_function);
+
+
+    #ifdef __x86_64__
+        #ifdef WIN32
+        if (argument_count == 1) {
+            if (argument[0].type[0] == TYPE_UNKNOW) {
+                // posicao 8
+                // 48 89 4d 10          	mov    %rcx,0x10(%rbp) // 16
+                // ARGUMENT POINTER:
+                g4(asm_function,0x48,0x89,0x4d,16);
+            } else if (argument[0].type[0] == TYPE_LONG) {
+                // posicao 8
+                // 89 4d 10             	mov    %ecx,0x10(%rbp) // 16
+                g3(asm_function,0x89,0x4d,16);
+                g(asm_function,OP_NOP);
+            }
+            else Erro ("%s: %d - USAGE: function func_name (arg) { ... }\n", l->name, l->line);
+        }
+        #endif
+        #ifdef __linux__
+        if (argument_count == 1) {
+            if (argument[0].type[0] == TYPE_UNKNOW) {
+                // PONTEIRO:
+                // 48 89 7d f8          	mov    %rdi,-0x8(%rbp)
+                g4(asm_function,0x48,0x89,0x7d,0xf8);
+            } else if (argument[0].type[0] == TYPE_LONG) {
+                // LONG
+                // 89 7d fc             	mov    %edi,-0x4(%rbp)
+                g3(asm_function,0x89,0x7d,0xfc);
+            }
+            else Erro ("%s: %d - USAGE: function func_name (arg) { ... }\n", l->name, l->line);
+        }
+        #endif
+    #endif
     stmt (l,asm_function); // here start from char: '{'
     emit_end (asm_function);
 
@@ -1043,6 +1135,14 @@ static void word_function (LEXER *l, ASM *a) {
     }
 */
 
+    if (func->code[8] == 0x48) {
+//printf ("funcao(%s) argumeto 1 tipo PONTEIRO\n", func->name);
+    }
+    if (func->code[8] == 0x89) {
+//printf ("funcao(%s) argumeto 1 tipo LONG(nao ponteiro)\n", func->name);
+    }
+
+
     asm_SetExecutable_PTR (func->code, len);
 
     // add on top:
@@ -1058,84 +1158,63 @@ static void word_if (LEXER *l, ASM *a) {
     static char array[20][20];
     static int if_count_total = 0;
     static int if_count = 0;
-    int is_negative;
 
-    if (lex(l) !='(') { Erro ("ERRO SINTAX (if) need char: '('\n"); return; }
+    int line = l->line;
+    if (lex(l) !='(') { Erro ("%s: %d - ERRO SINTAX (if) need char: '('\n", l->name, line); return; }
 
     if_count++;
     sprintf (array[if_count], "IF%d", if_count_total++);
 
     while (!erro && lex(l)) { // pass arguments: if (a > b) { ... }
-        is_negative = 0;
+        int is_negative = 0, _tok_;
 
         if (l->tok == '!') { is_negative = 1; lex(l); }
 
         asm_expression_reset(); // reg = 0;
-        expr0(l,a);
+        expr0(l,a); // Expression result in register: %eax
 
         if (erro) {
             Erro ("<<<<<<<<<<  if erro >>>>>>>>>>>>>\n");
             return;
         }
 
-//        if (l->tok == ')' || l->tok == TOK_AND_AND) emit_pop_eax (a); // 58     pop   %eax
-//        else                                        emit_pop_edx (a); // 5a     pop   %edx
+        _tok_ = l->tok;
+        if (l->tok == ')' || l->tok == TOK_AND_AND) {
+            // ... none ..
+        } else {
+            g2(a,G2_MOV_EAX_EBX); // "save" %eax in %ebx
+            asm_expression_reset(); // reg = 0;
+            lex(l); expr0(l,a);
+            g2(a,G2_CMP_EAX_EBX);
+        }
 
-        switch (l->tok) {
+        switch (_tok_) {
         case ')': // if (a) { ... }
-//        case TOK_AND_AND:
+        case TOK_AND_AND:
             g2(a,0x85,0xc0); // 85 c0    test   %eax,%eax
             if (is_negative == 0) emit_jump_je  (a,array[if_count]);
             else                  emit_jump_jne (a,array[if_count]);
             break;
-/*
+
         case '>':
-            lex(l); expr0(l,a);
-            #ifdef USE_VM
-            emit_cmp_int (a);
-            #endif
-            #ifdef USE_JIT
-            emit_pop_eax(a);
-            emit_cmp_eax_edx(a);
-            #endif
             emit_jump_jle (a,array[if_count]);
             break;
+
         case '<':
-            lex(l); expr0(l,a);
-            #ifdef USE_VM
-            emit_cmp_int (a);
-            #endif
-            #ifdef USE_JIT
-            emit_pop_eax(a);     // 58     : pop   %eax
-            emit_cmp_eax_edx(a); // 39 c2  : cmp   %eax,%edx
-            #endif
             emit_jump_jge (a,array[if_count]);
             break;
 
         case TOK_EQUAL_EQUAL: // ==
-            lex(l); expr0(l,a);
-            #ifdef USE_VM
-            emit_cmp_int (a);
-            #endif
-            #ifdef USE_JIT
-            emit_pop_eax(a);     // 58     : pop   %eax
-            emit_cmp_eax_edx(a); // 39 c2  : cmp   %eax,%edx
-            #endif
             emit_jump_jne(a,array[if_count]);
             break;
 
         case TOK_NOT_EQUAL: // !=
-            lex(l); expr0(l,a);
-            #ifdef USE_VM
-            emit_cmp_int (a);
-            #endif
-            #ifdef USE_JIT
-            emit_pop_eax(a);
-            emit_cmp_eax_edx(a);
-            #endif
             emit_jump_je (a,array[if_count]);
             break;
-*/
+
+        default:
+            Erro ("%s: %d: Word ( if ) compare not implemented: '%c'\n", l->name,l->line, _tok_);
+            return;
         }//: switch(tok)
 
         if (l->tok==')') break;
@@ -1148,18 +1227,17 @@ static void word_if (LEXER *l, ASM *a) {
 }// word_if ()
 
 static void word_include (LEXER *l, ASM *a) {
+    if (erro) return;
     if (lex(l) == TOK_STRING) {
         if (icount < MAX_INCLUDE) {
             icount++;
-            if ((incl[icount].text = FileOpen(l->token)) != NULL) {
-//printf ("INCLUDE(%s) %d\n", incl[icount].name, icount);
+            if (!erro && (incl[icount].text = FileOpen(l->token)) != NULL) {
                 if (core_Parse(&incl[icount].l, incl[icount].a, incl[icount].text, l->token) == 0) {
                     asm_Run (incl[icount].a); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
                 }
-                else Erro ("%s: %d Max include %d\n", incl[icount].l.name, incl[icount].l.line, icount);
+                else Erro ("FILE %s: %d '%s'\n", l->name, l->line, l->token);
 
                 free(incl[icount].text);
-//printf ("FREE(%s) %d\n", incl[icount].name, icount);
             }
             icount--;
         }
@@ -1208,6 +1286,8 @@ void lib_info (int arg) {
                     if (*s=='f') printf ("float");
                     else
                     if (*s=='s') printf ("char *");
+                    else
+                    if (*s=='p') printf ("void *");
                     s++;
                     if(*s) printf (", ");
                 }
@@ -1238,6 +1318,8 @@ void lib_info (int arg) {
                     if (*s=='f') printf ("float");
                     else
                     if (*s=='s') printf ("char *");
+                    else
+                    if (*s=='p') printf ("void *");
                     s++;
                     if(*s) printf (", ");
                 }

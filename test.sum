@@ -4,17 +4,15 @@
 //
 //-------------------------------------------------------------------
 //
-var a = 10, b = 30, i = 1500, f = 170.55;
+var a = 0, b = 30, i = 1500, f = 170.55;
 
-  "\nHello World ... SIMPLE STRING TEST\n\n";
+//
+// incompatible with JavaScript ... PLEASE WAIT IMPLEMENTATION ...
+//
+function test (int arg) {
+    printi (arg);
+}
 
-//  i = arg4 (a,b,i,4000);
-  i = arg5 (a,b,i,4000,15000);
+  test (12345);
 
-  info(1);
-
-  printi(i);
-  prints("Esse texto texto\n");
-
-  info(1);
 

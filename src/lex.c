@@ -164,6 +164,26 @@ label_top:
             return (l->tok = TOK_NUMBER);
         }
     }
+    if (c=='=' && next == '=') { // ==
+        *p++ = '='; *p = 0;
+        l->pos += 2;
+        return (l->tok = TOK_EQUAL_EQUAL);
+    }
+    if (c=='&' && next == '&') { // &&
+        *p++ = '&'; *p = 0;
+        l->pos += 2;
+        return (l->tok = TOK_AND_AND);
+    }
+    if (c=='|' && next == '|') { // ||
+        *p++ = '|'; *p = 0;
+        l->pos += 2;
+        return (l->tok = TOK_OR_OR);
+    }
+    if (c=='!' && next == '=') { // !=
+        *p++ = '='; *p = 0;
+        l->pos += 2;
+        return (l->tok = TOK_NOT_EQUAL);
+    }
 
     l->pos++;
     return (l->tok = c);

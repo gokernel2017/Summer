@@ -6,17 +6,19 @@
 //
 //-------------------------------------------------------------------
 //
-var win, bt1, bt2, editor, i = 100, count = 1;
+#include "hello.sum"
 
-function call_add (e) {
-    //printi (i);
+var win, bt1, bt2, editor, i = 100, count = 1, a;
+
+function call_add (int msg) {
     i = i + 1;
     LOG ("i: %d", i);
+//    printi (i);
 }
-function call_sub (e) {
-    //printi (i);
+function call_sub (int msg) {
     i = i - 1;
     LOG ("i: %d", i);
+//    printi (i);
 }
 
 if (app_Init(0,0)) {

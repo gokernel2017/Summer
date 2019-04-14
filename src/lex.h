@@ -54,8 +54,11 @@ enum {
 		TOK_PLUS_PLUS,		// ++
 		TOK_MINUS_MINUS,	// --
 		TOK_EQUAL_EQUAL,	// ==
+    TOK_AND_AND,      // &&
+    TOK_OR_OR,        // ||
 		TOK_PLUS_EQUAL,		// +=
-		TOK_MINUS_EQUAL		// -=
+		TOK_MINUS_EQUAL,	// -=
+    TOK_NOT_EQUAL     // !=
 };
 
 //-----------------------------------------------

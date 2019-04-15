@@ -1,0 +1,58 @@
+//-------------------------------------------------------------------
+// 
+// SG: Summer Graphic ( GL / DirectX / HTML Canvas ):
+//
+// Simple Example to test only.
+//
+// ----------------------------------------------
+// EVENT MODEL:
+//
+// typedef struct {
+//    void    *target;  // OBJECT or Pointer to "object"
+//    int     offsetX;  // mouse x
+//    int     offsetY;  // mouse y
+//    int     which;    // mouse button: 1 | 3
+// }TEvent;
+//
+// ----------------------------------------------
+//
+// BY: Francisco - gokernel@hotmail.com
+//
+//-------------------------------------------------------------------
+//
+var count, buf;
+
+//-----------------------------------------------
+//
+// INFO:
+//   Implemented only in 64 BITS:
+//     .offsetX 
+//     .offsetY
+//
+//-----------------------------------------------
+//
+function call_MouseMove (e) {
+
+    sprintf (buf, "Mouse X: %d Y: %d | count: %d", e.offsetX, e.offsetY, count);
+    count = count + 1;
+
+    sgClear ();
+
+    sgDrawText (buf, 100, 200, 64512); // COLOR_ORANGE
+
+    sgRender ();
+}
+
+if (sgInit(0,0)) {
+
+    buf = malloc(100);
+
+    sgSetEvent (call_MouseMove, "onmousemove");
+
+    sgDrawText ("Hello World | Move the Mouse !!!", 100, 100, 64512);
+
+    sgRender();
+
+    sgRun (0);
+}
+

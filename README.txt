@@ -26,6 +26,10 @@
    make -f Makefile_app clean
    make -f Makefile_app
 
+ 03: To compile SUMMER GRAPHIC type:
+   make -f Makefile_sg clean
+   make -f Makefile_sg
+
  To test the SUMMER program, type:
    sum test.sum
 
@@ -33,20 +37,25 @@
    app app.app
    or
    app
+
+ To test the SUMMER GRAPHIC, type:
+   sg graphic.sg
  
  ----------------------------------------------
-
 
  INFO:
    The implementation with APPLICATION API use the library SDL 1.x
 
+ INFO:
+   The implementation with SUMMER GRAPHIC ( GL / DirectX / HTML Canvas ): ... TEST ONLY ...
+      This is a test and use the library SDL 1.x
 
  INFO IMPLEMENTED:
    01: Call Function with max 5 arguments... PLEASE WAIT IMPLEMENTATION
    02: In ASM ( asm { } ) mode Call Function with max 2 arguments... PLEASE WAIT IMPLEMENTATION
    03: Call Function with argument type ( float ) not implemented.
    04: Implementation in 32 BITS not completed ...
-   05: The created function use only 1 argument(type int) ... PLEASE WAIT IMPLEMENTATION
+   05: The created function use only argument(type int) ... PLEASE WAIT IMPLEMENTATION
 
 
  WORDS:

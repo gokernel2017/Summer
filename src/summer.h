@@ -48,6 +48,11 @@ extern "C" {
     #include "app/app.h"
 #endif
 
+#ifdef USE_SG
+    // Summer Graphic ( GL / DirectX / HTML Canvas ):
+    #include "sg/sg.h"
+#endif
+
 //-----------------------------------------------
 //---------------  DEFINE / ENUM  ---------------
 //-----------------------------------------------

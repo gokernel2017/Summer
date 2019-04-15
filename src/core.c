@@ -77,6 +77,10 @@ static TFunc stdlib[]={
   { "printi",			"0i",		  (UCHAR*)lib_printi,    	0,    0,  	0,  			NULL },
   { "arg4",			  "iiiii",  (UCHAR*)arg4,    	0,    0,  	0,  			NULL },
   { "arg5",			  "iiiiii", (UCHAR*)arg5,    	0,    0,  	0,  			NULL },
+  //
+  { "sprintf",		"0ss",    (UCHAR*)sprintf,    	0,    0,  	0,  			NULL },
+  { "malloc",		  "pi",		  (UCHAR*)malloc,    	0,    0,  	0,  			NULL },
+
   // SDL:
 #ifdef USE_APPLICATION
   { "app_Init",       "iis",    (UCHAR*)app_Init,    	    0,    0,  	0,  			NULL },
@@ -88,6 +92,15 @@ static TFunc stdlib[]={
   { "app_SetEvent",   "0pps",   (UCHAR*)app_SetEvent,      0,    0,  	0,  			NULL },
   { "LOG",            "0*",     (UCHAR*)LOG,              0,    0,  	0,  			NULL },
   #endif
+#ifdef USE_SG
+  { "sgInit",       "iis",    (UCHAR*)sgInit,    	    0,    0,  	0,  			NULL },
+  { "sgRun",        "0p",		  (UCHAR*)sgRun,    	    0,    0,  	0,  			NULL },
+  { "sgSetEvent",   "0ps",	  (UCHAR*)sgSetEvent,	    0,    0,  	0,  			NULL },
+  { "sgDrawText",   "0siii",  (UCHAR*)sgDrawText,	    0,    0,  	0,  			NULL },
+  { "sgRender",     "00",     (UCHAR*)sgRender,	      0,    0,  	0,  			NULL },
+  { "sgClear",      "00",     (UCHAR*)sgClear,	      0,    0,  	0,  			NULL },
+  #endif
+
   { NULL, NULL, NULL, 0, 0, 0, NULL }
 };
 
@@ -263,6 +276,42 @@ static void atom (LEXER *l, ASM *a) { // expres
 
                 if (see(l)=='.' && lex(l) && lex(l)) { // .offsetX;
                     // ... NEED IMPLEMENTATION
+
+                    if (!strcmp(l->token, "offsetX")) { // 8
+                        #if defined(__x86_64__)
+                        #ifdef WIN32
+                        //48 8b 45 10          	mov    0x10(%rbp),%rax
+                        //8b 40 08             	mov    8(%rax),%eax
+                        g4(a,0x48,0x8b,0x45,0x10);
+                        #endif
+                        #ifdef __linux__
+// 48 8b 45 f8          	mov    -0x8(%rbp),%rax
+// 8b 40 08             	mov    8(%rax),%eax
+                        g4(a,0x48,0x8b,0x45,0xf8);
+                        #endif
+                        g3(a,0x8b,0x40,8);
+                        #endif
+                        lex(l);
+                    }
+                    else
+                    if (!strcmp(l->token, "offsetY")) { // 12
+                        #if defined(__x86_64__)
+                        #ifdef WIN32
+                        //48 8b 45 10          	mov    0x10(%rbp),%rax
+                        //8b 40 12             	mov    12(%rax),%eax
+                        g4(a,0x48,0x8b,0x45,0x10);
+                        #endif
+                        #ifdef __linux__
+// 48 8b 45 f8          	mov    -0x8(%rbp),%rax
+// 8b 40 08             	mov    8(%rax),%eax
+                        g4(a,0x48,0x8b,0x45,0xf8);
+                        #endif
+                        g3(a,0x8b,0x40,12);
+                        #endif
+                        lex(l);
+                    }
+                    else Erro("%s %d | ERRO(%s.%s) - Only implemented( .offsetX, .offsetY )", l->name, l->line, argument[i].name, l->token);
+
                 } else {
                     if (i == 0 && argument_count == 1 && argument[0].type[0] == TYPE_UNKNOW) {
                     #if defined(__x86_64__)

@@ -450,7 +450,7 @@ void emit_begin (ASM *a) { //: 32/64 BITS OK
     a->p[2] = 0x89;
     a->p[3] = 0xe5;
     a->p += 4;
-		emit_sub_esp(a,48); // 48 / 8 := 6
+    emit_sub_esp(a,48); // 48 / 8 := 6
     #else
     // 55     : push  %ebp
     // 89 e5  : mov   %esp,%ebp
@@ -459,7 +459,7 @@ void emit_begin (ASM *a) { //: 32/64 BITS OK
     a->p[1] = 0x89;
     a->p[2] = 0xe5;
     a->p += 3;
-		emit_sub_esp(a,100);
+    emit_sub_esp(a,100);
     #endif
 }
 
@@ -505,20 +505,17 @@ void emit_incl (ASM *a, void *var) { //: 32/64 BITS OK
 
 // mov $0x3e8, %eax
 void emit_mov_long_reg (ASM *a, long value, int reg) {
-		switch (reg) {
-		case EAX: g(a,0xb8); break; // b8 	e8 03 00 00		|	mov $0x3e8, %eax
-  	case ECX: g(a,0xb9); break; // b9 	e8 03 00 00		| mov $0x3e8, %ecx
-  	case EDX: g(a,0xba); break; // ba 	e8 03 00 00		| mov $0x3e8, %edx
-  	case EBX: g(a,0xbb); break; // bb		e8 03 00 00		| mov $0x3e8, %ebx
-		case ESI: g(a,0xbe); break; // be   e8 03 00 00   | mov $0x3e8, %esi
-		case EDI: g(a,0xbf); break; // bf   e8 03 00 00   | mov $0x3e8, %edi
-		default: return;
-		}
+    witch (reg) {
+    case EAX: g(a,0xb8); break; // b8 	e8 03 00 00		|	mov $0x3e8, %eax
+    case ECX: g(a,0xb9); break; // b9 	e8 03 00 00		| mov $0x3e8, %ecx
+    case EDX: g(a,0xba); break; // ba 	e8 03 00 00		| mov $0x3e8, %edx
+    case EBX: g(a,0xbb); break; // bb		e8 03 00 00		| mov $0x3e8, %ebx
+    case ESI: g(a,0xbe); break; // be   e8 03 00 00   | mov $0x3e8, %esi
+    case EDI: g(a,0xbf); break; // bf   e8 03 00 00   | mov $0x3e8, %edi
+    default: return;
+    }
     *(long*)a->p = value;
     a->p += 4; // ! OK
-
-
-
 }
 
 void emit_mov_var_reg (ASM *a, void *var, int reg) { ///: 32/64 BITS OK: Move variable to %register

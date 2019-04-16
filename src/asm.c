@@ -493,7 +493,7 @@ void emit_incl (ASM *a, void *var) { //: 32/64 BITS OK
 
 // mov $0x3e8, %eax
 void emit_mov_long_reg (ASM *a, long value, int reg) {
-    witch (reg) {
+    switch (reg) {
     case EAX: g(a,0xb8); break; // b8 	e8 03 00 00		|	mov $0x3e8, %eax
     case ECX: g(a,0xb9); break; // b9 	e8 03 00 00		| mov $0x3e8, %ecx
     case EDX: g(a,0xba); break; // ba 	e8 03 00 00		| mov $0x3e8, %edx

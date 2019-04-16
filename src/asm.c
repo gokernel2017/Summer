@@ -77,6 +77,7 @@ struct ASM { // opaque struct
     ASM_label *label;
     ASM_jump  *jump;
     int       size;
+    char      name[20];
 };
 struct ASM_label {
     char      *name;
@@ -104,13 +105,17 @@ static void pop_register (void) {
 //-------------------------  ASM PUCLIC API  ------------------------
 //-------------------------------------------------------------------
 //
-ASM *asm_New (unsigned int size) {
+ASM *asm_New (unsigned int size, char *name) {
     ASM *a = (ASM*)malloc(sizeof(ASM));
     if (a && (a->code=(UCHAR*)malloc(size)) != NULL) {
         a->p     = a->code;
         a->label = NULL;
         a->jump  = NULL;
         a->size  = size;
+        if (name) {
+            sprintf (a->name, name);
+            printf ("Create ASM(%s)\n", a->name);
+        }
         return a;
     }
     return NULL;
@@ -118,6 +123,7 @@ ASM *asm_New (unsigned int size) {
 
 void asm_Free (ASM *a) {
     if (a) {
+        printf ("Freeing ASM(%s)\n", a->name);
         asm_Reset (a);
         if (a->code) {
             free (a->code);
@@ -184,7 +190,7 @@ int asm_SetExecutable_PTR (void *ptr, unsigned int size) {
 int asm_SetExecutable_ASM (ASM *a, unsigned int size) {
 		if (size == 0)
 				size = (a->p - a->code);
-printf ("ASM SIZE: %d\n", size);
+printf ("ASM SIZE(%s): %d\n", a->name, size);
     return asm_SetExecutable_PTR (a->code, size);
 }
 
@@ -222,6 +228,12 @@ void asm_Label (ASM *a, char *name) {
             a->label = lab;
         }
     }
+}
+
+void asm_CodeCopy (ASM *src, UCHAR *dest, unsigned int len) {
+    register int i;
+    for (i = 0; i <= len; i++)
+        dest[i] = src->code[i];
 }
 
 static void asm_change_jump (ASM *a) {
@@ -438,8 +450,7 @@ void emit_begin (ASM *a) { //: 32/64 BITS OK
     a->p[2] = 0x89;
     a->p[3] = 0xe5;
     a->p += 4;
-//		emit_sub_esp(a,48); // 48 / 8 := 6
-		emit_sub_esp(a,32); // 48 / 8 := 6
+		emit_sub_esp(a,48); // 48 / 8 := 6
     #else
     // 55     : push  %ebp
     // 89 e5  : mov   %esp,%ebp

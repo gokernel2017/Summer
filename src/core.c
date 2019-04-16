@@ -694,17 +694,8 @@ ASM * core_Init (unsigned int size) {
 		if (!init) {
         int count;
 				init = 1;
-        if ((a =            asm_New(size)) == NULL) return NULL;
-        if ((asm_function = asm_New(size)) == NULL) return NULL;
-        for (count = 0; count < MAX_INCLUDE; count++) {
-            incl[count].a = asm_New (10000);
-//            printf ("Include OK: %d\n", count);
-/*
-            if (asm_SetExecutable_ASM(incl[count].a, 10000-1) != 0) {
-                printf ("Include Not Found\n");
-          return 0;
-*/
-        }
+        if ((a =            asm_New(size, "main")) == NULL) return NULL;
+        if ((asm_function = asm_New(size, "function")) == NULL) return NULL;
 
 				#ifdef WIN32
 				DefineAdd("WIN32", 1);
@@ -1110,7 +1101,6 @@ static void word_function (LEXER *l, ASM *a) {
                 // 48 89 4d 10          	mov    %rcx,0x10(%rbp) // 16
                 // ARGUMENT POINTER:
                 g4(asm_function,0x48,0x89,0x4d,16);
-printf ("Passando argumento PONTEIRO(%s)\n", argument[0].name);
             } else if (argument[0].type[0] == TYPE_LONG) {
                 // posicao 8
                 // 89 4d 10             	mov    %ecx,0x10(%rbp) // 16
@@ -1277,22 +1267,49 @@ static void word_if (LEXER *l, ASM *a) {
 
 }// word_if ()
 
+UCHAR *code;
 static void word_include (LEXER *l, ASM *a) {
     if (erro) return;
     if (lex(l) == TOK_STRING) {
         if (icount < MAX_INCLUDE) {
+
             icount++;
             if (!erro && (incl[icount].text = FileOpen(l->token)) != NULL) {
-                if (core_Parse(&incl[icount].l, incl[icount].a, incl[icount].text, l->token) == 0) {
-                    if (asm_SetExecutable_ASM(incl[icount].a, 0) == 0) {
-                        asm_Run (incl[icount].a); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
+
+                if ((incl[icount].a = asm_New (5000, l->token)) != NULL) {
+//                incl[icount].a = asm_New (5000, l->token);
+
+                    if (core_Parse(&incl[icount].l, incl[icount].a, incl[icount].text, l->token) == 0) {
+                        int len = asm_GetLen(incl[icount].a);
+                        code = malloc (len+5);
+                        if (code) {
+                            asm_CodeCopy (incl[icount].a, code, len);
+                            if (asm_SetExecutable_PTR(code, len) == 0) {
+                                ( (void(*)()) code ) ();
+                                //asm_Run(incl[icount].a); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
+                            }
+                            else printf ("ERRO:\n%s", ErroGet());
+
+                            if (code) {
+                                free(code);
+                                code = NULL;
+                            }
+                        }
+
                     }
-                }
-                else Erro ("FILE %s: %d '%s'\n", l->name, l->line, l->token);
+                    else Erro ("FILE %s: %d '%s'\n", l->name, l->line, l->token);
+
+                    if (incl[icount].a) {
+                        asm_Free(incl[icount].a);
+                        incl[icount].a = NULL;
+                    }
+
+                }// if (incl[icount].a = asm_New (10000)) != NULL)
 
                 free(incl[icount].text);
             }
             icount--;
+
         }
         else Erro ("%s: %d Max include %d\n", l->name, l->line, icount);
     }

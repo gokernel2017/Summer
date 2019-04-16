@@ -119,7 +119,7 @@ extern const UCHAR OP_pop_edi  [1]; // pop  %edi
 //-----------------  PUBLIC API  ----------------
 //-----------------------------------------------
 //
-LIBIMPORT ASM		*	asm_New						(unsigned int size);
+LIBIMPORT ASM		*	asm_New						(unsigned int size, char *name);
 LIBIMPORT void		asm_Free					(ASM *a);
 LIBIMPORT void		asm_Reset					(ASM *a);
 LIBIMPORT int			asm_SetExecutable_ASM	(ASM *a, unsigned int size);
@@ -128,6 +128,7 @@ LIBIMPORT void		asm_Run						(ASM *a);
 LIBIMPORT UCHAR * asm_GetCode				(ASM *a);
 LIBIMPORT int 		asm_GetLen				(ASM *a);
 LIBIMPORT void    asm_Label         (ASM *a, char *name);
+LIBIMPORT void    asm_CodeCopy      (ASM *src, UCHAR *dest, unsigned int len);
 // emit / gen:
 LIBIMPORT void 		gen								(ASM *a, UCHAR c); // emit 1 opcode
 LIBIMPORT void    g (ASM *a, UCHAR c);

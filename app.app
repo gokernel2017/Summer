@@ -31,7 +31,6 @@ function call_event (e) {
 }
 
 if (app_Init(0,0)) {
-
     //
     // Create only one
     //
@@ -52,6 +51,5 @@ if (app_Init(0,0)) {
 
         app_Run (0);
     }
-
 }
 

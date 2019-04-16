@@ -537,8 +537,11 @@ void app_SetCall (OBJECT *o, void (*call) (int msg)) {
 //AppSetCall (win1, win1_OnMouseMove, "onmousemove");
 void app_SetEvent (OBJECT *o, void (*call) (TEvent *e), char *name) {
     if (o->event == NULL) {
-        o->event = (EVENT*) malloc (sizeof(EVENT));
-        printf ("Create event\n");
+        if ((o->event = (EVENT*) malloc (sizeof(EVENT))) != NULL) {
+            o->event->onmouseup = NULL;
+            o->event->onmousedown = NULL;
+            o->event->onmousemove = NULL;
+        }
     }
     if (o->event && name) {
         if (!strcmp(name, "onmouseup")) o->event->onmouseup = call;

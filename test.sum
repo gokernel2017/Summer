@@ -4,13 +4,15 @@
 //
 //-------------------------------------------------------------------
 //
-var a = 0, b = 30, i = 1500, f = 170.55;
+var a = 110, b = 30, i = 1500, f = 170.55;
 
 //
 // incompatible with JavaScript ... PLEASE WAIT IMPLEMENTATION ...
 //
 function test (int arg) {
-    printi (arg);
+    if (a > 70) {
+        printi (arg);
+    }
 }
 
   test (12345);

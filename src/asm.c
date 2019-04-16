@@ -184,6 +184,7 @@ int asm_SetExecutable_PTR (void *ptr, unsigned int size) {
 int asm_SetExecutable_ASM (ASM *a, unsigned int size) {
 		if (size == 0)
 				size = (a->p - a->code);
+printf ("ASM SIZE: %d\n", size);
     return asm_SetExecutable_PTR (a->code, size);
 }
 

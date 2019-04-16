@@ -8,7 +8,7 @@
 //
 #include "hello.sum"
 
-var win, bt1, bt2, b_event, i = 100, count = 1, a;
+var win, bt1, bt2, b_event, i = 100, count = 1, a = 12345;
 
 function call_add (int msg) {
     i = i + 1;
@@ -23,11 +23,12 @@ function call_sub (int msg) {
 }
 
 function call_event (e) {
-  LOG("Calling Event Object ... Compatible with JavaScript !");
-  a = e;
-//  printi(a);
+    LOG("Calling Event Object ... offsetX: %d", e.offsetX);
+    a = e.offsetX;
+    if (a > 50) {
+        printi(a);
+    }
 }
-
 
 if (app_Init(0,0)) {
 
@@ -46,6 +47,8 @@ if (app_Init(0,0)) {
 
         b_event = app_NewButton (0, 0, 350, 30, "OBJECT");
         app_SetEvent (b_event, call_event, "onmouseup");
+
+        //disasm("call_event");
 
         app_Run (0);
     }

@@ -699,10 +699,11 @@ ASM * core_Init (unsigned int size) {
         for (count = 0; count < MAX_INCLUDE; count++) {
             incl[count].a = asm_New (10000);
 //            printf ("Include OK: %d\n", count);
+/*
             if (asm_SetExecutable_ASM(incl[count].a, 10000-1) != 0) {
                 printf ("Include Not Found\n");
           return 0;
-            }
+*/
         }
 
 				#ifdef WIN32
@@ -1109,6 +1110,7 @@ static void word_function (LEXER *l, ASM *a) {
                 // 48 89 4d 10          	mov    %rcx,0x10(%rbp) // 16
                 // ARGUMENT POINTER:
                 g4(asm_function,0x48,0x89,0x4d,16);
+printf ("Passando argumento PONTEIRO(%s)\n", argument[0].name);
             } else if (argument[0].type[0] == TYPE_LONG) {
                 // posicao 8
                 // 89 4d 10             	mov    %ecx,0x10(%rbp) // 16
@@ -1231,10 +1233,10 @@ static void word_if (LEXER *l, ASM *a) {
         if (l->tok == ')' || l->tok == TOK_AND_AND) {
             // ... none ..
         } else {
-            g2(a,G2_MOV_EAX_EBX); // "save" %eax in %ebx
+            g2(a,G2_MOV_EAX_EDX); // "save" %eax in %ebx
             asm_expression_reset(); // reg = 0;
             lex(l); expr0(l,a);
-            g2(a,G2_CMP_EAX_EBX);
+            g2(a,G2_CMP_EAX_EDX);
         }
 
         switch (_tok_) {
@@ -1282,7 +1284,9 @@ static void word_include (LEXER *l, ASM *a) {
             icount++;
             if (!erro && (incl[icount].text = FileOpen(l->token)) != NULL) {
                 if (core_Parse(&incl[icount].l, incl[icount].a, incl[icount].text, l->token) == 0) {
-                    asm_Run (incl[icount].a); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
+                    if (asm_SetExecutable_ASM(incl[icount].a, 0) == 0) {
+                        asm_Run (incl[icount].a); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
+                    }
                 }
                 else Erro ("FILE %s: %d '%s'\n", l->name, l->line, l->token);
 

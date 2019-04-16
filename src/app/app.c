@@ -249,6 +249,8 @@ void app_UpdateGui (OBJECT *o) {
         if (object_click && object_click == current) {
             // EVENT:
             if (object_click->event && object_click->event->onmouseup && object_click->proc (current, MSG_MOUSE_UP, 0) == RET_CALL) {
+                event.offsetX = mx - object_click->rect.x;
+                event.offsetY = my - object_click->rect.y;
                 object_click->event->onmouseup (&event);
             }
 

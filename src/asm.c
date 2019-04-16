@@ -465,18 +465,6 @@ void emit_begin (ASM *a) { //: 32/64 BITS OK
 
 void emit_end (ASM *a) { ///: 32/64 BITS OK
     #if defined(__x86_64__)
-
-/*
-401555:	90                   	nop
-401556:	48 83 c4 20          	add    $0x20,%rsp
-40155a:	5d                   	pop    %rbp
-40155b:	c3                   	retq   
-*/
-
-//  g5(a,0x90,0x48,0x83,0xc4,0x20);
-//  g2(a,0x5d,0xc3);
-
-
     a->p[0] = 0xc9; // c9 : leaveq
     a->p[1] = 0xc3; // c3 : retq
     a->p += 2;

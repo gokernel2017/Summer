@@ -3,13 +3,13 @@
 // SUMMER LANGUAGE:
 //
 // The Lexical Analyzer
-//lexical analyser
 //
 // FILE:
 //   lex.c
 //
 // SUMMER LANGUAGE START DATE ( 27/08/2017 - 08:35 ):
-//   rewrite: 23/03/2019 - 08:50
+//   rewrite 01: 20/07/2018 - 11:10
+//   rewrite 02: 23/03/2019 - 08:50
 //
 // BY: Francisco - gokernel@hotmail.com
 //
@@ -23,6 +23,7 @@ static char save_token [LEXER_TOKEN_SIZE + 1];
 static int  save_pos;
 static int  save_tok;
 static int  save_line;
+
 
 int lex (LEXER *l) {
     register char *p;
@@ -80,6 +81,8 @@ label_top:
         if (!strcmp(l->token, "if"))        return (l->tok = TOK_IF);
         if (!strcmp(l->token, "function"))  return (l->tok = TOK_FUNCTION);
         if (!strcmp(l->token, "include"))   return (l->tok = TOK_INCLUDE);
+        if (!strcmp(l->token, "ifdef"))     { ifdef_block++; return (l->tok = TOK_IFDEF); }
+        if (!strcmp(l->token, "endif"))     { ifdef_block--; return (l->tok = TOK_ENDIF); }
 
         return (l->tok = TOK_ID);
     }
@@ -190,29 +193,29 @@ label_top:
 }
 
 int lex_set (LEXER *l, char *text, char *name) {
-    if (l && text && name) {
-        l->text = text;
-        strcpy (l->name, name);
-        l->tok = 0;
-        l->pos = 0;
-        l->line = 1;
-        l->level = 0;
-        return 1;
-    }
-    return 0;
+  if (l && text && name) {
+    l->text = text;
+    strcpy (l->name, name);
+    l->tok = 0;
+    l->pos = 0;
+    l->line = 1;
+    l->level = 0;
+    return 1;
+  }
+  return 0;
 }
 
 void lex_save (LEXER *l) {
-    sprintf (save_token, "%s", l->token);
-    save_pos  = l->pos;
-    save_tok  = l->tok;
-    save_line = l->line;
+  sprintf (save_token, "%s", l->token);
+  save_pos  = l->pos;
+  save_tok  = l->tok;
+  save_line = l->line;
 }
 
 void lex_restore (LEXER *l) {
-    sprintf (l->token, "%s", save_token);
-    l->pos  = save_pos;
-    l->tok  = save_tok;
-    l->line = save_line;
+  sprintf (l->token, "%s", save_token);
+  l->pos  = save_pos;
+  l->tok  = save_tok;
+  l->line = save_line;
 }
 

@@ -64,7 +64,9 @@
    asm,
    if ( NEEW MORE IMPLEMENTATION ),
    function,
-   include
+   #include,
+   #ifdef,
+   #endif
 
  BETA.
 

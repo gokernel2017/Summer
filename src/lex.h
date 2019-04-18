@@ -44,6 +44,8 @@ enum {
     TOK_IF,
     TOK_FUNCTION,
     TOK_INCLUDE,
+    TOK_IFDEF,
+    TOK_ENDIF,
 		//
 		TOK_ID,
 		TOK_STRING,
@@ -81,6 +83,7 @@ struct LEXER {
 //--------------  GLOBAL VARIABLE  --------------
 //-----------------------------------------------
 //
+extern int ifdef_block;
 
 //-----------------------------------------------
 //-----------------  PUBLIC API  ----------------

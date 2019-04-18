@@ -121,7 +121,7 @@ int app_Init (int argc, char **argv) {
     int w = 800, h = 600, i, flags = 0;
 
     if (init) return 1;
-    printf ("app_Init : OBJECT SIZEOF = %d\n", (int)sizeof(OBJECT));
+//    printf ("app_Init : OBJECT SIZEOF = %d\n", (int)sizeof(OBJECT));
     init = 1;
     SDL_Init (SDL_INIT_VIDEO);
     SDL_WM_SetCaption ("Application API:", NULL);

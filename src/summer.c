@@ -93,7 +93,7 @@ int main (int argc, char *argv[]) {
 
         if (asm_SetExecutable_ASM(a, ASM_DEFAULT_SIZE - 2) != 0) {
             printf ("\n%s\n", ErroGet());
-						goto label_end;
+            goto label_end;
         }
 
 #ifdef USE_APPLICATION
@@ -139,7 +139,8 @@ int main (int argc, char *argv[]) {
     }
 
     label_end:
-    asm_Free (a);
+    ASM_FREE (a);
+    ASM_FREE (a);
     core_Finalize ();
     printf ("\nExiting With Sucess:\n");
     return 0;

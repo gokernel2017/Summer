@@ -46,6 +46,7 @@ extern "C" {
 //
 #define ASM_DEFAULT_SIZE	50000
 #define UCHAR							unsigned char
+#define ASM_FREE(aa)      asm_Free(aa); aa=NULL
 //
 #define PUSH_EAX  0x50 // push  %eax
 #define POP_EAX   0x58 // pop   %eax

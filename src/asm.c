@@ -12,7 +12,7 @@
 // BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
-//
+// size: 31.910
 #include "asm.h"
 
 #define REG_MAX		6
@@ -92,14 +92,9 @@ struct ASM_jump {
     ASM_jump  *next;
 };
 
-static void push_register (void) {
-    if (reg < REG_MAX) reg++;
-}
+static void push_register (void) { if (reg < REG_MAX) reg++; }
 
-static void pop_register (void) {
-    if (reg > 0) reg--;
-}
-
+static void pop_register (void) { if (reg > 0) reg--; }
 
 //-------------------------------------------------------------------
 //-------------------------  ASM PUCLIC API  ------------------------
@@ -114,7 +109,7 @@ ASM *asm_New (unsigned int size, char *name) {
         a->size  = size;
         if (name) {
             sprintf (a->name, name);
-            printf ("Create ASM(%s)\n", a->name);
+//            printf ("Create ASM(%s)\n", a->name);
         }
         return a;
     }
@@ -122,15 +117,15 @@ ASM *asm_New (unsigned int size, char *name) {
 }
 
 void asm_Free (ASM *a) {
-    if (a) {
-        printf ("Freeing ASM(%s)\n", a->name);
-        asm_Reset (a);
-        if (a->code) {
-            free (a->code);
-            a->code = NULL;
-        }
-        free (a);
+  if (a) {
+//    printf ("Freeing ASM(%s)\n", a->name);
+    asm_Reset(a);
+    if (a->code) {
+      free (a->code);
+      a->code = NULL;
     }
+    free(a);
+  }
 }
 
 void asm_Reset (ASM *a) {
@@ -188,20 +183,20 @@ int asm_SetExecutable_PTR (void *ptr, unsigned int size) {
 }
 
 int asm_SetExecutable_ASM (ASM *a, unsigned int size) {
-		if (size == 0)
-				size = (a->p - a->code);
-printf ("ASM SIZE(%s): %d\n", a->name, size);
-    return asm_SetExecutable_PTR (a->code, size);
+  if (size == 0)
+    size = (a->p - a->code);
+//printf ("ASM SIZE(%s): %d\n", a->name, size);
+  return asm_SetExecutable_PTR (a->code, size);
 }
 
 void asm_Run (ASM *a) {
-    ( (void(*)()) a->code ) ();
+  ( (void(*)()) a->code ) ();
 }
 
 void asm_get_addr (ASM *a, void *ptr) { ///: 32/64 BITS OK
-    *(void**)a->p = ptr;
-    //a->p += sizeof(void*);
-    a->p += 4; // ! OK
+  *(void**)a->p = ptr;
+  //a->p += sizeof(void*);
+  a->p += 4; // ! OK
 }
 
 void asm_Label (ASM *a, char *name) {
@@ -231,9 +226,9 @@ void asm_Label (ASM *a, char *name) {
 }
 
 void asm_CodeCopy (ASM *src, UCHAR *dest, unsigned int len) {
-    register int i;
-    for (i = 0; i <= len; i++)
-        dest[i] = src->code[i];
+  register int i;
+  for (i = 0; i < len; i++)
+    dest[i] = src->code[i];
 }
 
 static void asm_change_jump (ASM *a) {
@@ -402,65 +397,65 @@ static void asm_change_jump (ASM *a) {
 //-------------------------------------------------------------------
 //
 void g (ASM *a, UCHAR c) {
-    *a->p++ = c;
+  *a->p++ = c;
 }
 void gen (ASM *a, UCHAR c) {
-    *a->p++ = c;
+  *a->p++ = c;
 }
 void g2 (ASM *a, UCHAR c1, UCHAR c2) {
-    a->p[0] = c1;
-    a->p[1] = c2;
-    a->p += 2;
+  a->p[0] = c1;
+  a->p[1] = c2;
+  a->p += 2;
 }
 void g3 (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3) {
-    a->p[0] = c1;
-    a->p[1] = c2;
-    a->p[2] = c3;
-    a->p += 3;
+  a->p[0] = c1;
+  a->p[1] = c2;
+  a->p[2] = c3;
+  a->p += 3;
 }
 void g4 (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3, UCHAR c4) {
-    a->p[0] = c1;
-    a->p[1] = c2;
-    a->p[2] = c3;
-    a->p[3] = c4;
-    a->p += 4;
+  a->p[0] = c1;
+  a->p[1] = c2;
+  a->p[2] = c3;
+  a->p[3] = c4;
+  a->p += 4;
 }
 void g5 (ASM *a, UCHAR c1, UCHAR c2, UCHAR c3, UCHAR c4, UCHAR c5) {
-    a->p[0] = c1;
-    a->p[1] = c2;
-    a->p[2] = c3;
-    a->p[3] = c4;
-    a->p[4] = c5;
-    a->p += 5;
+  a->p[0] = c1;
+  a->p[1] = c2;
+  a->p[2] = c3;
+  a->p[3] = c4;
+  a->p[4] = c5;
+  a->p += 5;
 }
 
 void emit (ASM *a, const UCHAR opcode[], unsigned int len) {
-    while (len--) {
-				*a->p++ = *opcode++;
-		}
+  while (len--) {
+    *a->p++ = *opcode++;
+  }
 }
 
 void emit_begin (ASM *a) { //: 32/64 BITS OK
-    #if defined(__x86_64__)
-    // 55         : push  %rbp
-    // 48 89 e5   : mov   %rsp,%rbp
-    //-----------------------------
-    a->p[0] = 0x55;
-    a->p[1] = 0x48;
-    a->p[2] = 0x89;
-    a->p[3] = 0xe5;
-    a->p += 4;
-    emit_sub_esp(a,48); // 48 / 8 := 6
-    #else
-    // 55     : push  %ebp
-    // 89 e5  : mov   %esp,%ebp
-    //-----------------------------
-    a->p[0] = 0x55;
-    a->p[1] = 0x89;
-    a->p[2] = 0xe5;
-    a->p += 3;
-    emit_sub_esp(a,100);
-    #endif
+  #if defined(__x86_64__)
+  // 55         : push  %rbp
+  // 48 89 e5   : mov   %rsp,%rbp
+  //-----------------------------
+  a->p[0] = 0x55;
+  a->p[1] = 0x48;
+  a->p[2] = 0x89;
+  a->p[3] = 0xe5;
+  a->p += 4;
+  emit_sub_esp(a,48); // 48 / 8 := 6
+  #else
+  // 55     : push  %ebp
+  // 89 e5  : mov   %esp,%ebp
+  //-----------------------------
+  a->p[0] = 0x55;
+  a->p[1] = 0x89;
+  a->p[2] = 0xe5;
+  a->p += 3;
+  emit_sub_esp(a,100);
+  #endif
 }
 
 void emit_end (ASM *a) { ///: 32/64 BITS OK
@@ -480,15 +475,12 @@ void emit_end (ASM *a) { ///: 32/64 BITS OK
     asm_change_jump (a);
 }
 
-// 64 bits: ff 04 25 10 30 40 00 	incl   0x403010
-// 32 bits: ff 05 04 30 40 00    	incl   0x403004
-
 void emit_incl (ASM *a, void *var) { //: 32/64 BITS OK
-    #if defined(__x86_64__)
-    g3(a,0xff,0x04,0x25); asm_get_addr(a,var);  // ff 04 25   00 0a 60 00   : incl   0x600a00
-    #else
-    g2(a,0xff,0x05); asm_get_addr(a,var);       // ff 05      00 20 40 00   : incl   0x402000
-    #endif
+  #if defined(__x86_64__)
+  g3(a,0xff,0x04,0x25); asm_get_addr(a,var);  // ff 04 25   00 0a 60 00   : incl   0x600a00
+  #else
+  g2(a,0xff,0x05); asm_get_addr(a,var);       // ff 05      00 20 40 00   : incl   0x402000
+  #endif
 }
 
 // mov $0x3e8, %eax
@@ -973,67 +965,51 @@ void emit_jump_jmp (ASM *a, char *name) {
 //-------------------------------------------------------------------
 //
 static void asm_conditional_jump (ASM *a, char *name, int type) {
-    ASM_jump *jump;
-
-    if (name && (jump = (ASM_jump*)malloc (sizeof(ASM_jump))) != NULL) {
-        jump->name = strdup (name);
-        jump->pos  = (a->p - a->code); // the index
-        jump->type = type;
-        jump->exist = 0;
-
-        // add on top:
-        jump->next = a->jump;
-        a->jump = jump;
-
-        // to change ...
-        g(a,OP_NOP); g(a,OP_NOP);
-        g(a,OP_NOP); g(a,OP_NOP); g(a,OP_NOP); g(a,OP_NOP);
-    }
+  ASM_jump *jump;
+  if (name && (jump = (ASM_jump*)malloc (sizeof(ASM_jump))) != NULL) {
+    jump->name = strdup (name);
+    jump->pos  = (a->p - a->code); // the index
+    jump->type = type;
+    jump->exist = 0;
+    // add on top:
+    jump->next = a->jump;
+    a->jump = jump;
+    // to change ...
+    g(a,OP_NOP); g(a,OP_NOP);
+    g(a,OP_NOP); g(a,OP_NOP); g(a,OP_NOP); g(a,OP_NOP);
+  }
 }
-void emit_jump_je (ASM *a, char *name) {
-    asm_conditional_jump (a, name, ASM_JUMP_JE);
-}
-
-void emit_jump_jne (ASM *a, char *name) {
-    asm_conditional_jump (a, name, ASM_JUMP_JNE);
-}
-
-void emit_jump_jle (ASM *a, char *name) {
-    asm_conditional_jump (a, name, ASM_JUMP_JLE);
-}
-void emit_jump_jge (ASM *a, char *name) {
-    asm_conditional_jump (a, name, ASM_JUMP_JGE);
-}
-void emit_jump_jg (ASM *a, char *name) {
-    asm_conditional_jump (a, name, ASM_JUMP_JG);
-}
-void emit_jump_jl (ASM *a, char *name) {
-    asm_conditional_jump (a, name, ASM_JUMP_JL);
-}
+void emit_jump_je  (ASM *a, char *name) { asm_conditional_jump (a, name, ASM_JUMP_JE); }
+void emit_jump_jne (ASM *a, char *name) { asm_conditional_jump (a, name, ASM_JUMP_JNE); }
+void emit_jump_jle (ASM *a, char *name) { asm_conditional_jump (a, name, ASM_JUMP_JLE); }
+void emit_jump_jge (ASM *a, char *name) { asm_conditional_jump (a, name, ASM_JUMP_JGE); }
+void emit_jump_jg  (ASM *a, char *name) { asm_conditional_jump (a, name, ASM_JUMP_JG); }
+void emit_jump_jl  (ASM *a, char *name) { asm_conditional_jump (a, name, ASM_JUMP_JL); }
 
 //-------------------------------------------------------------------
 //------------------------------  ERRO  -----------------------------
 //-------------------------------------------------------------------
 //
 void Erro (char *format, ...) {
-    char msg[1024] = { 0 };
-    va_list ap;
+  char msg[1024] = { 0 };
+  va_list ap;
 
-    va_start (ap,format);
-    vsprintf (msg, format, ap);
-    va_end (ap);
-    if ((strlen(strErro) + strlen(msg)) < STR_ERRO_SIZE)
-        strcat (strErro, msg);
-    erro++;
+  va_start (ap,format);
+  vsprintf (msg, format, ap);
+  va_end (ap);
+  if ((strlen(strErro) + strlen(msg)) < STR_ERRO_SIZE)
+    strcat (strErro, msg);
+  erro++;
 }
 char *ErroGet (void) {
-    if (strErro[0])
-        return strErro;
-    else
-        return NULL;
+  if (strErro[0])
+    return strErro;
+  else
+    return NULL;
 }
 void ErroReset (void) {
-    erro = 0;
-    strErro[0] = 0;
+  erro = 0;
+  strErro[0] = 0;
 }
+// lines: 1039
 

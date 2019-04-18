@@ -42,6 +42,11 @@ label_end:
 
 }
 
-  function_for ();
+  #ifdef __linux__
 
+  #endif
+
+  "--------------------------\n";
+  function_for ();
+  "--------------------------\n";
 

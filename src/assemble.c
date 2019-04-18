@@ -44,7 +44,7 @@ static int GetReg32 (char *s);
 //
 static int parse_assemble_4 (ASM *a);
 static int parse_assemble_7 (ASM *a);
-static int op_mov_4 (ASM *a);
+//static int op_mov_4 (ASM *a);
 static int op_mov_5 (ASM *a);
 
 struct ARG {
@@ -479,7 +479,7 @@ static int parse_assemble_4 (ASM *a) {
 
 //  { "mov", T_REG,  ',',  T_NUM, '(', T_REG, ')' },
 static int parse_assemble_7 (ASM *a) {
-    int i = 0;
+//    int i = 0;
     struct ASSEMBLE_7 *o = assemble_7;
     while (o->name) {
         if (!strcmp(o->name, arg.text[0])

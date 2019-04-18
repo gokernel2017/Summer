@@ -59,25 +59,32 @@ void call_mov_value_eax (void);
 void call_sub_esp (void);
 void call_sub_rsp (void);
 
+struct ONE {
+  char  *text;
+  UCHAR op;
+}one[] = {
+  #ifdef __x86_64__
+  { "nop",          0x90 },
+  { "push   %rbp",  0x55 },
+  { "leaveq",       0xc9 },
+  { "retq",         0xc3 },
+  #else
+  { "push   %ebp",  0x55 },
+  { "leave",        0xc9 },
+  { "ret",          0xc3 },
+  #endif
+  { "push   %eax",  0x50 },
+  { "pop    %ecx",  0x59 },
+  { "pop    %edi",  0x5f },
+  { NULL, 0 },
+};
+
 struct _1OP {
     char  *text;
     UCHAR op[1];
     int   len;
     void (*call) (void);
 }_1op[] = {
-  #ifdef __x86_64__
-  { "nop", { 0x90 }, 1, NULL },
-  { "push   %rbp", { 0x55 }, 1, NULL },
-  { "leaveq",      { 0xc9 }, 1, NULL },
-  { "retq",        { 0xc3 }, 1, NULL },
-  #else
-  { "push   %ebp", { 0x55 }, 1, NULL },
-  { "leave",       { 0xc9 }, 1, NULL },
-  { "ret",         { 0xc3 }, 1, NULL },
-  #endif
-	{ "push   %eax", { 0x50 }, 1, NULL },
-  { "pop    %ecx", { 0x59 }, 1, NULL },
-  { "pop    %edi", { 0x5f }, 1, NULL },
   { "mov    %eax, var_?",  { 0xa3 }, 5, NULL }, // 32 BITS:  a3    10 40 40 00  | mov  %eax, 0x404010
   { "mov    $0x3e8, %eax", { 0xb8 }, 5, call_mov_value_eax }, // b8 	e8 03 00 00		|	mov $0x3e8, %eax
   { NULL, " " }
@@ -202,6 +209,20 @@ int _3 (void) {
     return 0;
 }
 
+int one_simple (void) {
+  struct ONE *op = one;
+  while (op->text) {
+    if (op->op == o[0]) {
+      int len = printf ("%04d: %s", i, op->text);
+      print_space(len);
+      print_op_increment(1);
+      return 1;
+    }
+    op++;
+  }
+  return 0;
+}
+
 void Disasm (UCHAR *code, char *name, int len) {
     o = code;
     i = 0;
@@ -213,6 +234,8 @@ void Disasm (UCHAR *code, char *name, int len) {
         if (_2()) { }
         else
         if (_1()) { }
+        else
+        if (one_simple()) { }
         else {
             printf ("0x%x, ", (UCHAR)*o);
             o++; i++;

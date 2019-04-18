@@ -57,10 +57,10 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func);
 static void DefineAdd (char *name, int value);
 
 void lib_info (int arg);
+int lib_printf (char *format, ...);
 void lib_help (int i);
 void lib_disasm (char *name);
 int lib_func_add (int a, int b);
-void lib_prints (char *s);
 void lib_printi (int i);
 int arg4(int a, int b, int c, int d);
 int arg5(int a, int b, int c, int d, int e);
@@ -72,15 +72,15 @@ static TFunc stdlib[]={
   //-----------------------------------------------------------------------------
   { "info",       "0i",     (UCHAR*)lib_info,       0,    0,    0,        NULL },
   { "disasm",     "0s",     (UCHAR*)lib_disasm,     0,    0,    0,        NULL },
+  //
+  { "printf",     "is.",    (UCHAR*)lib_printf,     0,    0,    0,        NULL },
+  { "sprintf",    "iss.",   (UCHAR*)sprintf,        0,    0,    0,        NULL },
+  { "malloc",     "pi",     (UCHAR*)malloc,         0,    0,    0,        NULL },
+  //
   { "func_add",   "iii",    (UCHAR*)lib_func_add,   0,    0,    0,        NULL },
-  { "prints",			"0s",		  (UCHAR*)lib_prints,    	0,    0,  	0,  			NULL },
   { "printi",			"0i",		  (UCHAR*)lib_printi,    	0,    0,  	0,  			NULL },
   { "arg4",			  "iiiii",  (UCHAR*)arg4,    	0,    0,  	0,  			NULL },
   { "arg5",			  "iiiiii", (UCHAR*)arg5,    	0,    0,  	0,  			NULL },
-  //
-  { "sprintf",		"0ss",    (UCHAR*)sprintf,    	0,    0,  	0,  			NULL },
-  { "malloc",		  "pi",		  (UCHAR*)malloc,    	0,    0,  	0,  			NULL },
-
   // SDL:
 #ifdef USE_APPLICATION
   { "app_Init",       "iis",    (UCHAR*)app_Init,    	    0,    0,  	0,  			NULL },
@@ -91,7 +91,7 @@ static TFunc stdlib[]={
   { "app_SetCall",    "0pp",    (UCHAR*)app_SetCall,      0,    0,  	0,  			NULL },
   { "app_SetEvent",   "0pps",   (UCHAR*)app_SetEvent,      0,    0,  	0,  			NULL },
   { "LOG",            "0*",     (UCHAR*)LOG,              0,    0,  	0,  			NULL },
-  #endif
+#endif
 #ifdef USE_SG
   { "sgInit",       "iis",    (UCHAR*)sgInit,    	    0,    0,  	0,  			NULL },
   { "sgRun",        "0p",		  (UCHAR*)sgRun,    	    0,    0,  	0,  			NULL },
@@ -99,7 +99,7 @@ static TFunc stdlib[]={
   { "sgDrawText",   "0siii",  (UCHAR*)sgDrawText,	    0,    0,  	0,  			NULL },
   { "sgRender",     "00",     (UCHAR*)sgRender,	      0,    0,  	0,  			NULL },
   { "sgClear",      "00",     (UCHAR*)sgClear,	      0,    0,  	0,  			NULL },
-  #endif
+#endif
 
   { NULL, NULL, NULL, 0, 0, 0, NULL }
 };
@@ -119,7 +119,6 @@ static INCLUDE incl [MAX_INCLUDE + 1];
 static int icount;
 //--------------------------------------
 int value;
-int ifdef_block;
 static TFunc *Gfunc = NULL;
 TVar Gvar [GVAR_SIZE]; // global:
 
@@ -535,7 +534,9 @@ int core_Parse (LEXER *l, ASM *a, char *text, char *name) {
     // ... compiling ...
   }
   emit_end (a);
-  if (ifdef_block)
+  if (l->level) // { ... }
+    Erro ("\nERRO: LEXER->level { ... }: %d\n", l->level);
+  if (l->ifdef_block)
     Erro ("%s: #ifdef block need close ...\n", l->name);
   return erro;
 }
@@ -1275,7 +1276,7 @@ static void word_IFDEF (LEXER *l, ASM *a) {
             o = o->next;
         }
         while (lex(l)) { // ! execute not defined
-            if (ifdef_block==0) break;
+            if (l->ifdef_block==0) break;
         }
 
         if (l->tok != TOK_ENDIF) {
@@ -1306,13 +1307,13 @@ void lib_info (int arg) {
         while (fi->name) {
             if(fi->proto){
                 char *s=fi->proto;
-                if (*s=='0') printf ("void  ");
+                if (*s=='0') printf ("void   ");
                 else
-                if (*s=='i') printf ("int   ");
+                if (*s=='i') printf ("int    ");
                 else
-                if (*s=='f') printf ("float ");
+                if (*s=='f') printf ("float  ");
                 else
-                if (*s=='s') printf ("char  *");
+                if (*s=='s') printf ("char   *");
                 else
                 if (*s=='p') printf ("void * ");
                 printf ("%s (", fi->name);
@@ -1327,6 +1328,8 @@ void lib_info (int arg) {
                     if (*s=='s') printf ("char *");
                     else
                     if (*s=='p') printf ("void *");
+                    else
+                    if (*s=='.') printf ("...");
                     s++;
                     if(*s) printf (", ");
                 }
@@ -1359,6 +1362,8 @@ void lib_info (int arg) {
                     if (*s=='s') printf ("char *");
                     else
                     if (*s=='p') printf ("void *");
+                    else
+                    if (*s=='.') printf ("...");
                     s++;
                     if(*s) printf (", ");
                 }
@@ -1383,6 +1388,33 @@ void lib_info (int arg) {
     }
 }
 
+int lib_printf (char *format, ...) {
+  char msg[1024] = { 0 };
+  register unsigned int i;
+  va_list ap;
+  int new_line = 0;
+
+  va_start (ap,format);
+  vsprintf (msg, format, ap);
+  va_end (ap);
+
+  for (i = 0; i < strlen(msg); i++) {
+    if (msg[i] == '\\' && msg[i+1] == 'n') { // new line
+      putc (10, stdout); // new line
+      new_line = 1;
+      i++;
+    }
+    else if (msg[i] == '\\' && msg[i+1] == 't') { // tab
+      putc ('\t', stdout); // tab
+      i++;
+    }
+    else putc (msg[i], stdout);
+  }
+  if (!new_line)
+    printf ("\n");
+  return i;
+}
+
 void lib_disasm (char *name) {
   if (name) {
     if (!strcmp(name, "main")) {
@@ -1401,9 +1433,6 @@ int lib_func_add (int a, int b) {
   return a + b;
 }
 
-void lib_prints (char *s) {
-  printf ("STRING(%s)\n", s);
-}
 void lib_printi (int i) {
   printf ("%d\n", i);
 }

@@ -81,8 +81,8 @@ label_top:
         if (!strcmp(l->token, "if"))        return (l->tok = TOK_IF);
         if (!strcmp(l->token, "function"))  return (l->tok = TOK_FUNCTION);
         if (!strcmp(l->token, "include"))   return (l->tok = TOK_INCLUDE);
-        if (!strcmp(l->token, "ifdef"))     { ifdef_block++; return (l->tok = TOK_IFDEF); }
-        if (!strcmp(l->token, "endif"))     { ifdef_block--; return (l->tok = TOK_ENDIF); }
+        if (!strcmp(l->token, "ifdef"))     { l->ifdef_block++; return (l->tok = TOK_IFDEF); }
+        if (!strcmp(l->token, "endif"))     { l->ifdef_block--; return (l->tok = TOK_ENDIF); }
 
         return (l->tok = TOK_ID);
     }
@@ -200,6 +200,7 @@ int lex_set (LEXER *l, char *text, char *name) {
     l->pos = 0;
     l->line = 1;
     l->level = 0;
+    l->ifdef_block = 0;
     return 1;
   }
   return 0;

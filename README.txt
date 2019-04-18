@@ -62,7 +62,7 @@
    int,
    var (int, float),
    asm,
-   if ( NEEW MORE IMPLEMENTATION ),
+   if ( NEED MORE IMPLEMENTATION ),
    function,
    #include,
    #ifdef,

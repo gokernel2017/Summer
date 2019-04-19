@@ -550,6 +550,26 @@ void emit_mov_reg_var (ASM *a, int reg, void *var) { ///: 32/64 BITS OK: Move %r
     }
 }
 
+void emit_mov_EBP_eax (ASM *a, UCHAR c) {
+  #if defined(__x86_64__)
+  g4(a,0x67,0x8b,0x45,c); // 67 8b 45   08  |  mov 0x8(%ebp), %eax
+  #else
+  g3(a,0x8b,0x45,c); // 8b 45  08 | mov 0x8(%ebp),%eax
+  #endif
+  // 32 bits
+  // 8b 40    04             	mov    0x4(%eax),%eax
+//64 bits
+// 67 8b 40 04          	mov    0x4(%eax),%eax
+}
+
+void emit_mov_EAX_eax (ASM *a, UCHAR c) {
+  #if defined(__x86_64__)
+  g4(a,0x67,0x8b,0x40,c); // 67 8b 40 04          	mov    0x4(%eax),%eax
+  #else
+  g3(a,0x8b,0x40,c); // 8b 40    04             	mov    0x4(%eax),%eax
+  #endif
+}
+
 void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
     // b8   7a 13 40 00       mov    $0x40137a, %eax
     // ff d0                	call   *%eax
@@ -600,6 +620,129 @@ void emit_mov_eax_EDX (ASM *a, UCHAR index) {
 // 64 bits
 // 67 89 42 04          	mov    %eax,0x4(%edx)
 
+}
+
+void emit_mov_eax_xmm0 (ASM *a) {
+#ifdef __x86_64__
+  // 89 45 fc             	mov    %eax,-0x4(%rbp)
+  // f3 0f 10 45 fc       	movss  -0x4(%rbp),%xmm0
+  g3(a,0x89,0x45,0xfc);
+  g5(a,0xf3,0x0f,0x10,0x45,0xfc);
+#endif
+}
+void emit_mov_eax_xmm1 (ASM *a) {
+#ifdef __x86_64__
+  // 89 45 fc             	mov    %eax,-0x4(%rbp)
+  // f3 0f 10 4d fc       	movss  -0x4(%rbp),%xmm1
+  g3(a,0x89,0x45,0xfc);
+  g5(a,0xf3,0x0f,0x10,0x4d,0xfc);
+#endif
+}
+void emit_mov_eax_xmm2 (ASM *a) {
+#ifdef __x86_64__
+  // 89 45 fc             	mov    %eax,-0x4(%rbp)
+  // f3 0f 10 55 fc       	movss  -0x4(%rbp),%xmm2
+  g3(a,0x89,0x45,0xfc);
+  g5(a,0xf3,0x0f,0x10,0x55,0xfc);
+#endif
+}
+void emit_mov_eax_xmm3 (ASM *a) {
+#ifdef __x86_64__
+  // 89 45 fc             	mov    %eax,-0x4(%rbp)
+  // f3 0f 10 5d fc       	movss  -0x4(%rbp),%xmm3
+  g3(a,0x89,0x45,0xfc);
+  g5(a,0xf3,0x0f,0x10,0x5d,0xfc);
+#endif
+}
+
+void emit_mov_eax_xmm4 (ASM *a) {
+#ifdef __x86_64__
+  // 89 45 fc             	mov    %eax,-0x4(%rbp)
+  // f3 0f 10 65 fc       	movss  -0x4(%rbp),%xmm4
+  g3(a,0x89,0x45,0xfc);
+  g5(a,0xf3,0x0f,0x10,0x65,0xfc);
+#endif
+}
+
+void emit_func_arg_number_float0 (ASM *a, float f) {
+#ifdef __x86_64__
+  // b8    9a 19 c9 42       	mov    $0x42c9199a,%eax
+  g(a,0xb8);
+  *(float*)a->p = f;
+  a->p += 4;
+  emit_mov_eax_xmm0 (a);
+#endif
+}
+
+void emit_func_arg_number_float1 (ASM *a, float f) {
+#ifdef __x86_64__
+  // b8    9a 19 c9 42       	mov    $0x42c9199a,%eax
+  g(a,0xb8);
+  *(float*)a->p = f;
+  a->p += 4;
+  emit_mov_eax_xmm1 (a);
+#endif
+}
+
+void emit_func_arg_number_float2 (ASM *a, float f) {
+#ifdef __x86_64__
+  // b8    9a 19 c9 42       	mov    $0x42c9199a,%eax
+  g(a,0xb8);
+  *(float*)a->p = f;
+  a->p += 4;
+  emit_mov_eax_xmm2 (a);
+#endif
+}
+
+void emit_func_arg_number_float3 (ASM *a, float f) {
+#ifdef __x86_64__
+  // b8    9a 19 c9 42       	mov    $0x42c9199a,%eax
+  g(a,0xb8);
+  *(float*)a->p = f;
+  a->p += 4;
+  emit_mov_eax_xmm3 (a);
+#endif
+}
+
+void emit_func_arg_number_float4 (ASM *a, float f) {
+#ifdef __x86_64__
+  // b8    9a 19 c9 42       	mov    $0x42c9199a,%eax
+  g(a,0xb8);
+  *(float*)a->p = f;
+  a->p += 4;
+  emit_mov_eax_xmm4 (a);
+#endif
+}
+
+void emit_func_arg_var_float0 (ASM *a, void *var) {
+#ifdef __x86_64__
+  emit_mov_var_reg(a, var,EAX);
+  emit_mov_eax_xmm0 (a);
+#endif
+}
+void emit_func_arg_var_float1 (ASM *a, void *var) {
+#ifdef __x86_64__
+  emit_mov_var_reg(a, var,EAX);
+  emit_mov_eax_xmm1 (a);
+#endif
+}
+void emit_func_arg_var_float2 (ASM *a, void *var) {
+#ifdef __x86_64__
+  emit_mov_var_reg(a, var,EAX);
+  emit_mov_eax_xmm2 (a);
+#endif
+}
+void emit_func_arg_var_float3 (ASM *a, void *var) {
+#ifdef __x86_64__
+  emit_mov_var_reg(a, var,EAX);
+  emit_mov_eax_xmm3 (a);
+#endif
+}
+void emit_func_arg_var_float4 (ASM *a, void *var) {
+#ifdef __x86_64__
+  emit_mov_var_reg(a,var,EAX);
+  emit_mov_eax_xmm4 (a);
+#endif
 }
 
 //-------------------------------------------------------------------

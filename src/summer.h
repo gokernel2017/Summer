@@ -58,7 +58,7 @@ extern "C" {
 //-----------------------------------------------
 //
 #define SUMMER_VERSION            0
-#define SUMMER_VERSION_SUB        10
+#define SUMMER_VERSION_SUB        70
 #define SUMMER_VERSION_PATCH      0
 #if defined(__x86_64__)
     #define SUMMER_VERSION_NAME   "BETA 64 BITS"
@@ -138,11 +138,8 @@ struct TArg {
 //--------------  GLOBAL VARIABLE  --------------
 //-----------------------------------------------
 //
-LIBIMPORT int value;
 LIBIMPORT TVar Gvar [GVAR_SIZE]; // global:
-
-LIBIMPORT int ifdef_array[10];
-LIBIMPORT int ifdef_index, ifdef_inc, ifndef_true;
+LIBIMPORT int ifndef_true;
 
 //-----------------------------------------------
 //-----------------  PUBLIC API  ----------------

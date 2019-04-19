@@ -14,22 +14,8 @@
 // BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
-// File Size: 43.913
+// File Size: 43.048
 #include "summer.h"
-
-// INFO: Windows X64 BITS functions arguments:
-// arg 1 = %ecx
-// arg 2 = %edx
-// arg 3 = %r8d
-// arg 4 = %r9d
-//
-// INFO: Linux X64 BITS functions arguments:
-// arg 1 = %edi
-// arg 2 = %esi
-// arg 3 = %edx
-// arg 4 = %ecx
-// arg 5 = %r8
-// arg 6 = %r9
 
 //-----------------------------------------------
 //-----------------  PROTOTYPES  ----------------
@@ -42,7 +28,7 @@ static void word_if (LEXER *l, ASM *a);
 static void word_function (LEXER *l, ASM *a);
 static void word_include (LEXER *l, ASM *a);
 static void word_IFDEF (LEXER *l, ASM *a);
-//
+
 static int expr0 (LEXER *l, ASM *a);
 static void expr1 (LEXER *l, ASM *a);
 static void expr2 (LEXER *l, ASM *a);
@@ -50,7 +36,7 @@ static void expr3 (LEXER *l, ASM *a);
 static void atom (LEXER *l, ASM *a);
 static int stmt (LEXER *l, ASM *a);
 static int see (LEXER *l);
-//
+
 static TFstring *fs_new (char *s);
 
 static void execute_call (LEXER *l, ASM *a, TFunc *func);
@@ -61,24 +47,28 @@ int lib_printf (char *format, ...);
 void lib_help (int i);
 void lib_disasm (char *name);
 int lib_func_add (int a, int b);
-void lib_printi (int i);
+float lib_func_add_float (float a, float b);
+void lib_print_int (int i);
+void lib_print_float (float f);
 int arg4(int a, int b, int c, int d);
 int arg5(int a, int b, int c, int d, int e);
 
 static TFunc stdlib[]={
   //-----------------------------------------------------------------------------
-  // char*        char*     UCHAR*                  int   int   int       FUNC*
-  // name         proto     code                    type  len   sub_esp   next
+  // char*        char*     UCHAR*                    int   int   int       FUNC*
+  // name         proto     code                      type  len   sub_esp   next
   //-----------------------------------------------------------------------------
-  { "info",       "0i",     (UCHAR*)lib_info,       0,    0,    0,        NULL },
-  { "disasm",     "0s",     (UCHAR*)lib_disasm,     0,    0,    0,        NULL },
+  { "info",       "0i",     (UCHAR*)lib_info,         0,    0,    0,        NULL },
+  { "disasm",     "0s",     (UCHAR*)lib_disasm,       0,    0,    0,        NULL },
   //
-  { "printf",     "is.",    (UCHAR*)lib_printf,     0,    0,    0,        NULL },
-  { "sprintf",    "iss.",   (UCHAR*)sprintf,        0,    0,    0,        NULL },
-  { "malloc",     "pi",     (UCHAR*)malloc,         0,    0,    0,        NULL },
+  { "printf",     "is.",    (UCHAR*)lib_printf,       0,    0,    0,        NULL },
+  { "sprintf",    "iss.",   (UCHAR*)sprintf,          0,    0,    0,        NULL },
+  { "malloc",     "pi",     (UCHAR*)malloc,           0,    0,    0,        NULL },
   //
-  { "func_add",   "iii",    (UCHAR*)lib_func_add,   0,    0,    0,        NULL },
-  { "printi",			"0i",		  (UCHAR*)lib_printi,    	0,    0,  	0,  			NULL },
+  { "func_add",   "iii",    (UCHAR*)lib_func_add,     0,    0,    0,        NULL },
+  { "addf",       "fff",    (UCHAR*)lib_func_add_float,   0,    0,    0,        NULL },
+  { "printi",			"0i",		  (UCHAR*)lib_print_int,   0,    0,  	0,  			NULL },
+  { "print_float","0f",     (UCHAR*)lib_print_float,0,    0,    0,        NULL },
   { "arg4",			  "iiiii",  (UCHAR*)arg4,    	0,    0,  	0,  			NULL },
   { "arg5",			  "iiiiii", (UCHAR*)arg5,    	0,    0,  	0,  			NULL },
   // SDL:
@@ -97,10 +87,12 @@ static TFunc stdlib[]={
   { "sgRun",        "0p",		  (UCHAR*)sgRun,    	    0,    0,  	0,  			NULL },
   { "sgSetEvent",   "0ps",	  (UCHAR*)sgSetEvent,	    0,    0,  	0,  			NULL },
   { "sgDrawText",   "0siii",  (UCHAR*)sgDrawText,	    0,    0,  	0,  			NULL },
-  { "sgRender",     "00",     (UCHAR*)sgRender,	      0,    0,  	0,  			NULL },
+  { "sgDrawFloat",  "0f",     (UCHAR*)sgDrawFloat,	    0,    0,  	0,  			NULL },
+  { "sgBeginScene", "00",     (UCHAR*)sgBeginScene,   0,    0,    0,        NULL },
+  { "sgEndScene",   "00",     (UCHAR*)sgEndScene,     0,    0,    0,        NULL },
   { "sgClear",      "00",     (UCHAR*)sgClear,	      0,    0,  	0,  			NULL },
+  { "sgSet2D",      "00",     (UCHAR*)sgSet2D,	      0,    0,  	0,  			NULL },
 #endif
-
   { NULL, NULL, NULL, 0, 0, 0, NULL }
 };
 
@@ -108,6 +100,9 @@ static TFunc stdlib[]={
 //------------------  VARIABLES  ----------------
 //-----------------------------------------------
 //
+TVar Gvar [GVAR_SIZE]; // global:
+ASM *asm_function;
+//-------------------------------------
 #define MAX_INCLUDE 7
 typedef struct {
   ASM     *a;
@@ -117,18 +112,12 @@ typedef struct {
 }INCLUDE;
 static INCLUDE incl [MAX_INCLUDE + 1];
 static int icount;
-//--------------------------------------
-int value;
+//-------------------------------------
 static TFunc *Gfunc = NULL;
-TVar Gvar [GVAR_SIZE]; // global:
-
-ASM *asm_function;
 static TFstring *fs = NULL;
 static TDefine *Gdefine = NULL;
 static TArg argument [20];
-
 static char func_name [100];
-
 static int
   is_function,
   is_recursive,
@@ -137,6 +126,7 @@ static int
   argument_count,
   local_count
   ;
+float _Fvalue_;
 
 static int expr0 (LEXER *l, ASM *a) {
   if (l->tok == TOK_ID) {
@@ -213,18 +203,16 @@ static void expr3 (LEXER *l, ASM *a) { // '('
   else atom(l,a);
 }
 static void atom (LEXER *l, ASM *a) { // expres
-  if (l->tok == TOK_STRING) {
-    TFstring *s = fs_new (l->token);
-    if (s) {
-      emit_expression_push_long (a, (long)(s->s));
-//            g(a, 0x68); asm_get_addr(a,s->s);
+    if (l->tok == TOK_STRING) {
+        TFstring *s = fs_new (l->token);
+        if (s)
+            emit_expression_push_long (a, (long)(s->s));
+        lex(l);
+        return;
     }
-    lex(l);
-    return;
-  }
 
-		if (l->tok == TOK_ID) {
-				int i;
+    if (l->tok == TOK_ID) {
+        int i;
         TFunc *fi;
 
         //
@@ -233,19 +221,16 @@ static void atom (LEXER *l, ASM *a) { // expres
         // NO CALL THE FUNCTION
         //
         if ((fi = FuncFind (l->token)) != NULL) {
-            if (see(l) == '(') {
+            if (see(l)=='(') {
                 // "execute the function"
                 execute_call (l,a,fi);
-                // and ... push the result
-//                emit_push_eax(a);
+                // and ... push the result in %eax
                 lex (l);
             } else if (see(l) != '(') {
-//printf ("push function pointer\n");
                 //
                 // push the real function pointer
                 //
                 emit_mov_var_reg (a, &fi->code, EAX);
-//                emit_push_eax(a);
                 lex (l);
             } 
         }
@@ -263,36 +248,46 @@ static void atom (LEXER *l, ASM *a) { // expres
                     // ... NEED IMPLEMENTATION
 
                     if (!strcmp(l->token, "offsetX")) { // 8
-                        #if defined(__x86_64__)
+                    #if defined(__x86_64__)
                         #ifdef WIN32
-                        //48 8b 45 10          	mov    0x10(%rbp),%rax
-                        //8b 40 08             	mov    8(%rax),%eax
+                        //48 8b 45 10          	mov    16(%rbp),%rax
                         g4(a,0x48,0x8b,0x45,0x10);
                         #endif
                         #ifdef __linux__
-// 48 8b 45 f8          	mov    -0x8(%rbp),%rax
-// 8b 40 08             	mov    8(%rax),%eax
+                        // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
                         g4(a,0x48,0x8b,0x45,0xf8);
                         #endif
+                        //8b 40 08             	mov    8(%rax),%eax
                         g3(a,0x8b,0x40,8);
-                        #endif
+                    #else
+                        // 32 bits
+                        // 8b 45 08             	mov    0x8(%ebp),%eax
+                        // 8b 40    04             	mov    0x4(%eax),%eax
+                        g3(a,0x8b,0x45,0x08);
+                        g3(a,0x8b,0x40,4);
+                    #endif
                         lex(l);
                     }
                     else
                     if (!strcmp(l->token, "offsetY")) { // 12
-                        #if defined(__x86_64__)
+                    #if defined(__x86_64__)
                         #ifdef WIN32
-                        //48 8b 45 10          	mov    0x10(%rbp),%rax
-                        //8b 40 12             	mov    12(%rax),%eax
+                        //48 8b 45 10          	mov    16(%rbp),%rax
                         g4(a,0x48,0x8b,0x45,0x10);
                         #endif
                         #ifdef __linux__
-// 48 8b 45 f8          	mov    -0x8(%rbp),%rax
-// 8b 40 08             	mov    8(%rax),%eax
+                        // 48 8b 45 f8          	mov    -0x8(%rbp),%rax
                         g4(a,0x48,0x8b,0x45,0xf8);
                         #endif
+                        //8b 40 12             	mov    12(%rax),%eax
                         g3(a,0x8b,0x40,12);
-                        #endif
+                    #else
+                        // 32 bits
+                        // 8b 45 08             	mov    0x8(%ebp),%eax
+                        // 8b 40    08             	mov    0x8(%eax),%eax
+                        g3(a,0x8b,0x45,0x08);
+                        g3(a,0x8b,0x40,8);
+                    #endif
                         lex(l);
                     }
                     else Erro("%s %d | ERRO(%s.%s) - Only implemented( .offsetX, .offsetY )", l->name, l->line, argument[i].name, l->token);
@@ -310,9 +305,17 @@ static void atom (LEXER *l, ASM *a) { // expres
                         #ifdef __linux__
                         //48 8b 45 f8          	mov    -0x8(%rbp),%rax
                         // 8b 00                	mov    (%rax),%eax
+                        // PONTEIRO
                         g4(a,0x48,0x8b,0x45,0xf8);
                         g2(a,0x8b,0x00);
                         #endif
+                    #else
+                        // 32 bits
+                        // 8b 45 08             	mov    0x8(%ebp),%eax
+                        // 8b 40    04             	mov    0x4(%eax),%eax
+                        // PONTEIRO
+                        g3(a,0x8b,0x45,0x08);
+//                        g3(a,0x8b,0x40,4);
                     #endif
                     }
                     lex(l);
@@ -321,16 +324,20 @@ static void atom (LEXER *l, ASM *a) { // expres
             else {
                 if (i==0 && argument[0].type[0]==TYPE_LONG) {
 //                    printf ("----------------- long dentro da funcaoFUNCAO ARGUMETO(INT) (%s)\n", argument[0].name);
-                    #if defined(__x86_64__)
-                        #ifdef WIN32
-                        // 8b 45 10             	mov    0x10(%rbp),%eax // 16
-                        g3(a,0x8b,0x45,16);
-                        #endif
-                        #ifdef __linux__
-                        //8b 45 fc             	mov    -0x4(%rbp),%eax
-                        g3(a,0x8b,0x45,0xfc);
-                        #endif
+                #if defined(__x86_64__)
+                    #ifdef WIN32
+                    // 8b 45 10             	mov  16(%rbp),%eax // 16
+                    g3(a,0x8b,0x45,16);
                     #endif
+                    #ifdef __linux__
+                    //8b 45 fc             	mov    -4(%rbp),%eax
+                    g3(a,0x8b,0x45,0xfc);
+                    #endif
+                #else
+                    // 32 bits
+                    // 8b 45 08             	mov    8(%ebp),%eax
+                    g3(a,0x8b,0x45,8);
+                #endif
                 }
                 lex(l);
             }
@@ -346,6 +353,7 @@ static void atom (LEXER *l, ASM *a) { // expres
                 Erro ("%s: %d: Float and Integer ... Not Permited: '%s' ;)\n", l->name, l->line, Gvar[i].name);
             } else {
                 if (var_type == TYPE_FLOAT) {
+printf("ATOM argumento var FLOAT\n");
                     emit_float_flds (a, &Gvar[i].value.f);
                 } else {
 										emit_expression_push_var (a, &Gvar[i].value.l);
@@ -365,6 +373,7 @@ static void atom (LEXER *l, ASM *a) { // expres
             var_type = TYPE_FLOAT;
 
         if (var_type==TYPE_FLOAT) {
+printf("push cfloat NUMBER(%s)\n", l->token);
             emit_push_float(a, atof(l->token));
         } else {
 						emit_expression_push_long (a, atol(l->token));
@@ -379,12 +388,12 @@ static void atom (LEXER *l, ASM *a) { // expres
 
 void expression (LEXER *l, ASM *a) {
 
-    if (l->tok == TOK_STRING) { // OK !
+    if (l->tok==TOK_STRING) { // OK !
         TFstring *s = fs_new (l->token);
         if (s) {
 						emit_print_string (a, s->s);
         }
-  return;
+        return;
     }
 
     if (l->tok==TOK_ID || l->tok==TOK_NUMBER) {
@@ -404,7 +413,7 @@ void expression (LEXER *l, ASM *a) {
         //
         if ((fi = FuncFind(l->token)) != NULL) {
             execute_call (l, a, fi);
-      return;
+            return;
         }
 
         if ((i = VarFind(l->token)) != -1) {
@@ -545,9 +554,9 @@ int core_Parse (LEXER *l, ASM *a, char *text, char *name) {
 // function_name (a, b, c + d);
 //
 static void execute_call (LEXER *l, ASM *a, TFunc *func) {
-    int count = 0, i;
+    int count = 0, is_float = 0;
 		#if !defined(__x86_64__)
-    int pos = 0, size = 4, is_float = 0, is_string = 0; // Used in: JIT 32 bits
+    int pos = 0, size = 4, is_string = 0;
 		#endif
 
     // no argument
@@ -563,6 +572,36 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 
             if (l->tok==TOK_ID || l->tok==TOK_NUMBER || l->tok==TOK_STRING || l->tok=='(') {
 
+                #if !defined(__x86_64__)
+                if (l->tok==TOK_STRING)
+                    is_string = 1;
+                #endif
+
+                // process function argumento float ... NEED IMPLEMENTATION
+                #ifdef __x86_64__
+                int i;
+                if (l->tok==TOK_NUMBER && strchr(l->token, '.')) {
+                    if (is_float==0) emit_func_arg_number_float0 (a,atof(l->token));
+                    if (is_float==1) emit_func_arg_number_float1 (a,atof(l->token));
+                    if (is_float==2) emit_func_arg_number_float2 (a,atof(l->token));
+                    if (is_float==3) emit_func_arg_number_float3 (a,atof(l->token));
+                    if (is_float==4) emit_func_arg_number_float4 (a,atof(l->token));
+                    is_float++;
+              continue;
+                }
+                if ((i = VarFind(l->token)) != -1) {
+                    if (Gvar[i].type==TYPE_FLOAT) {
+                        if (is_float==0) emit_func_arg_var_float0 (a,&Gvar[i].value.f);
+                        if (is_float==1) emit_func_arg_var_float1 (a,&Gvar[i].value.f);
+                        if (is_float==2) emit_func_arg_var_float2 (a,&Gvar[i].value.f);
+                        if (is_float==3) emit_func_arg_var_float3 (a,&Gvar[i].value.f);
+                        if (is_float==4) emit_func_arg_var_float4 (a,&Gvar[i].value.f);
+                        is_float++;
+              continue;
+                    }
+                }
+                #endif
+
                 main_variable_type = var_type = TYPE_LONG;
 
 								asm_expression_reset(); // reg = 0;
@@ -570,9 +609,13 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                 expr0 (l,a);
 
                 #if defined(__x86_64__)
-								// 4 arquments
-								if (count <= 4) {
-										gen(a,PUSH_EAX);
+                if (var_type != TYPE_FLOAT) {
+								    // 4 arquments
+								    if (count <= 4) {
+										    gen(a,PUSH_EAX);
+                    }
+                } else {
+                    // ... float type ...
                 }
                 #else
                 //-----------------------------------
@@ -582,19 +625,17 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                     size = 4;
                     pos += size;
                 } else { // JIT 32 bits: pass function argument float
-/*
                     // send the result of (float expression) to: 4(%esp)
                     //
                     // dd 5c 24   04    fstpl  0x4(%esp)
                     // d9 5c 24   04    fstps  0x4(%esp)
                     //
                     if (is_string)
-                        g4 (a,0xdd,0x5c,0x24, (char)pos); // fstpl
+                        g4 (a,0xdd,0x5c,0x24,(char)pos); // fstpl
                     else
-                        g4 (a,0xd9,0x5c,0x24, (char)pos); // fstps
+                        g4 (a,0xd9,0x5c,0x24,(char)pos); // fstps
                     if (is_string) size = 8;
                     pos += size;
-*/
                 }
                 #endif
 
@@ -625,7 +666,8 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 
 		// pass 64 bits arquments:
 		#if defined(__x86_64__)
-		if (count > 0) {
+		if (is_float==0 && count > 0) {
+        int i;
 				for (i = count-1; i >= 0; i--) {
 						if (i == 0) { // argument 1
 								#ifdef WIN32
@@ -821,7 +863,7 @@ void proc_ifdef (char *name) {
   TDefine *p = Gdefine;
   while (p) {
     if (!strcmp(p->name, name))
-      return ;
+      return;
     p = p->next;
   }
   ifndef_true = 1;
@@ -1432,9 +1474,17 @@ int lib_func_add (int a, int b) {
   printf ("a: %d, b: %d = %d\n", a, b, a+b);
   return a + b;
 }
+float lib_func_add_float (float a, float b) {
+  printf ("a: %f, b: %f = %f\n", a, b, a+b);
+  return a + b;
+}
 
-void lib_printi (int i) {
+
+void lib_print_int (int i) {
   printf ("%d\n", i);
+}
+void lib_print_float (float f) {
+  printf ("Float: %f\n", f);
 }
 
 int arg4 (int a, int b, int c, int d) {

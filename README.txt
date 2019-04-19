@@ -53,7 +53,7 @@
  INFO IMPLEMENTED:
    01: Call Function with max 5 arguments... PLEASE WAIT IMPLEMENTATION
    02: In ASM ( asm { } ) mode Call Function with max 2 arguments... PLEASE WAIT IMPLEMENTATION
-   03: Call Function with argument type ( float ) not implemented.
+   03: Call Function with argument type ( float ) implemented... NEED IMPLEMENTATION !!!
    04: Implementation in 32 BITS not completed ...
    05: The created function use only argument(type int) ... PLEASE WAIT IMPLEMENTATION
 

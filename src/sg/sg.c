@@ -100,29 +100,29 @@ void DrawChar (BMP *bmp, char ch, int x, int y, int color) {
 }
 
 void sgDrawText (char *text, int x, int y, int color) {
+#ifdef USE_GL
+  #ifdef USE_SDL
+  BMP *bmp = screen;
+  while (*text) {
+    if(*text > 32)
+      DrawChar (bmp, *text, x, y, color);
+    text++;
+    x += 8;
+  }
+  #else
+  opengl_draw_text (text, x, y, color);
+  #endif
+#endif
+}
 
-    BMP *bmp = screen;
-
-    while (*text) {
-        if(*text > 32)
-            DrawChar (bmp, *text, x, y, color);
-        text++;
-        x += 8;
-/*
-        if (*text == '\n') {
-            x = orig_x;
-            y += 15;
-        }
-*/
-    }
+void sgDrawFloat (float f) {
+    char buf[50];
+    sprintf(buf, "FLOAT: %f", f);
+    sgDrawText (buf, 10, 10, 64512);//COLOR_ORAMGE);
 }
 
 void sgRect (int x, int y, int w, int h, int color) {
     SDL_FillRect (screen, &(struct SDL_Rect){ x, y, w, h }, color);
-}
-
-void sgClear (void) {
-    SDL_FillRect (screen, &(struct SDL_Rect){ 0,0, screen->w, screen->h }, 0);
 }
 
 int sgInit (int argc, char **argv) {
@@ -137,8 +137,17 @@ int sgInit (int argc, char **argv) {
     #ifdef WIN32
     SDL_putenv ("SDL_VIDEO_CENTERED=center");
     #endif
-    SDL_WM_SetCaption ("Graphic Application API: SDL | To Exit Press F12 !", NULL);
+    SDL_WM_SetCaption ("SG: Summer Graphic (GL/DirectX/HTML Canvas) | To Exit Press ESC !", NULL);
+
+    // SDL / OPENGL
+    #ifndef USE_SDL
+    flag = SDL_OPENGL;
+    #endif
+
     screen = SDL_SetVideoMode (w, h, 16, flag);
+    #ifndef USE_SDL
+    opengl_make_font_8x13 ();
+    #endif
 
     atexit (SDL_Quit);
 #endif // ! USE_GL
@@ -180,13 +189,48 @@ void sgRun (void (*call) (void)) {
     }
 }
 
+// This set the projection mode 2D.
+void sgSet2D (void) {
+#ifdef USE_GL
+  #ifndef USE_SDL
+  glDisable (GL_DEPTH_TEST);
+//    glDisable ( GL_CULL_FACE );
+
+  glMatrixMode (GL_PROJECTION);
+  glLoadIdentity ();
+  glOrtho (0.0, 800, 600, 0.0, 0.0, 1.0);
+  #endif
+#endif
+}
+
 void sgSetEvent (void (*call) (TEvent *e), char *name) {
     if (name) {
         if (!strcmp(name, "onmousemove")) func_event.onmousemove = call;
     }
 }
 
-void sgRender (void) {
-    SDL_UpdateRect (screen, 0, 0, screen->w, screen->h);
+void sgBeginScene (void) {
+}
+
+void sgEndScene (void) {
+#ifdef USE_GL
+  #ifdef USE_SDL
+  SDL_UpdateRect (screen, 0, 0, screen->w, screen->h);
+  //SDL_Flip(screen);
+  #else
+  SDL_GL_SwapBuffers();
+  #endif
+#endif
+}
+
+void sgClear (void) {
+#ifdef USE_GL
+  #ifdef USE_SDL
+  SDL_FillRect (screen, &(struct SDL_Rect){ 0,0, screen->w, screen->h }, 0);
+  #else
+  glClearColor(0.0, 0.0, 0.0, 0.0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // GL_COLOR_BUFFER_BIT);
+  #endif
+#endif
 }
 

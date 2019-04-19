@@ -2,7 +2,7 @@
 
 CPP  = g++
 CC   = gcc
-OBJ  = obj/core.o obj/lex.o obj/asm.o obj/disasm.o obj/assemble.o obj/summer.o obj/sg.o
+OBJ  = obj/core.o obj/lex.o obj/asm.o obj/disasm.o obj/assemble.o obj/summer.o obj/opengl_text.o obj/sg.o
 BIN  = sg
 CFLAGS = -O2 -Wall -DUSE_SG
 ifeq ($(OS),Windows_NT)
@@ -44,7 +44,10 @@ obj/assemble.o: src/assemble.c
 obj/summer.o: src/summer.c
 	$(CC) $(CFLAGS) -c src/summer.c -o obj/summer.o
 
-###########  SW: Summer Widget Native  ##########
+##########  SG: Summer Graphic (GL/DirectX/HTML Canvas)  ##########
+
+obj/opengl_text.o: src/sg/opengl_text.c
+	$(CC) $(CFLAGS) -c src/sg/opengl_text.c -o obj/opengl_text.o
 
 obj/sg.o: src/sg/sg.c
 	$(CC) $(CFLAGS) -c src/sg/sg.c -o obj/sg.o

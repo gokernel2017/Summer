@@ -37,13 +37,13 @@ asm hello {
     mov   b, %esi
     mov   a, %edi
     #endif
-    call  func_add
+  call  func_add
   #endif // ! __x86_64__
 
   #ifdef __x86_32__
-    mov   b, %eax | mov %eax, 4(%esp)
-    mov   a, %eax | mov %eax, 0(%esp)
-    call  func_add
+  mov   b, %eax | mov %eax, 4(%esp)
+  mov   a, %eax | mov %eax, 0(%esp)
+  call  func_add
   #endif
 
   mov  %eax, i // i = a + b := ( 2250 )

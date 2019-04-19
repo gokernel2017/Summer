@@ -20,7 +20,7 @@
 //
 //-------------------------------------------------------------------
 //
-var count, buf;
+var count, buf, value = 0, f = 0.0;
 
 //-----------------------------------------------
 //
@@ -36,11 +36,19 @@ function call_MouseMove (e) {
     sprintf (buf, "Mouse X: %d Y: %d | count: %d", e.offsetX, e.offsetY, count);
     count = count + 1;
 
-    sgClear ();
+    //
+    // NEED IMPLEMENTATION TO: f += 0.5
+    //
+    f = f + 0.50;
 
+    sgBeginScene();
+
+    sgClear ();
     sgDrawText (buf, 100, 200, 64512); // COLOR_ORANGE
 
-    sgRender ();
+    sgDrawFloat(f); // <<<<<<< using float argument ... TESTING TEMP >>>>>>>
+
+    sgEndScene();
 }
 
 if (sgInit(0,0)) {
@@ -49,9 +57,11 @@ if (sgInit(0,0)) {
 
     sgSetEvent (call_MouseMove, "onmousemove");
 
-    sgDrawText ("Hello World | Move the Mouse !!!", 100, 100, 64512);
+    sgSet2D(); // set 2D projection mode using OpenGL.
 
-    sgRender();
+    sgBeginScene();
+    sgDrawText ("Hello World | Move the Mouse !!!", 100, 100, 64512);
+    sgEndScene();
 
     sgRun (0);
 }

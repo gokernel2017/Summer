@@ -21,7 +21,9 @@ extern "C" {
 
 #ifdef USE_GL
     #include <SDL/SDL.h>
-    #include <SDL/SDL_opengl.h>
+    #ifndef USE_SDL
+        #include <SDL/SDL_opengl.h>
+    #endif
     #ifdef WIN32
         #undef main
     #endif
@@ -52,9 +54,14 @@ LIBIMPORT int   sgInit      (int argc, char **argv);
 LIBIMPORT void  sgRun       (void (*call) (void));
 LIBIMPORT void  sgSetEvent  (void (*call) (TEvent *e), char *name);
 LIBIMPORT void  sgDrawText  (char *text, int x, int y, int color);
+LIBIMPORT void  sgDrawFloat (float f);
 LIBIMPORT void  sgRect      (int x, int y, int w, int h, int color);
 LIBIMPORT void  sgClear     (void);
-LIBIMPORT void  sgRender    (void);
+LIBIMPORT void  sgBeginScene(void);
+LIBIMPORT void  sgEndScene  (void);
+LIBIMPORT void  sgSet2D     (void); // set 2D mode
+LIBIMPORT void  opengl_make_font_8x13 (void);
+LIBIMPORT void  opengl_draw_text (char *str, int x, int y, int color);
 #ifdef __cplusplus
 }
 #endif

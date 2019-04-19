@@ -145,6 +145,21 @@ LIBIMPORT void 		emit_incl					(ASM *a, void *var);	// 32/64 BITS OK
 LIBIMPORT void		emit_mov_long_reg	(ASM *a, long value, int reg); // mov $1000, %eax
 LIBIMPORT void 		emit_mov_var_reg	(ASM *a, void *var, int reg); // 32/64 BITS OK: Move variable to %register
 LIBIMPORT void		emit_mov_reg_var	(ASM *a, int reg, void *var); // 32/64 BITS OK: Move %register to variable
+LIBIMPORT void    emit_mov_EBP_eax  (ASM *a, UCHAR c); // mov 4(%ebp), %eax
+LIBIMPORT void    emit_mov_EAX_eax  (ASM *a, UCHAR c); // mov 4(%eax), %eax
+//
+LIBIMPORT void emit_func_arg_number_float0 (ASM *a, float f);
+LIBIMPORT void emit_func_arg_number_float1 (ASM *a, float f);
+LIBIMPORT void emit_func_arg_number_float2 (ASM *a, float f);
+LIBIMPORT void emit_func_arg_number_float3 (ASM *a, float f);
+LIBIMPORT void emit_func_arg_number_float4 (ASM *a, float f);
+
+LIBIMPORT void emit_func_arg_var_float0 (ASM *a, void *var);
+LIBIMPORT void emit_func_arg_var_float1 (ASM *a, void *var);
+LIBIMPORT void emit_func_arg_var_float2 (ASM *a, void *var);
+LIBIMPORT void emit_func_arg_var_float3 (ASM *a, void *var);
+LIBIMPORT void emit_func_arg_var_float4 (ASM *a, void *var);
+
 LIBIMPORT void 		emit_call 				(ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
 LIBIMPORT void 		emit_sub_esp 			(ASM *a, char c); // 32/64 BITS OK
 LIBIMPORT void    emit_movl_ESP     (ASM *a, long value, UCHAR index);

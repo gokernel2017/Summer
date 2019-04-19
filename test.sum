@@ -4,7 +4,7 @@
 //
 //-------------------------------------------------------------------
 //
-var a = 110, b = 30, i = 1500, f = 170.55;
+var a = 110, b = 30, i = 1500, f = 170.0;
 
 //
 // incompatible with JavaScript ... PLEASE WAIT IMPLEMENTATION ...
@@ -15,5 +15,11 @@ function test (int arg) {
     }
 }
 
-  test (12345);
+function hello() { f = f + 0.50; }
+//  test (12345);
+
+//  printf ("Valor a: %d, f: %f\n", a, f);
+
+
+  disasm("hello");
 

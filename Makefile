@@ -4,7 +4,7 @@ CPP  = g++
 CC   = gcc
 OBJ  = obj/core.o obj/lex.o obj/asm.o obj/disasm.o obj/assemble.o obj/summer.o
 BIN  = sum
-CFLAGS = -O2 -Wall
+CFLAGS = -O2 -Wall -m32
 ifeq ($(OS),Windows_NT)
   # DirectX
   #LIBS = -ld3dx8d -ld3d8 -lgdi32 -lwinmm
@@ -25,7 +25,7 @@ clean: clean-custom
 	${RM} $(OBJ) $(BIN)
 
 $(BIN): $(OBJ)
-	$(CC) $(OBJ) -o "sum" $(LIBS) $(RES)
+	$(CC) $(OBJ) -o "sum" -m32 $(LIBS) $(RES)
 
 obj/core.o: src/core.c
 	$(CC) $(CFLAGS) -c src/core.c -o obj/core.o

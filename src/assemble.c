@@ -373,7 +373,7 @@ void Assemble (LEXER *l, ASM *a) {
         comment = 0;
         while ((c = l->text[l->pos++])) {
             if (c=='/' && l->text[l->pos]=='/') comment = 1;
-            if (c == '\n' || c == '|' || c == '}') {
+            if (c == '\n' || c == '|' || (c == '}' && comment==0)) {
                 *p = 0;
                 if (text[0] != 0) {
                     aparse(text, l, asm_function);
@@ -418,7 +418,7 @@ void Assemble (LEXER *l, ASM *a) {
         comment = 0;
         while ((c = l->text[l->pos++])) {
             if (c=='/' && l->text[l->pos]=='/') comment = 1;
-            if (c == '\n' || c == '|' || c == '}') {
+            if (c == '\n' || c == '|' || (c == '}' && comment==0)) {
                 *p = 0;
                 if (text[0] != 0) {
 										aparse(text, l, a);

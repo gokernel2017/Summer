@@ -377,10 +377,10 @@ void Assemble (LEXER *l, ASM *a) {
                 *p = 0;
                 if (text[0] != 0) {
                     aparse(text, l, asm_function);
-                    p = text;
-                    *p = 0;
-                    comment = 0;
                 }
+                p = text;
+                *p = 0;
+                comment = 0;
                 if (c=='\n') l->line++;
             } else *p++ = c;
             if (c == '}' && comment==0) break;
@@ -422,10 +422,10 @@ void Assemble (LEXER *l, ASM *a) {
                 *p = 0;
                 if (text[0] != 0) {
 										aparse(text, l, a);
-                    p = text;
-                    *p = 0;
-                    comment = 0;
                 }
+                p = text;
+                *p = 0;
+                comment = 0;
                 if (c=='\n') l->line++;
             } else *p++ = c;
             if (c == '}' && comment==0) break;

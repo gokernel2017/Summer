@@ -59,7 +59,7 @@ extern "C" {
 //
 #define SUMMER_VERSION            0
 #define SUMMER_VERSION_SUB        70
-#define SUMMER_VERSION_PATCH      0
+#define SUMMER_VERSION_PATCH      1
 #if defined(__x86_64__)
     #define SUMMER_VERSION_NAME   "BETA 64 BITS"
 #else

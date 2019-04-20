@@ -60,8 +60,15 @@ LIBIMPORT void  sgClear     (void);
 LIBIMPORT void  sgBeginScene(void);
 LIBIMPORT void  sgEndScene  (void);
 LIBIMPORT void  sgSet2D     (void); // set 2D mode
+LIBIMPORT void  sgSet3D     (void); // set 3D mode
 LIBIMPORT void  opengl_make_font_8x13 (void);
 LIBIMPORT void  opengl_draw_text (char *str, int x, int y, int color);
+
+#ifndef USE_SDL
+LIBIMPORT void draw_cube (GLenum type);
+LIBIMPORT void draw_piso ();
+#endif
+
 #ifdef __cplusplus
 }
 #endif

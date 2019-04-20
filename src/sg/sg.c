@@ -168,6 +168,16 @@ void sgEvent (void) {
             func_event.onmousemove(&_ev_);
         break;
 
+    case SDL_MOUSEBUTTONDOWN:
+        if (func_event.onmousedown)
+            func_event.onmousedown(&_ev_);
+        break;
+
+    case SDL_MOUSEBUTTONUP:
+        if (func_event.onmouseup)
+            func_event.onmouseup(&_ev_);
+        break;
+
     case SDL_KEYDOWN:
         if (ev.key.keysym.sym == SDLK_ESCAPE) {
             quit = 1;
@@ -189,27 +199,23 @@ void sgRun (void (*call) (void)) {
     }
 }
 
-// This set the projection mode 2D.
-void sgSet2D (void) {
-#ifdef USE_GL
-  #ifndef USE_SDL
-  glDisable (GL_DEPTH_TEST);
-//    glDisable ( GL_CULL_FACE );
-
-  glMatrixMode (GL_PROJECTION);
-  glLoadIdentity ();
-  glOrtho (0.0, 800, 600, 0.0, 0.0, 1.0);
-  #endif
-#endif
-}
-
 void sgSetEvent (void (*call) (TEvent *e), char *name) {
     if (name) {
+        if (!strcmp(name, "onmouseup")) func_event.onmouseup = call;
+        if (!strcmp(name, "onmousedown")) func_event.onmousedown = call;
         if (!strcmp(name, "onmousemove")) func_event.onmousemove = call;
     }
 }
 
 void sgBeginScene (void) {
+#ifdef USE_GL
+  #ifdef USE_SDL
+  SDL_FillRect (screen, &(struct SDL_Rect){ 0,0, screen->w, screen->h }, 0);
+  #else
+  glClearColor(0.0, 0.0, 0.0, 0.0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // GL_COLOR_BUFFER_BIT);
+  #endif
+#endif
 }
 
 void sgEndScene (void) {
@@ -232,5 +238,107 @@ void sgClear (void) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // GL_COLOR_BUFFER_BIT);
   #endif
 #endif
+}
+
+// This set the projection mode 3D.
+void sgSet3D (void) {
+#ifdef USE_GL
+  #ifndef USE_SDL
+    glEnable (GL_DEPTH_TEST);
+//    glEnable ( GL_CULL_FACE );
+
+    glMatrixMode (GL_PROJECTION);
+    glLoadIdentity ();
+    gluPerspective (60.0, ((GLdouble)800)/((GLdouble)600), 1.0, 1024.0);
+  #endif
+#endif
+}
+
+// This set the projection mode 2D.
+void sgSet2D (void) {
+#ifdef USE_GL
+  #ifndef USE_SDL
+  glDisable (GL_DEPTH_TEST);
+//    glDisable ( GL_CULL_FACE );
+
+//  glMatrixMode (GL_PROJECTION);
+  glLoadIdentity ();
+  glOrtho (0.0, 800, 600, 0.0, 0.0, 1.0);
+  #endif
+#endif
+}
+
+// This set the projection mode 2D.
+void set_2D (void) {
+#ifdef USE_GL
+  #ifndef USE_SDL
+    glDisable (GL_DEPTH_TEST);
+//    glDisable ( GL_CULL_FACE );
+
+//    glMatrixMode (GL_PROJECTION);
+    glLoadIdentity ();
+    glOrtho (0.0, 800, 600, 0.0, 0.0, 1.0);
+  #endif
+#endif
+}
+
+// Silicon Graphics, Inc.
+//
+// glut implementation:
+// FILE:
+//   glut_shapes.c
+//   glutWireCube(GLdouble size);
+//
+#ifdef USE_GL
+#ifndef USE_SDL
+void draw_cube (GLenum type) {
+  static GLfloat n[6][3] = {
+    {-1.0, 0.0, 0.0},
+    {0.0, 1.0, 0.0},
+    {1.0, 0.0, 0.0},
+    {0.0, -1.0, 0.0},
+    {0.0, 0.0, 1.0},
+    {0.0, 0.0, -1.0}
+  };
+  static GLint faces[6][4] = {
+    {0, 1, 2, 3},
+    {3, 2, 6, 7},
+    {7, 6, 5, 4},
+    {4, 5, 1, 0},
+    {5, 6, 2, 1},
+    {7, 4, 0, 3}
+  };
+  GLfloat v[8][3];
+  GLint i;
+
+  v[0][0] = v[1][0] = v[2][0] = v[3][0] = -1.0 / 2;
+  v[4][0] = v[5][0] = v[6][0] = v[7][0] = 1.0 / 2;
+  v[0][1] = v[1][1] = v[4][1] = v[5][1] = -1.0 / 2;
+  v[2][1] = v[3][1] = v[6][1] = v[7][1] = 1.0 / 2;
+  v[0][2] = v[3][2] = v[4][2] = v[7][2] = -1.0 / 2;
+  v[1][2] = v[2][2] = v[5][2] = v[6][2] = 1.0 / 2;
+
+  for (i = 5; i >= 0; i--) {
+    glBegin(type);
+    glNormal3fv(&n[i][0]);
+    glVertex3fv(&v[faces[i][0]][0]);
+    glVertex3fv(&v[faces[i][1]][0]);
+    glVertex3fv(&v[faces[i][2]][0]);
+    glVertex3fv(&v[faces[i][3]][0]);
+    glEnd();
+  }
+}
+#endif
+#endif
+
+void draw_piso () {
+  int i;
+    glColor3ub (70, 70, 70);
+    glBegin (GL_LINES);
+    for (i=-5; i < 6; i++) {
+        glVertex3f (i, 0.0, -5.0); glVertex3f (i, 0.0, 5.0);
+        glVertex3f (-5.0, 0.0, i); glVertex3f (5.0, 0.0, i);
+    }
+    glEnd ();
 }
 

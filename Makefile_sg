@@ -7,11 +7,11 @@ BIN  = sg
 CFLAGS = -O2 -Wall -DUSE_SG
 ifeq ($(OS),Windows_NT)
   # DirectX
-  LIBS = -lSDL
+  LIBS = -lSDL -lopengl32 -lglu32
   # RES  = obj/resource.o
   RES =
 else
-  LIBS = -lSDL
+  LIBS = -lSDL -lGL -lGLU
   RES =
 endif
 RM = rm -f

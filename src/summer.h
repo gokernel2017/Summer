@@ -162,6 +162,8 @@ LIBIMPORT int     VarFind         (char *name);
 LIBIMPORT void    proc_ifdef      (char *name);
 LIBIMPORT int     is_defined      (char *name);
 
+LIBIMPORT TFstring *fs_new (char *s);
+
 #ifdef USE_APPLICATION
 LIBIMPORT void LOG (char *format, ...);
 #endif

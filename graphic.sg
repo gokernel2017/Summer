@@ -1,3 +1,4 @@
+
 //-------------------------------------------------------------------
 // 
 // SG: Summer Graphic ( GL / DirectX / HTML Canvas ):
@@ -20,7 +21,44 @@
 //
 //-------------------------------------------------------------------
 //
-var count, buf, value = 0, f = 0.0;
+var count = 10, buf;
+
+var click = 0;
+
+var x = 0, y = 0, dx = 0, dy = 0, MouseX = 0, MouseY = 0;
+
+var angle_x = 30.0, angle_y = 30.0;
+
+
+function DrawScene () {
+
+    sgBeginScene();
+    sgSet3D(); // set 3D projection mode using OpenGL.
+
+  glPushMatrix();
+
+    //glTranslatef (0.0, -1.5, -10.0); // -- cam up z
+    glTranslatef (0.0, 0.0, -3.0);
+
+    //-----------------------------------------
+    // rotate the world on mouse click
+    //-----------------------------------------
+    //
+    glRotatef (angle_x, 1.0, 0.0, 0.0);
+    glRotatef (angle_y, 0.0, 1.0, 0.0);
+
+    draw_cube(2); // #define GL_LINE_LOOP 2
+//    draw_piso();
+
+  glPopMatrix ();
+
+    sgSet2D(); // set 2D projection mode using OpenGL.
+    sgDrawText (buf, 100, 100, 64512); // COLOR_ORANGE
+
+    sgEndScene();
+//    sgClear ();
+}
+
 
 //-----------------------------------------------
 //
@@ -31,37 +69,47 @@ var count, buf, value = 0, f = 0.0;
 //
 //-----------------------------------------------
 //
-function call_MouseMove (e) {
+function onMouseMove (e) {
+    x = e.offsetX;
+    y = e.offsetY;
 
-    sprintf (buf, "Mouse X: %d Y: %d | count: %d", e.offsetX, e.offsetY, count);
-    count = count + 1;
+    dx = MouseX - x;
+    dy = MouseY - y;
 
-    //
-    // NEED IMPLEMENTATION TO: f += 0.5
-    //
-    f = f + 0.50;
+    // Used to set the projection angle ... SEE: draw_scene().
+    MouseX = x;
+    MouseY = y;
 
-    sgBeginScene();
+    if (click) {
+        angle_x = angle_x - dy;
+        angle_y = angle_y - dx;
 
-    sgClear ();
-    sgDrawText (buf, 100, 200, 64512); // COLOR_ORANGE
+        sprintf (buf, "Mouse X: %d Y: %d | count: %d", e.offsetX, e.offsetY, count);
+        count = count + 1;
 
-    sgDrawFloat(f); // <<<<<<< using float argument ... TESTING TEMP >>>>>>>
+        DrawScene();
+    }
+}
 
-    sgEndScene();
+function onMouseDown (e) {
+    click = 1;
+}
+
+function onMouseUp (e) {
+    click = 0;
 }
 
 if (sgInit(0,0)) {
 
-    buf = malloc(100);
+    buf = malloc(150);
 
-    sgSetEvent (call_MouseMove, "onmousemove");
+    sgSetEvent (onMouseMove, "onmousemove");
+    sgSetEvent (onMouseDown, "onmousedown");
+    sgSetEvent (onMouseUp,   "onmouseup");
 
-    sgSet2D(); // set 2D projection mode using OpenGL.
+    sprintf (buf, "Mouse X: %d Y: %d | count: %d", 100, 100, count);
 
-    sgBeginScene();
-    sgDrawText ("Hello World | Move the Mouse !!!", 100, 100, 64512);
-    sgEndScene();
+    DrawScene();
 
     sgRun (0);
 }

@@ -130,6 +130,9 @@ LIBIMPORT UCHAR * asm_GetCode				(ASM *a);
 LIBIMPORT int 		asm_GetLen				(ASM *a);
 LIBIMPORT void    asm_Label         (ASM *a, char *name);
 LIBIMPORT void    asm_CodeCopy      (ASM *src, UCHAR *dest, unsigned int len);
+
+LIBIMPORT void    asm_get_addr      (ASM *a, void *ptr); ///: 32/64 BITS OK
+
 // emit / gen:
 LIBIMPORT void 		gen								(ASM *a, UCHAR c); // emit 1 opcode
 LIBIMPORT void    g (ASM *a, UCHAR c);

@@ -22,7 +22,7 @@
 //
 #include "summer.h"
 
-#define ARG_MAX	10
+#define ARG_MAX	15
 
 enum { // arg.tok[]
     T_ID = 1,
@@ -130,6 +130,18 @@ label_top:
         if (*str==0) return 0;
         str++;
         goto label_top;
+    }
+
+    //################  STRING  #################
+    //
+    if (*str == '"') {
+        str++; // '"'
+        while (*str && *str != '"' && *str != '\r' && *str != '\n') {
+            *p++ = *str++;
+        }
+        *p = 0;
+        if (*str=='"') str++;// else Erro("%s: Line: %d - String erro", l->name, l->line);
+        return (arg.tok[count] = T_STR);
     }
 
     //##########  WORD, IDENTIFIER ...  #########
@@ -361,7 +373,7 @@ void Assemble (LEXER *l, ASM *a) {
         comment = 0;
         while ((c = l->text[l->pos++])) {
             if (c=='/' && l->text[l->pos]=='/') comment = 1;
-            if (c == '\n' || c == '|') {
+            if (c == '\n' || c == '|' || c == '}') {
                 *p = 0;
                 if (text[0] != 0) {
                     aparse(text, l, asm_function);
@@ -406,7 +418,7 @@ void Assemble (LEXER *l, ASM *a) {
         comment = 0;
         while ((c = l->text[l->pos++])) {
             if (c=='/' && l->text[l->pos]=='/') comment = 1;
-            if (c == '\n' || c == '|') {
+            if (c == '\n' || c == '|' || c == '}') {
                 *p = 0;
                 if (text[0] != 0) {
 										aparse(text, l, a);
@@ -527,16 +539,97 @@ static void execute_function (LEXER *l, ASM *a) {
             if (i == 1) {
                 if (arg.tok[1] == T_NUM)
                     emit_mov_long_reg (a, atol(arg.text[1]), ECX);
-                if (arg.tok[1] == T_VAR)
-                    emit_mov_var_reg (a, &Gvar[ arg.value[1] ].value.l, ECX);
+                if (arg.tok[1] == T_VAR) {
+                    if (Gvar[ arg.value[1] ].type != TYPE_FLOAT)
+                        emit_mov_var_reg (a, &Gvar[ arg.value[1] ].value.l, ECX);
+                    else
+                        emit_func_arg_var_float0 (a, &Gvar[ arg.value[1] ].value.f);
+                }
+                if (arg.tok[1] == T_STR) {
+                    TFstring *s = fs_new (arg.text[1]);
+                    if (s) {
+                        emit_mov_long_reg (a,(long)(s->s), ECX);
+                    }
+                }
             }
             if (i == 2) {
                 if (arg.tok[2] == T_NUM)
                     emit_mov_long_reg(a,atol(arg.text[2]),EDX);
-                if (arg.tok[2] == T_VAR)
-                    emit_mov_var_reg (a, &Gvar[ arg.value[2] ].value.l, EDX);
+                if (arg.tok[2] == T_VAR) {
+                    if (Gvar[ arg.value[2] ].type != TYPE_FLOAT)
+                        emit_mov_var_reg (a, &Gvar[ arg.value[2] ].value.l, EDX);
+                    else
+                        emit_func_arg_var_float1 (a, &Gvar[ arg.value[2] ].value.f);
+                }
+                if (arg.tok[2] == T_STR) {
+                    TFstring *s = fs_new (arg.text[2]);
+                    if (s) {
+                        emit_mov_long_reg (a,(long)(s->s), EDX);
+printf ("ASM pasaando string\n");
+                    }
+                }
+
             }
+            if (i == 3) {
+                if (arg.tok[2] == T_NUM) {
+                    if (strchr(arg.text[2], '.'))
+                        emit_mov_long_reg(a,atol(arg.text[2]),EDX);
+                    else
+                        emit_func_arg_number_float2 (a, atof(arg.text[2]));
+                }
+                if (arg.tok[3] == T_VAR) {
+                    if (Gvar[ arg.value[3] ].type != TYPE_FLOAT) {
+                        emit_mov_var_reg (a, &Gvar[ arg.value[3] ].value.l, EAX);
+                        // 41 89 c0   mov    %eax,%r8d
+                        g3(a,0x41,0x89,0xc0);
+                    } else {
+//                        emit_func_arg_var_float2 (a, &Gvar[ arg.value[3] ].value.f);
+                        emit_mov_var_reg(a, &Gvar[ arg.value[3] ].value.f, EAX);
+                        // 41 89 c0   mov    %eax,%r8d
+                        g3(a,0x41,0x89,0xc0);
+                    }
+                }
+/*
+                if (arg.tok[2] == T_STR) {
+                    TFstring *s = fs_new (arg.text[2]);
+                    if (s) {
+                        emit_mov_long_reg (a,(long)(s->s), EDX);
+printf ("ASM pasaando string\n");
+                    }
+                }
+*/
+
+            }
+
             #endif
+
+/*
+// INFO: Windows X64 BITS functions arguments:
+// arg 1 = %ecx
+// arg 2 = %edx
+// arg 3 = %r8d
+// arg 4 = %r9d
+
+						else if (i == 2) { // argument 3
+								#ifdef WIN32
+                // 58                   	pop    %rax
+                // 41 89 c0             	mov    %eax,%r8d
+                g4(a,0x58,0x41,0x89,0xc0);
+								#else
+                g(a,POP_EDX);
+								#endif
+						}
+						else if (i == 3) { // argument 4
+								#ifdef WIN32
+                // 58                   	pop    %rax
+                // 41 89 c1             	mov    %eax,%r9d
+                g4(a,0x58,0x41,0x89,0xc1);
+								#else
+                g(a,POP_ECX);
+								#endif
+						}
+
+*/
 
 // 41 b8 e8 03 00 00    	mov    $0x3e8,%r8d
 // 41 b9 88 13 00 00    	mov    $0x1388,%r9d
@@ -559,10 +652,10 @@ static void execute_function (LEXER *l, ASM *a) {
             #endif
         #else // ! __x86_64__
             if (arg.tok[i] == T_NUM)
-                emit_movl_ESP(a, atol(arg.text[i]), (i-1)*4);
+                emit_movl_ESP(a, atol(arg.text[i]), (i - 1)*4);
             if (arg.tok[i] == T_VAR) {
                 emit_mov_var_reg (a, &Gvar[ arg.value[i] ].value.l, EAX);
-                emit_mov_eax_ESP (a, (i-1)*4);
+                emit_mov_eax_ESP (a, (i - 1)*4);
             }
         #endif
         }

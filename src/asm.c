@@ -829,7 +829,14 @@ void emit_float_faddp (ASM *a) { g2 (a,0xde,0xc1); } // de c1    faddp  %st,%st(
 // USAGE:
 //   emit_float_faddp (a);
 //
-void emit_float_fsubp (ASM *a) { g2 (a,0xde,0xe1); } // de e1    fsubp  %st,%st(1)
+
+// change:
+void emit_float_fxch (ASM *a) { g2 (a,0xd9,0xc9); } // d9 c9    fxch   %st(1)
+
+void emit_float_fsubp (ASM *a) {
+    emit_float_fxch (a); // 2 bytes: change %st(0) %st(1);
+    g2 (a,0xde,0xe1); // de e1    fsubp  %st,%st(1)
+}
 
 //
 // set the variable and CLEAR the stack:
@@ -1011,7 +1018,7 @@ void emit_expression_add_long (ASM *a) {
 void emit_expression_sub_long (ASM *a) { 
 		pop_register();
 		// DEBUG !
-    printf ("  sub %s, %s\n", REGISTER[reg], REGISTER[reg-1]);
+//    printf ("  sub %s, %s\n", REGISTER[reg], REGISTER[reg-1]);
 		if (reg == ECX && reg-1 == EAX) {
 				EMIT(a,OP_sub_ecx_eax); // sub %ecx, %eax
 		}

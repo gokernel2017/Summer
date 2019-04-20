@@ -37,7 +37,7 @@ static void atom (LEXER *l, ASM *a);
 static int stmt (LEXER *l, ASM *a);
 static int see (LEXER *l);
 
-static TFstring *fs_new (char *s);
+TFstring *fs_new (char *s);
 
 static void execute_call (LEXER *l, ASM *a, TFunc *func);
 static void DefineAdd (char *name, int value);
@@ -50,8 +50,22 @@ int lib_func_add (int a, int b);
 float lib_func_add_float (float a, float b);
 void lib_print_int (int i);
 void lib_print_float (float f);
+void lib_func_float_int (float f, int i);
 int arg4(int a, int b, int c, int d);
 int arg5(int a, int b, int c, int d, int e);
+
+char *lib_float2s (float f);
+
+/*
+void gl_Begin (int i) { glBegin (i); }
+void gl_End (void) { glEnd (); }
+void gl_PushMatrix (void) { glPushMatrix(); }
+void gl_PopMatrix (void) { glPopMatrix(); }
+void gl_Color3ub (unsigned char r, unsigned char g, unsigned char b) { glColor3ub (r,g,b); }
+void gl_Rotatef (float angle, float x, float y, float z) { glRotatef (angle,x,y,z); }
+void gl_Vertex3f    (float x, float y, float z) { glVertex3f (x,y,z); }
+void gl_Translatef  (float x, float y, float z) { glTranslatef (x,y,z); }
+*/
 
 static TFunc stdlib[]={
   //-----------------------------------------------------------------------------
@@ -60,8 +74,10 @@ static TFunc stdlib[]={
   //-----------------------------------------------------------------------------
   { "info",       "0i",     (UCHAR*)lib_info,         0,    0,    0,        NULL },
   { "disasm",     "0s",     (UCHAR*)lib_disasm,       0,    0,    0,        NULL },
+  { "float2s",    "pi",     (UCHAR*)lib_float2s,      0,    0,    0,        NULL },
   //
   { "printf",     "is.",    (UCHAR*)lib_printf,       0,    0,    0,        NULL },
+  { "strcat",     "ss",     (UCHAR*)strcat,           0,    0,    0,        NULL },
   { "sprintf",    "iss.",   (UCHAR*)sprintf,          0,    0,    0,        NULL },
   { "malloc",     "pi",     (UCHAR*)malloc,           0,    0,    0,        NULL },
   //
@@ -69,6 +85,9 @@ static TFunc stdlib[]={
   { "addf",       "fff",    (UCHAR*)lib_func_add_float,   0,    0,    0,        NULL },
   { "printi",			"0i",		  (UCHAR*)lib_print_int,   0,    0,  	0,  			NULL },
   { "print_float","0f",     (UCHAR*)lib_print_float,0,    0,    0,        NULL },
+
+  { "float_int",  "0fi",    (UCHAR*)lib_func_float_int,0,    0,    0,        NULL },
+
   { "arg4",			  "iiiii",  (UCHAR*)arg4,    	0,    0,  	0,  			NULL },
   { "arg5",			  "iiiiii", (UCHAR*)arg5,    	0,    0,  	0,  			NULL },
   // SDL:
@@ -92,7 +111,16 @@ static TFunc stdlib[]={
   { "sgEndScene",   "00",     (UCHAR*)sgEndScene,     0,    0,    0,        NULL },
   { "sgClear",      "00",     (UCHAR*)sgClear,	      0,    0,  	0,  			NULL },
   { "sgSet2D",      "00",     (UCHAR*)sgSet2D,	      0,    0,  	0,  			NULL },
-#endif
+  { "sgSet3D",      "00",     (UCHAR*)sgSet3D,	      0,    0,  	0,  			NULL },
+  #ifndef USE_SDL
+  { "draw_cube",    "0i",     (UCHAR*)draw_cube,      0,    0,  	0,  			NULL },
+  { "draw_piso",    "00",     (UCHAR*)draw_piso,      0,    0,  	0,  			NULL },
+  { "glTranslatef", "0fff",   (UCHAR*)glTranslatef,   0,    0,  	0,  			NULL },
+  { "glPushMatrix", "00",     (UCHAR*)glPushMatrix,   0,    0,  	0,  			NULL },
+  { "glPopMatrix",  "00",     (UCHAR*)glPopMatrix,   0,    0,  	0,  			NULL },
+  { "glRotatef",    "0ffff",  (UCHAR*)glRotatef,   0,    0,  	0,  			NULL },
+  #endif
+#endif // USE_SG
   { NULL, NULL, NULL, 0, 0, 0, NULL }
 };
 
@@ -165,7 +193,8 @@ static void expr1 (LEXER *l, ASM *a) { // '+' '-' : ADDITION | SUBTRACTION
   while ((op=l->tok) == '+' || op == '-') {
     lex(l);
     expr2(l,a);
-    if (var_type==TYPE_FLOAT) {
+    //if (var_type==TYPE_FLOAT) {
+    if (main_variable_type==TYPE_FLOAT) {
       if (op=='+') emit_add_float(a);
       if (op=='-') emit_sub_float(a);
     } else { // TYPE_LONG
@@ -181,7 +210,8 @@ static void expr2 (LEXER *l, ASM *a) { // '*' '/' : MULTIPLICATION | DIVISION
   while ((op=l->tok) == '*' || op == '/') {
     lex (l);
     expr3 (l, a);
-    if (var_type==TYPE_FLOAT) {
+//    if (var_type==TYPE_FLOAT) {
+    if (main_variable_type==TYPE_FLOAT) {
       if (op=='*') emit_mul_float(a);
       if (op=='/') emit_div_float(a);
     } else { // TYPE_LONG
@@ -346,14 +376,21 @@ static void atom (LEXER *l, ASM *a) { // expres
 				if ((i = VarFind(l->token)) != -1) {
             var_type = Gvar[i].type;
 
-//            #ifdef USE_JIT
             if (main_variable_type == TYPE_FLOAT && var_type != TYPE_FLOAT) {
-                // db 05    70 40 40 00    	fildl  0x404070
-                //g2(a,0xdb,0x05); asm_get_addr(a, &Gvar[i].value.i);
-                Erro ("%s: %d: Float and Integer ... Not Permited: '%s' ;)\n", l->name, l->line, Gvar[i].name);
+            #ifdef __x86_64__
+// 64 bits
+// db 04 25     10 30 40 00 	fildl  0x403010
+                g3(a,0xdb,0x04,0x25); asm_get_addr(a, &Gvar[i].value.l);
+            #else
+// 32 bits
+// db 05    70 40 40 00    	fildl  0x404070
+                g2(a,0xdb,0x05); asm_get_addr(a, &Gvar[i].value.l);
+            #endif
+printf("ATOM argumento FLOAT com INTEIRO\n");
+//                Erro ("%s: %d: Float and Integer ... Not Permited: '%s' ;)\n", l->name, l->line, Gvar[i].name);
             } else {
                 if (var_type == TYPE_FLOAT) {
-printf("ATOM argumento var FLOAT\n");
+//printf("ATOM argumento var FLOAT\n");
                     emit_float_flds (a, &Gvar[i].value.f);
                 } else {
 										emit_expression_push_var (a, &Gvar[i].value.l);
@@ -373,7 +410,7 @@ printf("ATOM argumento var FLOAT\n");
             var_type = TYPE_FLOAT;
 
         if (var_type==TYPE_FLOAT) {
-printf("push cfloat NUMBER(%s)\n", l->token);
+//printf("push cfloat NUMBER(%s)\n", l->token);
             emit_push_float(a, atof(l->token));
         } else {
 						emit_expression_push_long (a, atol(l->token));
@@ -639,7 +676,7 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
                 }
                 #endif
 
-                if (count++ > 15) break;
+                if (count++ > 10) break;
             }
             if (l->tok == ')' || l->tok == ';') break;
         }
@@ -666,8 +703,8 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 
 		// pass 64 bits arquments:
 		#if defined(__x86_64__)
-		if (is_float==0 && count > 0) {
-        int i;
+		if (count > 0) {
+        int i, var;
 				for (i = count-1; i >= 0; i--) {
 						if (i == 0) { // argument 1
 								#ifdef WIN32
@@ -930,7 +967,7 @@ int VarFind (char *name) {
   return -1;
 }
 
-static TFstring *fs_new (char *s) {
+TFstring *fs_new (char *s) {
   static int count = 0;
   TFstring *p = fs, *n;
   while (p) {
@@ -1470,6 +1507,17 @@ void lib_disasm (char *name) {
   }
 }
 
+char buf[20];
+char *lib_float2s (float f) {
+    sprintf (buf, "%f", f);
+    return buf;
+}
+
+void lib_func_float_int (float f, int i) {
+  printf ("f: %f, i: %d\n", f, i);
+}
+
+
 int lib_func_add (int a, int b) {
   printf ("a: %d, b: %d = %d\n", a, b, a+b);
   return a + b;
@@ -1500,5 +1548,6 @@ int arg5 (int a, int b, int c, int d, int e) {
   printf ("arg5 result = %d\n\n", a+b+c+d+e);
   return a + b + c + d + e;
 }
+
 // lines: 1437
 

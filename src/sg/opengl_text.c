@@ -3,6 +3,7 @@
 #ifdef USE_GL
 #ifndef USE_SDL
 
+#include <stdio.h>
 #include <SDL/SDL_opengl.h>
 
 unsigned char font_8x13_data[][13] = {

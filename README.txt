@@ -65,6 +65,7 @@
    if ( NEED MORE IMPLEMENTATION ),
    function,
    #include,
+   #define,
    #ifdef,
    #endif
 

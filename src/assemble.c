@@ -488,7 +488,6 @@ static int parse_assemble_4 (ASM *a) {
 
 //  { "mov", T_REG,  ',',  T_NUM, '(', T_REG, ')' },
 static int parse_assemble_7 (ASM *a) {
-//    int i = 0;
     struct ASSEMBLE_7 *o = assemble_7;
     while (o->name) {
         if (!strcmp(o->name, arg.text[0])
@@ -589,47 +588,9 @@ printf ("ASM pasaando string\n");
                         g3(a,0x41,0x89,0xc0);
                     }
                 }
-/*
-                if (arg.tok[2] == T_STR) {
-                    TFstring *s = fs_new (arg.text[2]);
-                    if (s) {
-                        emit_mov_long_reg (a,(long)(s->s), EDX);
-printf ("ASM pasaando string\n");
-                    }
-                }
-*/
-
             }
+            #endif // WIN32
 
-            #endif
-
-/*
-// INFO: Windows X64 BITS functions arguments:
-// arg 1 = %ecx
-// arg 2 = %edx
-// arg 3 = %r8d
-// arg 4 = %r9d
-
-						else if (i == 2) { // argument 3
-								#ifdef WIN32
-                // 58                   	pop    %rax
-                // 41 89 c0             	mov    %eax,%r8d
-                g4(a,0x58,0x41,0x89,0xc0);
-								#else
-                g(a,POP_EDX);
-								#endif
-						}
-						else if (i == 3) { // argument 4
-								#ifdef WIN32
-                // 58                   	pop    %rax
-                // 41 89 c1             	mov    %eax,%r9d
-                g4(a,0x58,0x41,0x89,0xc1);
-								#else
-                g(a,POP_ECX);
-								#endif
-						}
-
-*/
 
 // 41 b8 e8 03 00 00    	mov    $0x3e8,%r8d
 // 41 b9 88 13 00 00    	mov    $0x1388,%r9d
@@ -649,8 +610,9 @@ printf ("ASM pasaando string\n");
                 if (arg.tok[2] == T_VAR)
                     emit_mov_var_reg (a, &Gvar[ arg.value[2] ].value.l, ESI);
             }
-            #endif
-        #else // ! __x86_64__
+            #endif // __linux__
+        #else // __x86_64__
+            // 32 bits
             if (arg.tok[i] == T_NUM)
                 emit_movl_ESP(a, atol(arg.text[i]), (i - 1)*4);
             if (arg.tok[i] == T_VAR) {

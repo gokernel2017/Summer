@@ -14,7 +14,7 @@
 // BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
-// File Size: 43.048
+// File Size: 49.146
 #include "summer.h"
 
 //-----------------------------------------------
@@ -190,7 +190,7 @@ static int expr0 (LEXER *l, ASM *a) {
           }
           return i;
         } else {
-//          lex_restore (l); // restore the lexer position
+          lex_restore (l); // restore the lexer position
         }
       }// if ((i = VarFind(l->token)) != -1)
     }//: if (see(l)=='=')
@@ -717,7 +717,7 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 		// pass 64 bits arquments:
 		#if defined(__x86_64__)
 		if (count > 0) {
-        int i, var;
+        int i;
 				for (i = count-1; i >= 0; i--) {
 						if (i == 0) { // argument 1
 								#ifdef WIN32

@@ -41,7 +41,7 @@ static int
     ;
 
 void _call_ (void) {
-    SDL_Delay (10);
+    SDL_Delay (5);
 }
 void (*CallBack) (void) = _call_;
 
@@ -71,31 +71,30 @@ void DrawPixel (BMP *bmp, int x, int y, int color) {
 
 // 8 x 13
 void DrawChar (BMP *bmp, char ch, int x, int y, int color) {
-
   if (ch > 32) {
     register unsigned char count;
     register int xx;
 
-      xx = (ch - SDLK_SPACE) * 8;
+    xx = (ch - SDLK_SPACE) * 8;
 
-      // insert color
-      for (count=0; count < 8; count++) {
-          if ( fixed_font[ 0][xx] == 'x' ) { DrawPixel(bmp, x, y+0,  color); }
-          if ( fixed_font[ 1][xx] == 'x' ) { DrawPixel(bmp, x, y+1,  color); }
-          if ( fixed_font[ 2][xx] == 'x' ) { DrawPixel(bmp, x, y+2,  color); }
-          if ( fixed_font[ 3][xx] == 'x' ) { DrawPixel(bmp, x, y+3,  color); }
-          if ( fixed_font[ 4][xx] == 'x' ) { DrawPixel(bmp, x, y+4,  color); }
-          if ( fixed_font[ 5][xx] == 'x' ) { DrawPixel(bmp, x, y+5,  color); }
-          if ( fixed_font[ 6][xx] == 'x' ) { DrawPixel(bmp, x, y+6,  color); }
-          if ( fixed_font[ 7][xx] == 'x' ) { DrawPixel(bmp, x, y+7,  color); }
-          if ( fixed_font[ 8][xx] == 'x' ) { DrawPixel(bmp, x, y+8,  color); }
-          if ( fixed_font[ 9][xx] == 'x' ) { DrawPixel(bmp, x, y+9,  color); }
-          if ( fixed_font[10][xx] == 'x' ) { DrawPixel(bmp, x, y+10, color); }
-          if ( fixed_font[11][xx] == 'x' ) { DrawPixel(bmp, x, y+11, color); }
-          if ( fixed_font[12][xx] == 'x' ) { DrawPixel(bmp, x, y+12, color); }
-          if ( fixed_font[13][xx] == 'x' ) { DrawPixel(bmp, x, y+13, color); }
-          xx++; x++;
-      }
+    // insert color
+    for (count=0; count < 8; count++) {
+      if (fixed_font[ 0][xx] == 'x') { DrawPixel(bmp, x, y+0,  color); }
+      if (fixed_font[ 1][xx] == 'x') { DrawPixel(bmp, x, y+1,  color); }
+      if (fixed_font[ 2][xx] == 'x') { DrawPixel(bmp, x, y+2,  color); }
+      if (fixed_font[ 3][xx] == 'x') { DrawPixel(bmp, x, y+3,  color); }
+      if (fixed_font[ 4][xx] == 'x') { DrawPixel(bmp, x, y+4,  color); }
+      if (fixed_font[ 5][xx] == 'x') { DrawPixel(bmp, x, y+5,  color); }
+      if (fixed_font[ 6][xx] == 'x') { DrawPixel(bmp, x, y+6,  color); }
+      if (fixed_font[ 7][xx] == 'x') { DrawPixel(bmp, x, y+7,  color); }
+      if (fixed_font[ 8][xx] == 'x') { DrawPixel(bmp, x, y+8,  color); }
+      if (fixed_font[ 9][xx] == 'x') { DrawPixel(bmp, x, y+9,  color); }
+      if (fixed_font[10][xx] == 'x') { DrawPixel(bmp, x, y+10, color); }
+      if (fixed_font[11][xx] == 'x') { DrawPixel(bmp, x, y+11, color); }
+      if (fixed_font[12][xx] == 'x') { DrawPixel(bmp, x, y+12, color); }
+      if (fixed_font[13][xx] == 'x') { DrawPixel(bmp, x, y+13, color); }
+      xx++; x++;
+    }
   }
 }
 
@@ -104,7 +103,7 @@ void sgDrawText (char *text, int x, int y, int color) {
   #ifdef USE_SDL
   BMP *bmp = screen;
   while (*text) {
-    if(*text > 32)
+    if (*text > 32)
       DrawChar (bmp, *text, x, y, color);
     text++;
     x += 8;
@@ -116,45 +115,45 @@ void sgDrawText (char *text, int x, int y, int color) {
 }
 
 void sgDrawFloat (float f) {
-    char buf[50];
-    sprintf(buf, "FLOAT: %f", f);
-    sgDrawText (buf, 10, 10, 64512);//COLOR_ORAMGE);
+  char buf[50];
+  sprintf(buf, "FLOAT: %f", f);
+  sgDrawText (buf, 10, 10, 64512);//COLOR_ORAMGE);
 }
 
 void sgRect (int x, int y, int w, int h, int color) {
-    SDL_FillRect (screen, &(struct SDL_Rect){ x, y, w, h }, color);
+  SDL_FillRect (screen, &(struct SDL_Rect){ x, y, w, h }, color);
 }
 
 int sgInit (int argc, char **argv) {
-    int w = 800, h = 600, flag = 0;
-    static int init = 0;
+  int w = 800, h = 600, flag = 0;
+  static int init = 0;
 
-    if (init) return 1;
-    init = 1;
+  if (init) return 1;
+  init = 1;
 
 #ifdef USE_GL
-    SDL_Init (SDL_INIT_VIDEO);
-    #ifdef WIN32
-    SDL_putenv ("SDL_VIDEO_CENTERED=center");
-    #endif
-    SDL_WM_SetCaption ("SG: Summer Graphic (GL/DirectX/HTML Canvas) | To Exit Press ESC !", NULL);
+  SDL_Init (SDL_INIT_VIDEO);
+  #ifdef WIN32
+  SDL_putenv ("SDL_VIDEO_CENTERED=center");
+  #endif
+  SDL_WM_SetCaption ("SG: Summer Graphic (GL/DirectX/HTML Canvas) | To Exit Press ESC !", NULL);
 
-    // SDL / OPENGL
-    #ifndef USE_SDL
-    flag = SDL_OPENGL;
-    #endif
+  // SDL / OPENGL
+  #ifndef USE_SDL
+  flag = SDL_OPENGL;
+  #endif
 
-    screen = SDL_SetVideoMode (w, h, 16, flag);
-    #ifndef USE_SDL
-    opengl_make_font_8x13 ();
-    #endif
+  screen = SDL_SetVideoMode (w, h, 16, flag);
+  #ifndef USE_SDL
+  opengl_make_font_8x13 ();
+  #endif
 
-    atexit (SDL_Quit);
-#endif // ! USE_GL
+  atexit (SDL_Quit);
+#endif // USE_GL
 
-    return 1;
+  return 1;
 
-}// sgInit ();
+}// sgInit();
 
 void sgEvent (void) {
     SDL_Event ev;
@@ -188,23 +187,21 @@ void sgEvent (void) {
 }
 
 void sgRun (void (*call) (void)) {
-
-    if (call)
-        CallBack = call;
-
-    quit = 0;
-    while (!quit) {
-        sgEvent();
-        CallBack();
-    }
+  if (call)
+    CallBack = call;
+  quit = 0;
+  while (!quit) {
+    sgEvent();
+    CallBack();
+  }
 }
 
 void sgSetEvent (void (*call) (TEvent *e), char *name) {
-    if (name) {
-        if (!strcmp(name, "onmouseup")) func_event.onmouseup = call;
-        if (!strcmp(name, "onmousedown")) func_event.onmousedown = call;
-        if (!strcmp(name, "onmousemove")) func_event.onmousemove = call;
-    }
+  if (name) {
+    if (!strcmp(name, "onmouseup")) func_event.onmouseup = call;
+    if (!strcmp(name, "onmousedown")) func_event.onmousedown = call;
+    if (!strcmp(name, "onmousemove")) func_event.onmousemove = call;
+  }
 }
 
 void sgBeginScene (void) {
@@ -275,9 +272,9 @@ void sgSet2D (void) {
 //   glut_shapes.c
 //   glutWireCube(GLdouble size);
 //
-#ifdef USE_GL
-#ifndef USE_SDL
 void draw_cube (GLenum type) {
+#ifdef USE_GL
+  #ifndef USE_SDL
   static GLfloat n[6][3] = {
     {-1.0, 0.0, 0.0},
     {0.0, 1.0, 0.0},
@@ -313,11 +310,13 @@ void draw_cube (GLenum type) {
     glVertex3fv(&v[faces[i][3]][0]);
     glEnd();
   }
+  #endif
+#endif
 }
-#endif
-#endif
 
 void draw_piso () {
+#ifdef USE_GL
+  #ifndef USE_SDL
   int i;
   glColor3ub (70, 70, 70);
   glBegin (GL_LINES);
@@ -326,5 +325,7 @@ void draw_piso () {
     glVertex3f (-5.0, 0.0, i); glVertex3f (5.0, 0.0, i);
   }
   glEnd ();
+  #endif
+#endif
 }
 

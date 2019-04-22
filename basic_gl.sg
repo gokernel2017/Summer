@@ -5,6 +5,8 @@
 //
 // Simple OpenGL Example ...
 //
+// TO SUMMER VERSION: 0.72.0
+//
 // BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
@@ -27,8 +29,6 @@ function draw () {
 
     sgEndScene();
 }
-
-
 
 if (sgInit(0,0)) {
 

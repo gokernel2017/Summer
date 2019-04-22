@@ -27,6 +27,7 @@ static void word_asm (LEXER *l, ASM *a);
 static void word_if (LEXER *l, ASM *a);
 static void word_function (LEXER *l, ASM *a);
 static void word_include (LEXER *l, ASM *a);
+static void word_DEFINE (LEXER *l, ASM *a);
 static void word_IFDEF (LEXER *l, ASM *a);
 
 static int expr0 (LEXER *l, ASM *a);
@@ -56,16 +57,18 @@ int arg5(int a, int b, int c, int d, int e);
 
 char *lib_float2s (float f);
 
-/*
+#ifdef USE_SG
+  #ifndef USE_SDL
 void gl_Begin (int i) { glBegin (i); }
 void gl_End (void) { glEnd (); }
 void gl_PushMatrix (void) { glPushMatrix(); }
 void gl_PopMatrix (void) { glPopMatrix(); }
-void gl_Color3ub (unsigned char r, unsigned char g, unsigned char b) { glColor3ub (r,g,b); }
 void gl_Rotatef (float angle, float x, float y, float z) { glRotatef (angle,x,y,z); }
-void gl_Vertex3f    (float x, float y, float z) { glVertex3f (x,y,z); }
-void gl_Translatef  (float x, float y, float z) { glTranslatef (x,y,z); }
-*/
+void gl_Translatef (float x, float y, float z) { glTranslatef (x,y,z); }
+void gl_Color3ub (unsigned char r, unsigned char g, unsigned char b) { glColor3ub (r,g,b); }
+void gl_Vertex3f (float x, float y, float z) { glVertex3f (x,y,z); }
+  #endif
+#endif
 
 static TFunc stdlib[]={
   //-----------------------------------------------------------------------------
@@ -115,11 +118,17 @@ static TFunc stdlib[]={
   #ifndef USE_SDL
   { "draw_cube",    "0i",     (UCHAR*)draw_cube,      0,    0,  	0,  			NULL },
   { "draw_piso",    "00",     (UCHAR*)draw_piso,      0,    0,  	0,  			NULL },
-  { "glTranslatef", "0fff",   (UCHAR*)glTranslatef,   0,    0,  	0,  			NULL },
-  { "glPushMatrix", "00",     (UCHAR*)glPushMatrix,   0,    0,  	0,  			NULL },
-  { "glPopMatrix",  "00",     (UCHAR*)glPopMatrix,   0,    0,  	0,  			NULL },
-  { "glRotatef",    "0ffff",  (UCHAR*)glRotatef,   0,    0,  	0,  			NULL },
-  #endif
+
+  { "glBegin",      "0i",(UCHAR*)gl_Begin,0,0,0, NULL },
+  { "glEnd",        "00",(UCHAR*)gl_End,0,0,0,NULL },
+  { "glPushMatrix", "00",(UCHAR*)gl_PushMatrix,0,0,0,NULL},
+  { "glPopMatrix",  "00",(UCHAR*)gl_PopMatrix,0,0,0,NULL},
+  { "glRotatef",    "0ffff",(UCHAR*)gl_Rotatef,0,0,0,NULL},
+  { "glTranslatef", "0fff",(UCHAR*)gl_Translatef,0,0,0,NULL},
+
+  { "glColor3ub",   "0iii",(UCHAR*)gl_Color3ub,0,0,0,NULL},
+  { "glVertex3f",   "0fff",(UCHAR*)gl_Vertex3f,0,0,0,NULL},
+  #endif // ! USE_SDL
 #endif // USE_SG
   { NULL, NULL, NULL, 0, 0, 0, NULL }
 };
@@ -179,7 +188,7 @@ static int expr0 (LEXER *l, ASM *a) {
           }
           return i;
         } else {
-          lex_restore (l); // restore the lexer position
+//          lex_restore (l); // restore the lexer position
         }
       }// if ((i = VarFind(l->token)) != -1)
     }//: if (see(l)=='=')
@@ -244,6 +253,17 @@ static void atom (LEXER *l, ASM *a) { // expres
     if (l->tok == TOK_ID) {
         int i;
         TFunc *fi;
+        TDefine *def = Gdefine;
+
+        // process MACROS: ... ONLY NUMBERS
+        while (def) {
+            if (!strcmp(def->name, l->token)) {
+                emit_expression_push_long (a, def->value);
+                lex(l);
+                return;
+            }
+            def = def->next;
+        }
 
         //
         // push the pointer of function:
@@ -376,41 +396,31 @@ static void atom (LEXER *l, ASM *a) { // expres
 				if ((i = VarFind(l->token)) != -1) {
             var_type = Gvar[i].type;
 
-            if (main_variable_type == TYPE_FLOAT && var_type != TYPE_FLOAT) {
+            if (main_variable_type==TYPE_FLOAT && var_type != TYPE_FLOAT) {
             #ifdef __x86_64__
-// 64 bits
-// db 04 25     10 30 40 00 	fildl  0x403010
+                // db 04 25     10 30 40 00 	fildl  0x403010
                 g3(a,0xdb,0x04,0x25); asm_get_addr(a, &Gvar[i].value.l);
             #else
-// 32 bits
-// db 05    70 40 40 00    	fildl  0x404070
+                // db 05    70 40 40 00    	fildl  0x404070
                 g2(a,0xdb,0x05); asm_get_addr(a, &Gvar[i].value.l);
             #endif
-printf("ATOM argumento FLOAT com INTEIRO\n");
-//                Erro ("%s: %d: Float and Integer ... Not Permited: '%s' ;)\n", l->name, l->line, Gvar[i].name);
             } else {
-                if (var_type == TYPE_FLOAT) {
-//printf("ATOM argumento var FLOAT\n");
+                if (var_type==TYPE_FLOAT) {
                     emit_float_flds (a, &Gvar[i].value.f);
                 } else {
 										emit_expression_push_var (a, &Gvar[i].value.l);
                 }
             }
-//            #endif
-//            #ifdef USE_VM
-//            emit_push_var (a,i);
-//            #endif
 
             lex(l);
         }
         else Erro ("%s: %d: - Ilegal Word '%s'\n", l->name, l->line, l->token);
 		}
-		else if (l->tok == TOK_NUMBER) {
+		else if (l->tok==TOK_NUMBER) {
         if (strchr(l->token, '.'))
             var_type = TYPE_FLOAT;
 
         if (var_type==TYPE_FLOAT) {
-//printf("push cfloat NUMBER(%s)\n", l->token);
             emit_push_float(a, atof(l->token));
         } else {
 						emit_expression_push_long (a, atol(l->token));
@@ -557,10 +567,11 @@ static int stmt (LEXER *l, ASM *a) {
   case TOK_IF: word_if (l,a); return 1;
   case TOK_FUNCTION: word_function (l,a); return 1;
   case TOK_INCLUDE: word_include (l,a); return 1;
+  case TOK_DEFINE: word_DEFINE(l,a); return 1;
   case TOK_IFDEF: word_IFDEF (l,a); return 1;
   default: expression (l,a); return 1;
   case '}': l->level--; return 1;
-  case TOK_NEW_LINE:
+//  case TOK_NEW_LINE:
   case '#':
   case ';':
   case ',':
@@ -768,28 +779,29 @@ ASM * core_Init (unsigned int size) {
     DefineAdd("WIN32", 1);
     #endif
     #ifdef __linux__
-    DefineAdd("__linux__", 2);
+    DefineAdd("__linux__", 1);
     #endif
 
     #ifdef __x86_64__
       // 64 bits
-      DefineAdd("__x86_64__", 2);
+      DefineAdd("__x86_64__", 1);
       #ifdef WIN32
       DefineAdd("WINDOWS_64", 1);
       #endif
       #ifdef __linux__
-      DefineAdd("LINUX_64", 2);
+      DefineAdd("LINUX_64", 1);
       #endif
     #else // 64 bits
       // 32 bits
-      DefineAdd("__x86_32__", 2);
+      DefineAdd("__x86_32__", 1);
       #ifdef WIN32
       DefineAdd("WINDOWS_32", 1);
       #endif
       #ifdef __linux__
-      DefineAdd("LINUX_32", 2);
+      DefineAdd("LINUX_32", 1);
       #endif
     #endif // 32 bits
+
     return a;
   }
   return NULL;
@@ -1333,12 +1345,28 @@ static void word_include (LEXER *l, ASM *a) {
 
                 free(incl[icount].text);
             }
+            else Erro ("%s %d | File Not Found: '%s'\n", l->name, l->line, l->token);
             icount--;
 
         }
         else Erro ("%s: %d Max include %d\n", l->name, l->line, icount);
     }
     else Erro ("%s: %d - INCLUDE USAGE: include %cfile_name%c\n", l->name, l->line, '"', '"' );
+}
+
+
+//
+// define TOK_ID  100
+//
+static void word_DEFINE (LEXER *l, ASM *a) {
+  if (lex(l)==TOK_ID) {
+    char name[100];
+    strcpy (name,l->token);
+    if (lex(l)==TOK_NUMBER) {
+      DefineAdd(name,atoi(l->token));
+    }
+    else Erro("%s: %d | USAGE: #define NUMBER\n", l->name, l->line);
+  }
 }
 
 static void word_IFDEF (LEXER *l, ASM *a) {

@@ -1,0 +1,39 @@
+
+//-------------------------------------------------------------------
+// 
+// SG: Summer Graphic ( GL / DirectX / HTML Canvas ):
+//
+// Simple OpenGL Example ...
+//
+// BY: Francisco - gokernel@hotmail.com
+//
+//-------------------------------------------------------------------
+//
+#include "opengl.sg"
+
+function draw () {
+
+    sgBeginScene();
+    sgSet2D(); // set 2D projection mode using OpenGL.
+
+    glColor3ub(255,130,30); // color orange
+
+    glBegin(GL_LINE_LOOP);
+    glVertex3f(100.0,100.0,0.0);
+    glVertex3f(700.0,100.0,0.0);
+    glVertex3f(700.0,500.0,0.0);
+    glVertex3f(100.0,500.0,0.0);
+    glEnd();
+
+    sgEndScene();
+}
+
+
+
+if (sgInit(0,0)) {
+
+    draw();
+
+    sgRun (0);
+}
+

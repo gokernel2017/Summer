@@ -17,6 +17,18 @@
 //
 #include "lex.h"
 
+/*
+#define SAVE_MAX 5
+typedef struct {
+    char  token [ SAVE_MAX+1 ] [LEXER_TOKEN_SIZE + 1];
+    int   pos [ SAVE_MAX+1 ];
+    int   tok [ SAVE_MAX+1 ];
+    int   line [ SAVE_MAX+1 ];
+    int   stack;
+}TSave;
+static TSave save;
+*/
+
 extern void Erro (char *format, ...); // in file: "asm.c"
 
 static char save_token [LEXER_TOKEN_SIZE + 1];
@@ -81,6 +93,7 @@ label_top:
         if (!strcmp(l->token, "if"))        return (l->tok = TOK_IF);
         if (!strcmp(l->token, "function"))  return (l->tok = TOK_FUNCTION);
         if (!strcmp(l->token, "include"))   return (l->tok = TOK_INCLUDE);
+        if (!strcmp(l->token, "define"))    return (l->tok = TOK_DEFINE);
         if (!strcmp(l->token, "ifdef"))     { l->ifdef_block++; return (l->tok = TOK_IFDEF); }
         if (!strcmp(l->token, "endif"))     { l->ifdef_block--; return (l->tok = TOK_ENDIF); }
 
@@ -219,4 +232,41 @@ void lex_restore (LEXER *l) {
   l->tok  = save_tok;
   l->line = save_line;
 }
+
+/*
+void lex_save (LEXER *l) {
+
+//  sprintf (save_token, "%s", l->token);
+//  save_pos  = l->pos;
+//  save_tok  = l->tok;
+//  save_line = l->line;
+
+  if (save.stack < SAVE_MAX)
+      save.stack++;
+
+  sprintf (save.token[save.stack], "%s", l->token);
+  save.pos[save.stack]  = l->pos;
+  save.tok[save.stack]  = l->tok;
+  save.line[save.stack] = l->line;
+
+}
+
+void lex_restore (LEXER *l) {
+
+//  sprintf (l->token, "%s", save_token);
+//  l->pos  = save_pos;
+//  l->tok  = save_tok;
+//  l->line = save_line;
+
+  sprintf (l->token, "%s", save.token[save.stack]);
+  l->pos  = save.pos[save.stack];
+  l->tok  = save.tok[save.stack];
+  l->line = save.line[save.stack];
+  if (save.stack > 0)
+      save.stack--;
+
+
+}
+
+*/
 

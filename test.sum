@@ -4,7 +4,11 @@
 //
 //-------------------------------------------------------------------
 //
-var a = 110, b = 30, i = 1500, f1 = 170.0, f2 = 700.50, buf;
+//var a = 110, b = 30, i = 1500, g = 55, f1 = 170.0, f2 = 700.50, buf;
+
+
+/*
+#define GL_LINE_LOOP 3
 
 //
 // incompatible with JavaScript ... PLEASE WAIT IMPLEMENTATION ...
@@ -15,22 +19,12 @@ function test (int arg) {
     }
 }
 
-/*
-  buf = malloc(100);
+  info(GL_LINE_LOOP);
 
-  asm { sprintf buf "Hello World: %f\n" 150.50 }
-
-  printf (buf);
-
-0000000000401574 <funcao>:
-  401574:	55                   	push   %rbp
-  401575:	48 89 e5             	mov    %rsp,%rbp
-  401578:	b8 9a 19 c9 42       	mov    $0x42c9199a,%eax
-  40157d:	89 45 fc             	mov    %eax,-0x4(%rbp)
-  401580:	f3 0f 10 45 fc       	movss  -0x4(%rbp),%xmm0
-  401585:	5d                   	pop    %rbp
-  401586:	c3                   	retq   
-
+//disasm("test");
 */
-disasm("test");
+
+  var i,g,a,b;
+
+  i = g + a * b;
 

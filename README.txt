@@ -16,8 +16,6 @@
 
  SUMMER LANGUAGE:
 
- https://github.com/gokernel2017/Summer/releases
-
  ----------------------------------------------
 
  01: To compile SUMMER type:

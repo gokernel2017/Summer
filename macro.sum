@@ -1,0 +1,15 @@
+
+var a = 10, b = 20, c = 55, d = 5, i = 7;
+
+#define MACRO 1500
+
+
+//function hello() {
+  MACRO ;
+//}
+
+//  hello();
+//  info(1);
+//  disasm("hello");
+
+

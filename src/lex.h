@@ -44,6 +44,7 @@ enum {
     TOK_IF,
     TOK_FUNCTION,
     TOK_INCLUDE,
+    TOK_DEFINE,
     TOK_IFDEF,
     TOK_ENDIF,
 		//

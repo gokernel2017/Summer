@@ -64,6 +64,8 @@ ASM * GetAsmMain (void) {
 int main (int argc, char *argv[]) {
     FILE *fp;
 
+//printf ("0x0000: %d\n", 0x0000);
+
     if ((a = core_Init(ASM_DEFAULT_SIZE)) == NULL)
   return -1;
 
@@ -139,7 +141,6 @@ int main (int argc, char *argv[]) {
     }
 
     label_end:
-    ASM_FREE (a);
     ASM_FREE (a);
     core_Finalize ();
     printf ("\nExiting With Sucess:\n");

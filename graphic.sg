@@ -21,6 +21,8 @@
 //
 //-------------------------------------------------------------------
 //
+#include "opengl.sg"
+
 var count = 10, buf;
 
 var click = 0;
@@ -28,7 +30,6 @@ var click = 0;
 var x = 0, y = 0, dx = 0, dy = 0, MouseX = 0, MouseY = 0;
 
 var angle_x = 30.0, angle_y = 30.0;
-
 
 function DrawScene () {
 
@@ -47,7 +48,7 @@ function DrawScene () {
     glRotatef (angle_x, 1.0, 0.0, 0.0);
     glRotatef (angle_y, 0.0, 1.0, 0.0);
 
-    draw_cube(2); // #define GL_LINE_LOOP 2
+    draw_cube(GL_LINE_LOOP); // 2
 //    draw_piso();
 
   glPopMatrix ();
@@ -57,8 +58,8 @@ function DrawScene () {
 
     sgEndScene();
 //    sgClear ();
-}
 
+}
 
 //-----------------------------------------------
 //
@@ -89,6 +90,7 @@ function onMouseMove (e) {
 
         DrawScene();
     }
+
 }
 
 function onMouseDown (e) {
@@ -98,6 +100,7 @@ function onMouseDown (e) {
 function onMouseUp (e) {
     click = 0;
 }
+
 
 if (sgInit(0,0)) {
 

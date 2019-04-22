@@ -66,6 +66,7 @@ void gl_PopMatrix (void) { glPopMatrix(); }
 void gl_Rotatef (float angle, float x, float y, float z) { glRotatef (angle,x,y,z); }
 void gl_Translatef (float x, float y, float z) { glTranslatef (x,y,z); }
 void gl_Color3ub (unsigned char r, unsigned char g, unsigned char b) { glColor3ub (r,g,b); }
+void gl_Vertex2f (float x, float y) { glVertex2f (x,y); }
 void gl_Vertex3f (float x, float y, float z) { glVertex3f (x,y,z); }
   #endif
 #endif
@@ -127,6 +128,7 @@ static TFunc stdlib[]={
   { "glTranslatef", "0fff",(UCHAR*)gl_Translatef,0,0,0,NULL},
 
   { "glColor3ub",   "0iii",(UCHAR*)gl_Color3ub,0,0,0,NULL},
+  { "glVertex2f",   "0ff",(UCHAR*)gl_Vertex2f,0,0,0,NULL},
   { "glVertex3f",   "0fff",(UCHAR*)gl_Vertex3f,0,0,0,NULL},
   #endif // ! USE_SDL
 #endif // USE_SG

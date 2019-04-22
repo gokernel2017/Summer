@@ -20,11 +20,12 @@ function draw () {
 
     glColor3ub(255,130,30); // color orange
 
+    // Draw a Rectangle:
     glBegin(GL_LINE_LOOP);
-    glVertex3f(100.0,100.0,0.0);
-    glVertex3f(700.0,100.0,0.0);
-    glVertex3f(700.0,500.0,0.0);
-    glVertex3f(100.0,500.0,0.0);
+    glVertex2f(100.0, 100.0); // -
+    glVertex2f(100.0, 500.0); // |
+    glVertex2f(700.0, 500.0); // -
+    glVertex2f(700.0, 100.0); // |
     glEnd();
 
     sgEndScene();
@@ -34,6 +35,6 @@ if (sgInit(0,0)) {
 
     draw();
 
-    sgRun (0);
+    sgRun(0);
 }
 

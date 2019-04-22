@@ -268,20 +268,6 @@ void sgSet2D (void) {
 #endif
 }
 
-// This set the projection mode 2D.
-void set_2D (void) {
-#ifdef USE_GL
-  #ifndef USE_SDL
-    glDisable (GL_DEPTH_TEST);
-//    glDisable ( GL_CULL_FACE );
-
-//    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity ();
-    glOrtho (0.0, 800, 600, 0.0, 0.0, 1.0);
-  #endif
-#endif
-}
-
 // Silicon Graphics, Inc.
 //
 // glut implementation:
@@ -333,12 +319,12 @@ void draw_cube (GLenum type) {
 
 void draw_piso () {
   int i;
-    glColor3ub (70, 70, 70);
-    glBegin (GL_LINES);
-    for (i=-5; i < 6; i++) {
-        glVertex3f (i, 0.0, -5.0); glVertex3f (i, 0.0, 5.0);
-        glVertex3f (-5.0, 0.0, i); glVertex3f (5.0, 0.0, i);
-    }
-    glEnd ();
+  glColor3ub (70, 70, 70);
+  glBegin (GL_LINES);
+  for (i=-5; i < 6; i++) {
+    glVertex3f (i, 0.0, -5.0); glVertex3f (i, 0.0, 5.0);
+    glVertex3f (-5.0, 0.0, i); glVertex3f (5.0, 0.0, i);
+  }
+  glEnd ();
 }
 

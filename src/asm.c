@@ -18,42 +18,14 @@
 #define REG_MAX		6
 #define STR_ERRO_SIZE		1024
 
-//char *ss = "\x81\x05\xE0\x5A\x47\x00\x01\x00\x00\x00\x11\x22\x33\x44\x55\x66";
-//		emit (a, (UCHAR[]){ 0x48, 0x89, 0xe5 }, 3);
-
-/*
-#include "ChunkEmitters.c"
-
-void emitByte(Byte **buf, Byte x) {
-    *((*buf)++) = x;
-}
-
-void emitShort(Byte **buf, short x) {
-    *((short *) *buf) = x;
-    *buf += 2;
-}
-
-void emitInt(Byte **buf, int x) {
-    *((int *) *buf) = x;
-    *buf += 4;
-}
-
-void emitLong(Byte **buf, long x) {
-    *((long *) *buf) = x;
-    *buf += 8;
-}
-
-*/
-
 static void asm_change_jump (ASM *a);
 
 int erro; // global
 
 static float asmFvalue = 1500.0;
-float f1 = 100.55, f2 = 500.55;
 
 static char strErro [STR_ERRO_SIZE + 1];
-static char *REGISTER[REG_MAX] = { "%eax", "%ecx", "%edx", "%ebx", "%esi", "%edi" };
+//static char *REGISTER[REG_MAX] = { "%eax", "%ecx", "%edx", "%ebx", "%esi", "%edi" };
 // used for expression in register:
 static int	reg; // EAX, ECX, EDX, EBX, ESI, EDI
 
@@ -246,6 +218,7 @@ static void asm_change_jump (ASM *a) {
                 jump->exist = 1;
 
                 switch (jump->type) {
+
                 case ASM_JUMP_JMP:
                     {
                     *(UCHAR*)(a->code+jump_pos-1) = 0xe9; // OPCODE ( jmp )
@@ -253,54 +226,47 @@ static void asm_change_jump (ASM *a) {
                     }
                     break;
 
-                case ASM_JUMP_JG:
+                case ASM_JUMP_JNE:
                     {
                     int r = label_pos - jump_pos - 2;
 
                     if (r == (char)r) { // 2 bytes
-                        // 7f 08                	 jg     4012b1 < _code + number >
+                        // 75 08  |  jne     4012b1 < _code + number >
                         //
-                        *(UCHAR*)(a->code+jump_pos) = 0x7f;
-                        *(UCHAR*)(a->code+jump_pos+1) = r;
-                    } else { // 6 bytes
-                        // 0f 8f    bb 00 00 00     jg     4013a7 < _code + number >
-                        //
-                        *(UCHAR*)(a->code+jump_pos) = 0x0f;
-                        *(UCHAR*)(a->code+jump_pos+1) = 0x8f;
-                        *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
-                    }
-                    }
-                    break;//: case ASM_JUMP_JG:
-//------------------------------------------------------------
-
-// 7c fe                	jl     401293 <label>
-// 0f 8c    5a ff ff ff    	jl     401293 <label>
-                case ASM_JUMP_JL:
-                    {
-                    int r = label_pos - jump_pos - 2;
-
-                    if (r == (char)r) { // 2 bytes
-                        //  7c fe     jl    40129e <_my_loop+0xe>
-                        //
-                        *(char*)(a->code+jump_pos) = 0x7c;
+                        *(char*)(a->code+jump_pos) = 0x75;
                         *(char*)(a->code+jump_pos+1) = r;
                     } else {
-                        // 0f 8c    96 00 00 00    jl   40133e <_my_loop+0xa9>
+                        // 0f 85    85 ed bf ff   jne    401293 < _code + number >
                         //
                         *(char*)(a->code+jump_pos) = 0x0f;
-                        *(char*)(a->code+jump_pos+1) = 0x8c;
+                        *(char*)(a->code+jump_pos+1) = 0x85;
                         *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
                     }
                     }
                     break;
 
-//------------------------------------------------------------
+                case ASM_JUMP_JLE:
+                    {
+                    int r = label_pos - jump_pos - 2;
+                    if (r == (char)r) { // 2 bytes
+                        // 7e 06  |  jle    40165a < code + number >
+                        //
+                        *(UCHAR*)(a->code+jump_pos) = 0x7e;
+                        *(UCHAR*)(a->code+jump_pos+1) = r;
+                    } else {
+                        // 0f 8e    d3 00 00 00    	jle    401733 < code + number >
+                        //
+                        *(UCHAR*)(a->code+jump_pos) = 0x0f;
+                        *(UCHAR*)(a->code+jump_pos+1) = 0x8e;
+                        *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
+                    }
+                    } break;//: case JUMP_JUMP_JLE: {
 
                 case ASM_JUMP_JGE:
                     {
                     int r = label_pos - jump_pos - 2;
                     if (r == (char)r) { // 2 bytes
-                        // 7d 06                	jge    40165f < code + number>
+                        // 7d 06  |  jge    40165f < code + number>
                         //
                         *(UCHAR*)(a->code+jump_pos) = 0x7d;
                         *(UCHAR*)(a->code+jump_pos+1) = r;
@@ -314,34 +280,35 @@ static void asm_change_jump (ASM *a) {
                     }
                     break;//: case JUMP_TYPE_JGE:
 
-                case ASM_JUMP_JLE:
+                case ASM_JUMP_JG:
                     {
                     int r = label_pos - jump_pos - 2;
+
                     if (r == (char)r) { // 2 bytes
-                        // 7e 06                	jle    40165a < code + number >
+                        // 7f 08  |  jg     4012b1 < _code + number >
                         //
-                        *(UCHAR*)(a->code+jump_pos) = 0x7e;
+                        *(UCHAR*)(a->code+jump_pos) = 0x7f;
                         *(UCHAR*)(a->code+jump_pos+1) = r;
-                    } else {
-                        // 0f 8e    d3 00 00 00    	jle    401733 < code + number >
+                    } else { // 6 bytes
+                        // 0f 8f    bb 00 00 00     jg     4013a7 < _code + number >
                         //
                         *(UCHAR*)(a->code+jump_pos) = 0x0f;
-                        *(UCHAR*)(a->code+jump_pos+1) = 0x8e;
+                        *(UCHAR*)(a->code+jump_pos+1) = 0x8f;
                         *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
                     }
-                    } break;//: case JUMP_JUMP_JLE: {
-
+                    }
+                    break;//: case ASM_JUMP_JG:
 
                 case ASM_JUMP_JE:
                     {
                     int r = label_pos - jump_pos - 2;
                     if (r == (char)r) { // 2 bytes
-                        //  40129a:	74 02     je    40129e <_my_loop+0xe>
+                        // 74 02  |  je    40129e <_my_loop+0xe>
                         //
                         *(char*)(a->code+jump_pos) = 0x74;
                         *(char*)(a->code+jump_pos+1) = r;
                     } else {
-                        // 4012a2:	0f 84    96 00 00 00    je   40133e <_my_loop+0xa9>
+                        // 0f 84    96 00 00 00    je   40133e <_my_loop+0xa9>
                         //
                         *(char*)(a->code+jump_pos) = 0x0f;
                         *(char*)(a->code+jump_pos+1) = 0x84;
@@ -350,21 +317,20 @@ static void asm_change_jump (ASM *a) {
                     }
                     break;
 
-
-                case ASM_JUMP_JNE:
+                case ASM_JUMP_JL:
                     {
                     int r = label_pos - jump_pos - 2;
 
                     if (r == (char)r) { // 2 bytes
-                        // 75 08                	 jne     4012b1 < _code + number >
+                        // 7c fe  |  jl    40129e <_my_loop+0xe>
                         //
-                        *(char*)(a->code+jump_pos) = 0x75;
+                        *(char*)(a->code+jump_pos) = 0x7c;
                         *(char*)(a->code+jump_pos+1) = r;
                     } else {
-                        // 0f 85    85 ed bf ff   jne    401293 < _code + number >
+                        // 0f 8c    96 00 00 00    jl   40133e <_my_loop+0xa9>
                         //
                         *(char*)(a->code+jump_pos) = 0x0f;
-                        *(char*)(a->code+jump_pos+1) = 0x85;
+                        *(char*)(a->code+jump_pos+1) = 0x8c;
                         *(int*) (a->code+jump_pos+2) = (int)(label_pos - jump_pos - 6);
                     }
                     }
@@ -482,6 +448,15 @@ void emit_incl (ASM *a, void *var) { //: 32/64 BITS OK
   g2(a,0xff,0x05); asm_get_addr(a,var);       // ff 05      00 20 40 00   : incl   0x402000
   #endif
 }
+
+void emit_decl (ASM *a, void *var) { //: 32/64 BITS OK
+    #if defined(__x86_64__)
+    g3(a,0xff,0x0c,0x25); asm_get_addr(a, var);  // ff 0c 25   cc 0a 60 00   decl  0x600acc
+    #else
+    g2(a,0xff,0x0d); asm_get_addr(a, var);  // ff 0d      00 20 40 00   decl  0x402000
+    #endif
+}
+
 
 // mov $0x3e8, %eax
 void emit_mov_long_reg (ASM *a, long value, int reg) {
@@ -1044,8 +1019,8 @@ void emit_expression_div_long (ASM *a) {
     pop_register();
     if (reg == ECX) {
         // DEBUG !
-        printf ("  cltd\n");
-        printf ("  idiv %s\n", REGISTER[reg]);
+//        printf ("  cltd\n");
+//        printf ("  idiv %s\n", REGISTER[reg]);
         // emit ...
         g(a,0x99);        // 99       cltd
         g2(a,0xf7,0xf9);  // f7 f9    idiv   %ecx

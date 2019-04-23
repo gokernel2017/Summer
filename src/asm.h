@@ -145,6 +145,7 @@ LIBIMPORT void		emit 							(ASM *a, const UCHAR opcode[], unsigned int len);
 LIBIMPORT void 		emit_begin				(ASM *a);							// 32/64 BITS OK
 LIBIMPORT void 		emit_end 					(ASM *a);							// 32/64 BITS OK
 LIBIMPORT void 		emit_incl					(ASM *a, void *var);	// 32/64 BITS OK
+LIBIMPORT void    emit_decl         (ASM *a, void *var); //: 32/64 BITS OK
 LIBIMPORT void		emit_mov_long_reg	(ASM *a, long value, int reg); // mov $1000, %eax
 LIBIMPORT void 		emit_mov_var_reg	(ASM *a, void *var, int reg); // 32/64 BITS OK: Move variable to %register
 LIBIMPORT void		emit_mov_reg_var	(ASM *a, int reg, void *var); // 32/64 BITS OK: Move %register to variable

@@ -42,6 +42,8 @@ enum {
 		TOK_VAR,
     TOK_ASM,
     TOK_IF,
+    TOK_FOR,
+    TOK_BREAK,
     TOK_FUNCTION,
     TOK_INCLUDE,
     TOK_DEFINE,

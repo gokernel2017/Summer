@@ -25,6 +25,8 @@ static void word_int (LEXER *l, ASM *a);
 static void word_var (LEXER *l, ASM *a); // int, float
 static void word_asm (LEXER *l, ASM *a);
 static void word_if (LEXER *l, ASM *a);
+static void word_for (LEXER *l, ASM *a);
+static void word_break (LEXER *l, ASM *a);
 static void word_function (LEXER *l, ASM *a);
 static void word_include (LEXER *l, ASM *a);
 static void word_DEFINE (LEXER *l, ASM *a);
@@ -37,6 +39,8 @@ static void expr3 (LEXER *l, ASM *a);
 static void atom (LEXER *l, ASM *a);
 static int stmt (LEXER *l, ASM *a);
 static int see (LEXER *l);
+static int ModuleIsLib (char *LibName);
+static TFunc *ModuleFind (char *LibName, char *FuncName);
 
 TFstring *fs_new (char *s);
 
@@ -153,13 +157,18 @@ static INCLUDE incl [MAX_INCLUDE + 1];
 static int icount;
 //-------------------------------------
 static TFunc *Gfunc = NULL;
+static TModule *Gmodule = NULL;
 static TFstring *fs = NULL;
 static TDefine *Gdefine = NULL;
 static TArg argument [20];
-static char func_name [100];
+static char
+  func_name [100],
+  array_break [20][20]   // used to word break
+  ;
 static int
   is_function,
   is_recursive,
+  loop_level,
   main_variable_type,
   var_type,
   argument_count,
@@ -177,34 +186,32 @@ static int expr0 (LEXER *l, ASM *a) {
     //
     //---------------------------------------
     if (see(l)=='=') {
-      int i = 1;
+      int i;
       if ((i = VarFind(l->token)) != -1) {
         lex_save (l); // save the lexer position
         if (lex(l)=='=') {
           lex(l);
           expr1(l,a);
-          if (main_variable_type==TYPE_FLOAT) {
+          if (Gvar[i].type==TYPE_FLOAT) {
             emit_float_fstps (a, &Gvar[i].value.f);
           } else {
             emit_mov_reg_var (a, EAX, &Gvar[i].value.l);
           }
           return i;
-        } else {
-          lex_restore (l); // restore the lexer position
         }
+        else lex_restore (l); // restore the lexer position
       }// if ((i = VarFind(l->token)) != -1)
-    }//: if (see(l)=='=')
+    }// if (see(l)=='=')
   }
-  expr1 (l, a);
+  expr1(l, a);
   return -1;
 }
 static void expr1 (LEXER *l, ASM *a) { // '+' '-' : ADDITION | SUBTRACTION
   int op;
-  expr2 (l, a);
+  expr2(l, a);
   while ((op=l->tok) == '+' || op == '-') {
     lex(l);
     expr2(l,a);
-    //if (var_type==TYPE_FLOAT) {
     if (main_variable_type==TYPE_FLOAT) {
       if (op=='+') emit_add_float(a);
       if (op=='-') emit_sub_float(a);
@@ -219,9 +226,8 @@ static void expr2 (LEXER *l, ASM *a) { // '*' '/' : MULTIPLICATION | DIVISION
   int op;
   expr3(l,a);
   while ((op=l->tok) == '*' || op == '/') {
-    lex (l);
-    expr3 (l, a);
-//    if (var_type==TYPE_FLOAT) {
+    lex(l);
+    expr3(l, a);
     if (main_variable_type==TYPE_FLOAT) {
       if (op=='*') emit_mul_float(a);
       if (op=='/') emit_div_float(a);
@@ -243,6 +249,7 @@ static void expr3 (LEXER *l, ASM *a) { // '('
   }
   else atom(l,a);
 }
+
 static void atom (LEXER *l, ASM *a) { // expres
     if (l->tok == TOK_STRING) {
         TFstring *s = fs_new (l->token);
@@ -433,30 +440,36 @@ static void atom (LEXER *l, ASM *a) { // expres
 				printf ("ATOM ERRO TOKEN(%s) ... SAINDO\n", l->token);
 				Erro("%s: %d Expression atom - Ilegal Word (%s)\n", l->line, l->token);
 		}
-}// atom ()
+}// atom()
 
 void expression (LEXER *l, ASM *a) {
 
     if (l->tok==TOK_STRING) { // OK !
         TFstring *s = fs_new (l->token);
         if (s) {
-						emit_print_string (a, s->s);
+            emit_print_string (a, s->s);
         }
         return;
     }
 
     if (l->tok==TOK_ID || l->tok==TOK_NUMBER) {
-				TFunc *fi;
-				int i, next;
+        TFunc *fi;
+        int i, next;
 
-        if (l->tok==TOK_NUMBER && strchr(l->token, '.'))
-            main_variable_type = var_type = TYPE_FLOAT;
-        else
-            main_variable_type = var_type = TYPE_LONG; // 0
+        next = see(l);
 
-				next = see(l);
+        if (next=='.' && ModuleIsLib(l->token)) { // ! console.log();
+            char buf[100];
+            lex_save(l);
+            sprintf (buf, "%s", l->token); // TModule.name: := "console"
+            lex(l); // .
+            if (lex(l)==TOK_ID && (fi = ModuleFind (buf, l->token)) != NULL) { // ! FuncName in TModule
+                execute_call (l, a, fi);
+          return;
+            }
+            else lex_restore(l);
+        }
 
-        //
         // call a function without return:
         //   function_name (...);
         //
@@ -465,14 +478,19 @@ void expression (LEXER *l, ASM *a) {
             return;
         }
 
+        if (l->tok==TOK_NUMBER && strchr(l->token, '.'))
+            main_variable_type = var_type = TYPE_FLOAT;
+        else
+            main_variable_type = var_type = TYPE_LONG; // 0
+
         if ((i = VarFind(l->token)) != -1) {
+
             main_variable_type = var_type = Gvar[i].type;
-						// ...
+
             if (next=='=') {
                 lex_save(l); // save the lexer position
                 lex(l); // =
                 if (lex(l)==TOK_ID) {
-
 /*
                     if (see(l)=='.' && ModuleIsLib(l->token)) {
                         lex_save(l); // save the lexer position
@@ -518,15 +536,15 @@ void expression (LEXER *l, ASM *a) {
                             emit_mov_reg_var(a, EAX, &Gvar[i].value.l);
                         }
 
-                  return;
+                        return;
                     }//: if ((fi = FuncFind(l->token)) != NULL)
 
                 }
                 lex_restore(l); // restore the lexer position
 
-            }// if (next=='=')
+            }// if (see(l)=='=')
 
-				}// if ((i = VarFind(l->token)) != -1)
+        }// if ((i = VarFind(l->token)) != -1)
 
         //---------------------------------------
         // Expression types:
@@ -535,14 +553,14 @@ void expression (LEXER *l, ASM *a) {
         //   i;
         //---------------------------------------
         //
-				asm_expression_reset(); // reg = 0;
-				if (expr0(l,a) == -1) { // Expression: a + b;
-						int new_line = 0;
-						if (l->tok==';')
-								new_line = 1;
-						// display the expression result
-						emit_pop_print_result (a, main_variable_type, new_line);
-				}
+        asm_expression_reset(); // reg = 0;
+        if (expr0(l,a) == -1) { // Expression: a + b;
+            int new_line = 0;
+            if (l->tok==';')
+                new_line = 1;
+            // display the expression result
+            emit_pop_print_result (a, main_variable_type, new_line);
+        }
     }
     else Erro("%s: %d | Expression ERRO - Ilegar Word (%s)\n", l->name, l->line, l->token);
 }
@@ -567,13 +585,14 @@ static int stmt (LEXER *l, ASM *a) {
   case TOK_VAR: word_var (l,a); return 1;
   case TOK_ASM: word_asm (l,a); return 1;
   case TOK_IF: word_if (l,a); return 1;
+  case TOK_FOR: word_for (l,a); return 1;
+  case TOK_BREAK: word_break (l,a); return 1;
   case TOK_FUNCTION: word_function (l,a); return 1;
   case TOK_INCLUDE: word_include (l,a); return 1;
   case TOK_DEFINE: word_DEFINE(l,a); return 1;
   case TOK_IFDEF: word_IFDEF (l,a); return 1;
   default: expression (l,a); return 1;
   case '}': l->level--; return 1;
-//  case TOK_NEW_LINE:
   case '#':
   case ';':
   case ',':
@@ -769,6 +788,53 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 		emit_call (a, func->code, (UCHAR)count, 0);
 }
 
+void core_ModuleAdd (char *module_name, char *func_name, char *proto, UCHAR *code) {
+    TModule *mod, *p = Gmodule;
+    TFunc *func;
+
+    while (p) {
+        if (!strcmp(module_name, p->name)) {
+            if ((func = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
+                func->name = strdup (func_name);
+                func->proto = strdup (proto);
+                func->type = FUNC_TYPE_NATIVE_C;
+                func->len = 0;
+                func->code = code;
+
+                // add on top;
+                func->next = p->func;
+                p->func = func;
+          return;
+            }
+        }
+        p = p->next;
+    }
+    //
+    // create: MODULE and FUNCTION.
+    //
+    if ((mod = (TModule*) malloc(sizeof(TModule))) != NULL) {
+        if ((func = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
+            func->name = strdup (func_name);
+            func->proto = strdup (proto);
+            func->type = FUNC_TYPE_NATIVE_C;
+            func->len = 0;
+            func->code = code;
+
+            mod->name = strdup(module_name);
+
+            mod->func = NULL;
+
+            // add function on top
+            func->next = mod->func;
+            mod->func = func;
+
+            // add module on top
+            mod->next = Gmodule;
+            Gmodule = mod;
+        }
+    }
+}
+
 ASM * core_Init (unsigned int size) {
   static int init = 0;
   if (!init) {
@@ -776,6 +842,8 @@ ASM * core_Init (unsigned int size) {
     init = 1;
     if ((a =            asm_New(size, "main")) == NULL) return NULL;
     if ((asm_function = asm_New(size, "asm_function")) == NULL) return NULL;
+
+    core_ModuleAdd ("console", "log", "0s", (UCHAR*)lib_printf);
 
     #ifdef WIN32
     DefineAdd("WIN32", 1);
@@ -979,6 +1047,62 @@ int VarFind (char *name) {
     v++;
   }
   return -1;
+}
+
+TFunc *ModuleFind (char *LibName, char *FuncName) {
+    TModule *p = Gmodule;
+//    TModule *pnew = NULL;
+    while (p) {
+        if (!strcmp(p->name, LibName)) {
+            TFunc *f = p->func;
+//            pnew = p;
+            while (f) {
+                if (!strcmp(f->name, FuncName)) {
+              return f;
+                }
+                f = f->next;
+            }
+        }
+        p = p->next;
+    }
+/*
+    //
+    // ! create new, if function exist in library:
+    //
+    if (pnew != NULL) {
+        #ifdef WIN32
+        void *fp = (void*)GetProcAddress ((HMODULE)pnew->lib, FuncName);
+        #endif
+        #ifdef __linux__
+        void *fp = dlsym (pnew->lib, FuncName);
+        #endif
+        TFunc *fn;
+        if (fp && (fn = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
+            fn->name = strdup (FuncName);
+            fn->proto = strdup ("ii");
+            fn->type = FUNC_TYPE_MODULE;
+            fn->len = 0;
+            fn->code = (UCHAR*)fp;
+            //
+            // add in Gmodule ... on top
+            //
+            fn->next = pnew->func;
+            pnew->func = fn;
+      return fn;
+        }
+    }
+*/
+    return NULL;
+}
+
+int ModuleIsLib (char *LibName) {
+    TModule *p = Gmodule;
+    while (p) {
+        if (!strcmp(p->name, LibName))
+      return 1;
+        p = p->next;
+    }
+    return 0;
 }
 
 TFstring *fs_new (char *s) {
@@ -1240,6 +1364,151 @@ static void word_function (LEXER *l, ASM *a) {
 
 }// word_function ()
 
+static void word_break (LEXER *l, ASM *a) {
+    if (loop_level) {
+        emit_jump_jmp (a, array_break[loop_level]);
+    }
+    else Erro ("%s: %d: word 'break' need a loop", l->name, l->line);
+}
+
+//
+// for (;;) { ... }
+// for (i = 0; i < 100; i++) { ... }
+//
+static void word_for (LEXER *l, ASM *a) {
+    //####### to "push/pop"
+    //
+    static char array[20][20];
+    static int for_count_total = 0;
+    static int for_count = 0;
+
+    if (lex(l) != '(') {
+        Erro ("%s: %d: ERRO FOR, dont found char: '('", l->name, l->line);
+        return;
+    }
+    lex (l);
+
+    // for (;;) { ... }
+    //
+    if (l->tok == ';' && lex(l) == ';') {
+        if (lex(l) != ')') {
+            Erro ("ERRO FOR, dont found char: ')'");
+            return;
+        }
+        if (see(l) != '{') { // ! check block '{'
+            Erro ("ERRO FOR, dont found char: '{'");
+            return;
+        }
+
+loop_level++;  // <<<<<<<<<<  ! PUSH  >>>>>>>>>>
+
+        for_count++;
+        for_count_total++;
+        sprintf (array[for_count], "FOR_%d", for_count_total);
+        sprintf (array_break[loop_level], "FOR_END%d", for_count_total); // used for break
+        asm_Label(a, array[for_count]);
+
+        stmt (l,a); //<<<<<<<<<<  block  >>>>>>>>>>
+
+        emit_jump_jmp (a, array[for_count]);
+
+        asm_Label (a, array_break[loop_level]); // used to break
+        for_count--;
+
+loop_level--;  // <<<<<<<<<<  ! POP  >>>>>>>>>>
+    } else {
+        int i; // var index
+        int type = 0; // <  >  ==  !=
+        int inc = 0; // ++, --
+        int var_count = -1, number_count = 0;
+
+        // for (i = 10; i < 100; i++) { ... }
+        asm_expression_reset(); // reg = 0;
+        i = expr0 (l,a);
+        if (i != -1) {
+            lex(l);
+            if (!strcmp(Gvar[i].name, l->token)) {
+                // < >  ==  !=
+                type = lex(l);
+                lex(l); // get number or variable
+                var_count = VarFind (l->token);
+                if (var_count == -1) {
+                    number_count = atoi (l->token);
+                }
+                while (lex(l)) {
+                    if (l->tok == TOK_PLUS_PLUS)   inc = TOK_PLUS_PLUS;
+                    if (l->tok == TOK_MINUS_MINUS) inc = TOK_MINUS_MINUS;
+                    if (l->tok == ')') break;
+                }
+                if (l->tok == ')' && see(l)=='{') {
+
+loop_level++;
+                    for_count++;
+                    for_count_total++;
+                    sprintf (array[for_count], "FOR_%d", for_count_total);
+                    sprintf (array_break[loop_level], "FOR_END%d", for_count_total); // used for break
+
+//-------------------------------------------------------------------
+//<<<<<<<<<<<<<<<<<<<<<<<  " TOP OF LOOP "  >>>>>>>>>>>>>>>>>>>>>>>>>
+//-------------------------------------------------------------------
+
+                    asm_Label (a, array[for_count]);
+
+                    if (var_count == -1) {
+                        emit_mov_long_reg(a, number_count, EAX);
+                    } else {
+                        emit_mov_var_reg (a, &Gvar[var_count].value.l, EAX);
+                    }
+                    emit_cmp_eax_var (a, &Gvar[i].value.l);
+
+                    //
+                    // ! Jump to: " END OF LOOP "
+                    //
+                    if (type == '>') emit_jump_jle (a, array_break[loop_level]);
+                    else
+                    if (type == '<') emit_jump_jge (a, array_break[loop_level]);
+                    else
+                    {
+                        printf ("Not found: %d\n", type);
+                        Erro ("< > == !=");
+                    }
+
+                    //---------------------------------------------------------------
+                    // process the block starting from string char: '{'
+                    //---------------------------------------------------------------
+                    //
+                    stmt (l,a);  //<<<<<<<<<<  block  >>>>>>>>>>
+
+                    if (inc == TOK_PLUS_PLUS)
+                        emit_incl (a, &Gvar[i].value.l);
+                    else if (inc == TOK_MINUS_MINUS)
+                        emit_decl (a, &Gvar[i].value.l);
+
+                    //
+                    // Jump to: " TOP OF LOOP "
+                    //
+                    emit_jump_jmp (a, array[for_count]);
+
+                    asm_Label(a, array_break[loop_level]); // used to break
+                    for_count--;
+
+//-------------------------------------------------------------------
+//<<<<<<<<<<<<<<<<<<<<<<<  " END OF LOOP "  >>>>>>>>>>>>>>>>>>>>>>>>>
+//-------------------------------------------------------------------
+
+loop_level--;
+                }// if (l->tok == ')' && see(l)=='{')
+                else Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
+            }
+            else Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
+
+        }// if (i != -1)
+        else Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
+
+    }// } else {
+
+}// word_for ()
+
 static void word_if (LEXER *l, ASM *a) {
     //**** to "push/pop"
     static char array[20][20];
@@ -1480,6 +1749,17 @@ void lib_info (int arg) {
             }
             fi = fi->next;
         }
+        TModule *p = Gmodule;
+        while (p) {
+            TFunc *f = p->func;
+            printf ("MODULE: '%s'\n", p->name);
+            while (f) {
+                printf ("  '%s'\n", f->name);
+                f = f->next;
+            }
+            p = p->next;
+        }
+
 				}
         break;
 

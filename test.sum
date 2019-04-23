@@ -4,27 +4,16 @@
 //
 //-------------------------------------------------------------------
 //
-//var a = 110, b = 30, i = 1500, g = 55, f1 = 170.0, f2 = 700.50, buf;
-
-
-/*
-#define GL_LINE_LOOP 3
+var a = 110, b = 30, i = 1500, g = 55, f1 = 170.0, f2 = 700.50, buf;
 
 //
 // incompatible with JavaScript ... PLEASE WAIT IMPLEMENTATION ...
 //
 function test (int arg) {
     if (a > 70) {
-        printi (arg);
+        console.log ("arg: %d", arg);
     }
 }
 
-  info(GL_LINE_LOOP);
-
-//disasm("test");
-*/
-
-  var i,g,a,b;
-
-  i = g + a * b;
+  test (12345);
 

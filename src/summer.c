@@ -20,9 +20,9 @@
 #define PROG_SIZE     70000
 #define STRING_SIZE   1024
 
-LEXER l;
-ASM *a;
-char string [STRING_SIZE + 1];
+static ASM *a;
+static LEXER l;
+static char string [STRING_SIZE + 1];
 
 #ifdef USE_APPLICATION
 OBJECT *console = NULL;
@@ -50,7 +50,6 @@ void call_console (int msg) {
         } else {
             if (iten_color) iten_color->color = COLOR_ERRO;
             app_ConsoleAdd(console, ErroGet(), COLOR_WHITE);
-//printf ("%s\n", ErroGet());
         }
         app_ConsoleSetText(console, "$");
     }
@@ -63,11 +62,36 @@ ASM * GetAsmMain (void) {
 
 int main (int argc, char *argv[]) {
     FILE *fp;
+    int i, is_string = 0;
 
-//printf ("0x0000: %d\n", 0x0000);
+    for (i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "-s") && argc > i+1) is_string = i+1;
+        if (!strcmp(argv[i], "-h")) {
+            printf ("Summer Language Help:\n");
+            printf ("OPTIONS:\n");
+            printf ("  -h   : Display this help.\n");
+            printf ("  -s   : Run a 'string' program.\n");
+      return 0;
+        }
+    }
 
-    if ((a = core_Init(ASM_DEFAULT_SIZE)) == NULL)
+    if ((a = core_Init (ASM_DEFAULT_SIZE)) == NULL)
   return -1;
+
+    // execute a string and exit:
+    //
+    // sum -s "int a=100, b=200; a=b; a;"
+    //
+    if (is_string) {
+        if (core_Parse(&l, a, argv[is_string], "string") == 0) {
+            if (asm_SetExecutable_ASM(a, 0) == 0) {
+                asm_Run (a); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
+            }
+            else printf ("ERRO:\n%s\n", ErroGet());
+        }
+        else printf ("ERRO:\n%s\n", ErroGet());
+        goto label_end;
+    }
 
     if (argc >= 2 && (fp = fopen (argv[1], "r")) != NULL) {
         char prog [PROG_SIZE + 1];
@@ -89,9 +113,9 @@ int main (int argc, char *argv[]) {
         else printf ("ERRO:\n%s", ErroGet());
 
     } else {
-    //-------------------------------------------
-    // INTERACTIVE MODE:
-    //-------------------------------------------
+    //---------------------------------------------------------------
+    // BEGIN INTERACTIVE MODE:
+    //---------------------------------------------------------------
 
         if (asm_SetExecutable_ASM(a, ASM_DEFAULT_SIZE - 2) != 0) {
             printf ("\n%s\n", ErroGet());
@@ -104,7 +128,7 @@ int main (int argc, char *argv[]) {
                 app_SetSize (console, screen->w-100, 0);
                 app_SetCall (console, call_console);
                 app_SetFocus (console);
-                app_Run(NULL);
+                app_Run (NULL);
             }
         }
 #else
@@ -138,6 +162,10 @@ int main (int argc, char *argv[]) {
             else printf ("ERRO:\n%s", ErroGet());
         }
 #endif
+
+    //---------------------------------------------------------------
+    // END INTERACTIVE MODE:
+    //---------------------------------------------------------------
     }
 
     label_end:

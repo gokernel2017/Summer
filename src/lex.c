@@ -91,6 +91,8 @@ label_top:
         if (!strcmp(l->token, "var"))       return (l->tok = TOK_VAR);
         if (!strcmp(l->token, "asm"))       return (l->tok = TOK_ASM);
         if (!strcmp(l->token, "if"))        return (l->tok = TOK_IF);
+        if (!strcmp(l->token, "for"))       return (l->tok = TOK_FOR);
+        if (!strcmp(l->token, "break"))     return (l->tok = TOK_BREAK);
         if (!strcmp(l->token, "function"))  return (l->tok = TOK_FUNCTION);
         if (!strcmp(l->token, "include"))   return (l->tok = TOK_INCLUDE);
         if (!strcmp(l->token, "define"))    return (l->tok = TOK_DEFINE);

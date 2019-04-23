@@ -63,6 +63,8 @@
    var (int, float),
    asm,
    if ( NEED MORE IMPLEMENTATION ),
+   for,
+   break,
    function,
    #include,
    #define,

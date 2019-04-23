@@ -93,6 +93,7 @@ enum {
 typedef union  VALUE    VALUE;
 typedef struct TVar     TVar;
 typedef struct TFunc    TFunc;
+typedef struct TModule  TModule;
 typedef struct TFstring	TFstring; // fixed string
 typedef struct TDefine	TDefine;
 typedef struct TArg     TArg;
@@ -117,6 +118,12 @@ struct TFunc {
     int     len;
     int     sub_esp;  // used only in dynamic modules: .dll | .so
     TFunc   *next;
+};
+struct TModule {
+    char    *name;
+    void    *lib;
+    TFunc   *func;
+    TModule *next;
 };
 struct TFstring {
     char *s;

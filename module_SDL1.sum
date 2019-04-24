@@ -2,8 +2,16 @@
 //
 // Module example using SDL 1.x
 //
+// FILE:
+//   module_SDL1.sum
+//
 // INFO:
 //   Not implemented for Linux 64 bits
+//
+// FOR SUMMER VERSION 0.71.0
+//
+// USAGE:
+//   sum module_SDL1.sum
 //
 //-------------------------------------------------------------------
 //

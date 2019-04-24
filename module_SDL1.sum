@@ -1,0 +1,34 @@
+//-------------------------------------------------------------------
+//
+// Module example using SDL 1.x
+//
+// INFO:
+//   Not implemented for Linux 64 bits
+//
+//-------------------------------------------------------------------
+//
+#ifdef WIN32
+    module ("SDL",    "sdl"); // in Windows:  "SDL.dll"
+#endif
+#ifdef __linux__
+    module ("libSDL", "sdl"); // in Linux:    "libSDL.so"
+#endif
+
+//----------------------------------------------------------
+//      lib_name:   func_name:            proto:    sub_esp:
+//----------------------------------------------------------
+import ("sdl",      "SDL_Init",           "0i",     0);
+import ("sdl",      "SDL_SetVideoMode",   "piiii",  0);
+import (0,          "SDL_Delay",          "0i",     0);
+import (0,          "SDL_Quit",           "00",     0);
+
+  sdl.SDL_Init (32);
+
+  sdl.SDL_SetVideoMode (800, 600, 16, 0); // color 16
+
+  console.log ("Plase Wait 3 Seconds ...");
+
+  SDL_Delay (3000);
+
+  SDL_Quit ();
+

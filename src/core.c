@@ -29,6 +29,8 @@ static void word_for (LEXER *l, ASM *a);
 static void word_break (LEXER *l, ASM *a);
 static void word_function (LEXER *l, ASM *a);
 static void word_include (LEXER *l, ASM *a);
+static void word_import (LEXER *l, ASM *a);
+static void word_module (LEXER *l, ASM *a);
 static void word_DEFINE (LEXER *l, ASM *a);
 static void word_IFDEF (LEXER *l, ASM *a);
 
@@ -589,6 +591,8 @@ static int stmt (LEXER *l, ASM *a) {
   case TOK_BREAK: word_break (l,a); return 1;
   case TOK_FUNCTION: word_function (l,a); return 1;
   case TOK_INCLUDE: word_include (l,a); return 1;
+  case TOK_MODULE: word_module (l,a); return 1;
+  case TOK_IMPORT: word_import (l,a); return 1;
   case TOK_DEFINE: word_DEFINE(l,a); return 1;
   case TOK_IFDEF: word_IFDEF (l,a); return 1;
   default: expression (l,a); return 1;
@@ -1663,6 +1667,165 @@ static void word_IFDEF (LEXER *l, ASM *a) {
     }
     else Erro ("%s: %d: USAGE: ifdef name\n", l->name, _line_);
 }
+
+//
+// library ("SDL", "sdl");
+//
+static void word_module (LEXER *l, ASM *a) {
+    char FileName [100] = { 0 };
+    char LibName  [100] = { 0 };
+    void *lib = NULL;
+    int count = 0;
+
+#ifdef __linux__
+    #ifdef __x86_64__
+    Erro ("%s: %d | MODULE Not For Linux 64 bits ... PLEASE WAIT IMPLEMENTATION !!!\n", l->name, l->line);
+    return;
+    #endif
+#endif
+
+    while (lex(l)) {
+        if (l->tok==TOK_STRING) {
+            if (count==0) {
+                #ifdef WIN32
+                sprintf (FileName, "%s.dll", l->token);
+                #endif
+                #ifdef __linux__
+                sprintf (FileName, "%s.so", l->token);
+                #endif
+            } else if (count==1) {
+                sprintf (LibName, "%s", l->token);
+            }
+            count++;
+        }
+        if (l->tok==')' || l->tok==';') break;
+    }
+
+    //
+    // is module exist then return
+    //
+    TModule *mod, *p = Gmodule;
+    while (p) { // ! if exist
+        if (!strcmp(p->name, LibName))
+      return;
+        p = p->next;
+    }
+
+    #ifdef WIN32
+    lib = (void *)LoadLibrary (FileName);
+    #endif
+    #ifdef __linux__
+    lib = dlopen (FileName, RTLD_NOW); // RTLD_LAZY); // RTLD_NOW
+    #endif
+    if (lib && (mod = (TModule*) malloc(sizeof(TModule))) != NULL) {
+        mod->name = strdup(LibName);
+        mod->lib = lib;
+        mod->func = NULL;
+        mod->next = NULL;
+        // add on top
+        mod->next = Gmodule;
+        Gmodule = mod;
+        printf ("Module Loaded: '%s'\n", FileName);
+    } else {
+        //Erro("%s: %d: File Not Found: '%s'\n", l->name, l->line, FileName);
+        printf ("%s: %d: File Not Found: '%s'\n", l->name, l->line, FileName);
+    }
+}
+//
+// import ("sdl", "SDL_init", "0i", 0);
+// import (0, "SDL_init", "0i", 0);
+//
+static void word_import (LEXER *l, ASM *a) {
+    char LibName[100] = { '0', 0 };
+    char FuncName[100] = { 0 };
+    char proto[100] = { '0', '0', 0 };
+    int sub = 0;
+    TModule *p = Gmodule;
+    void *fp = NULL;
+    TFunc *func = NULL;
+    int count = 0;
+
+#ifdef __linux__
+    #ifdef __x86_64__
+    Erro ("%s: %d | IMPORT Not For Linux 64 bits ... PLEASE WAIT IMPLEMENTATION !!!\n", l->name, l->line);
+    return;
+    #endif
+#endif
+
+    while (lex(l)) {
+        if (l->tok==TOK_STRING || l->tok==TOK_NUMBER) {
+            if (count==0) {
+                sprintf (LibName, "%s", l->token);
+            } else if (count==1) {
+                sprintf (FuncName, "%s", l->token);
+            } else if (count==2) {
+                sprintf(proto, "%s", l->token);
+            } else if (count==3) { // sub_esp
+                sub = atoi(l->token);
+            }
+            count++;
+        }
+        if (l->tok==')' || l->tok==';') break;
+    }
+
+    if (LibName[0]=='0') {
+        #ifdef WIN32
+        fp = (void*)GetProcAddress ((HMODULE)p->lib, FuncName);
+        #endif
+        #ifdef __linux__
+        fp = dlsym (p->lib, FuncName);
+        #endif
+        if (fp && (func = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
+            func->name = strdup (FuncName);
+            func->proto = strdup (proto);
+            func->type = FUNC_TYPE_MODULE;
+            func->len = 0;
+            func->sub_esp = sub;
+            func->code = fp;
+
+            //
+            // add in Gfunc ... on top
+            // USAGE:
+            //   SDL_SetVideoMode (...);
+            //
+            func->next = Gfunc;
+            Gfunc = func;
+        }
+        else printf ("Function Not Found: '%s'\n", FuncName);//Erro("%s: %d: USAGE: import(%csdl%c, %SDL_Init%c, %c0i%c\n", '"', '"', '"');
+        return;
+    }
+
+    while (p) {
+        if (!strcmp(p->name, LibName)) {
+            #ifdef WIN32
+            fp = (void*)GetProcAddress ((HMODULE)p->lib, FuncName);
+            #endif
+            #ifdef __linux__
+            fp = dlsym (p->lib, FuncName);
+            #endif
+            if (fp && (func = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
+                func->name = strdup (FuncName);
+                func->proto = strdup (proto);
+                func->type = FUNC_TYPE_MODULE;
+                func->len = 0;
+                func->sub_esp = sub;
+                func->code = fp;
+
+                //
+                // add in Gmodule ... on top
+                // USAGE:
+                //   sdl.SDL_SetVideoMode (...);
+                //
+                func->next = p->func;
+                p->func = func;
+            }
+            else printf ("Function Not Found: '%s'\n", FuncName);//Erro("%s: %d: USAGE: import(%csdl%c, %SDL_Init%c, %c0i%c\n", '"', '"', '"');
+            return;
+        }
+        p = p->next;
+    }//: while (p)
+}
+
 
 
 void lib_info (int arg) {

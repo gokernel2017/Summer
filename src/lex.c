@@ -95,6 +95,8 @@ label_top:
         if (!strcmp(l->token, "break"))     return (l->tok = TOK_BREAK);
         if (!strcmp(l->token, "function"))  return (l->tok = TOK_FUNCTION);
         if (!strcmp(l->token, "include"))   return (l->tok = TOK_INCLUDE);
+        if (!strcmp(l->token, "module"))    return (l->tok = TOK_MODULE);
+        if (!strcmp(l->token, "import"))    return (l->tok = TOK_IMPORT);
         if (!strcmp(l->token, "define"))    return (l->tok = TOK_DEFINE);
         if (!strcmp(l->token, "ifdef"))     { l->ifdef_block++; return (l->tok = TOK_IFDEF); }
         if (!strcmp(l->token, "endif"))     { l->ifdef_block--; return (l->tok = TOK_ENDIF); }

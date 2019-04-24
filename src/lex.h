@@ -46,6 +46,8 @@ enum {
     TOK_BREAK,
     TOK_FUNCTION,
     TOK_INCLUDE,
+    TOK_MODULE,
+    TOK_IMPORT,
     TOK_DEFINE,
     TOK_IFDEF,
     TOK_ENDIF,

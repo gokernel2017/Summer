@@ -49,7 +49,6 @@ struct ASM { // opaque struct
     ASM_label *label;
     ASM_jump  *jump;
     int       size;
-    char      name[20];
 };
 struct ASM_label {
     char      *name;
@@ -72,17 +71,13 @@ static void pop_register (void) { if (reg > 0) reg--; }
 //-------------------------  ASM PUCLIC API  ------------------------
 //-------------------------------------------------------------------
 //
-ASM *asm_New (unsigned int size, char *name) {
+ASM *asm_New (unsigned int size) {
     ASM *a = (ASM*)malloc(sizeof(ASM));
     if (a && (a->code=(UCHAR*)malloc(size)) != NULL) {
         a->p     = a->code;
         a->label = NULL;
         a->jump  = NULL;
         a->size  = size;
-        if (name) {
-            sprintf (a->name, name);
-//            printf ("Create ASM(%s)\n", a->name);
-        }
         return a;
     }
     return NULL;
@@ -90,7 +85,6 @@ ASM *asm_New (unsigned int size, char *name) {
 
 void asm_Free (ASM *a) {
   if (a) {
-//    printf ("Freeing ASM(%s)\n", a->name);
     asm_Reset(a);
     if (a->code) {
       free (a->code);

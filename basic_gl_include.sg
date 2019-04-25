@@ -10,6 +10,7 @@
 //
 //-------------------------------------------------------------------
 //
+#include "opengl.sg"
 
 function draw () {
 
@@ -19,7 +20,7 @@ function draw () {
     glColor3ub(255,130,30); // color orange
 
     // Draw a Rectangle:
-    glBegin(2); // #define GL_LINE_LOOP 2
+    glBegin(GL_LINE_LOOP);
     glVertex2f(100.0, 100.0);
     glVertex2f(100.0, 500.0);
     glVertex2f(700.0, 500.0);

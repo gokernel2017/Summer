@@ -1,0 +1,4 @@
+var a = 123;
+
+  console.log ("\n... Hello World ... VAR a: %d\n\n", a);
+ 

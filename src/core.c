@@ -147,17 +147,7 @@ static TFunc stdlib[]={
 //
 TVar Gvar [GVAR_SIZE]; // global:
 ASM *asm_function;
-//-------------------------------------
-#define MAX_INCLUDE 7
-typedef struct {
-  ASM     *a;
-  LEXER   l;
-  char    *text;
-  UCHAR   *code;
-}INCLUDE;
-static INCLUDE incl [MAX_INCLUDE + 1];
-static int icount;
-//-------------------------------------
+static ASM *asm_include1, *asm_include2;
 static TFunc *Gfunc = NULL;
 static TModule *Gmodule = NULL;
 static TFstring *fs = NULL;
@@ -798,6 +788,17 @@ void core_ModuleAdd (char *module_name, char *func_name, char *proto, UCHAR *cod
 
     while (p) {
         if (!strcmp(module_name, p->name)) {
+/*
+            TFunc *f = p->func;
+            // if function exist then return 
+            while (f) {
+                if (!strcmp(f->name, func_name)) {
+                    printf("FUNCTION EXIST: %s.%s()\n", p->name, f->name);
+                    return;
+                }
+                f = f->next;
+            }
+*/
             if ((func = (TFunc*) malloc (sizeof(TFunc))) != NULL) {
                 func->name = strdup (func_name);
                 func->proto = strdup (proto);
@@ -844,8 +845,18 @@ ASM * core_Init (unsigned int size) {
   if (!init) {
     ASM *a;
     init = 1;
-    if ((a =            asm_New(size, "main")) == NULL) return NULL;
-    if ((asm_function = asm_New(size, "asm_function")) == NULL) return NULL;
+    if ((a =            asm_New(size)) == NULL) return NULL;
+    if ((asm_function = asm_New(size)) == NULL) return NULL;
+    if ((asm_include1 = asm_New(size)) == NULL) return NULL;
+    if ((asm_include2 = asm_New(size)) == NULL) return NULL;
+
+    if (asm_SetExecutable_ASM(asm_include1, size - 2) != 0) {
+        return NULL;
+    }
+    if (asm_SetExecutable_ASM(asm_include2, size - 2) != 0) {
+        return NULL;
+    }
+    printf ("core_Init >>>>>>> ASM CREATED:\nasm_main\nasm_function\nasm_include1\nasm_include2\n");
 
     core_ModuleAdd ("console", "log", "0s", (UCHAR*)lib_printf);
 
@@ -1586,49 +1597,47 @@ static void word_if (LEXER *l, ASM *a) {
 
 }// word_if ()
 
-static void word_include (LEXER *l, ASM *a) {
-    if (erro) return;
-    if (lex(l)==TOK_STRING) {
-        if (icount < MAX_INCLUDE) {
-
-            icount++;
-            if (!erro && (incl[icount].text = FileOpen(l->token)) != NULL) {
-
-                if ((incl[icount].a = asm_New (5000, l->token)) != NULL) {
-
-                    if (core_Parse(&incl[icount].l, incl[icount].a, incl[icount].text, l->token) == 0) {
-                        int len = asm_GetLen(incl[icount].a);
-                        if ((incl[icount].code = malloc (len+5)) != NULL) {
-                            asm_CodeCopy (incl[icount].a, incl[icount].code, len);
-                            if (asm_SetExecutable_PTR(incl[icount].code, len) == 0) {
-                                ( (void(*)()) incl[icount].code ) (); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
-                            }
-                            else printf ("ERRO:\n%s", ErroGet());
-
-                            if (incl[icount].code) {
-                                free(incl[icount].code);
-                                incl[icount].code = NULL;
-                            }
-                        }
-
-                    }
-                    else Erro ("FILE %s: %d '%s'\n", l->name, l->line, l->token);
-
-                    ASM_FREE(incl[icount].a);
-
-                }// if (incl[icount].a = asm_New (10000)) != NULL)
-
-                free(incl[icount].text);
-            }
-            else Erro ("%s %d | File Not Found: '%s'\n", l->name, l->line, l->token);
-            icount--;
-
+static void include1 (LEXER *l, ASM *a) {
+    LEXER lexer;
+    char *text;
+    if ((text = FileOpen(l->token)) != NULL) {
+        if (core_Parse(&lexer, asm_include1, text, l->token) == 0) {
+            asm_Run (asm_include1); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
         }
-        else Erro ("%s: %d Max include %d\n", l->name, l->line, icount);
+        else Erro ("FILE %s: %d '%s'\n", lexer.name, lexer.line, l->token);
+        free (text);
+    }
+    else Erro ("%s %d | File Not Found: '%s'\n", l->name, l->line, l->token);
+}
+static void include2 (LEXER *l, ASM *a) {
+    LEXER lexer;
+    char *text;
+    if ((text = FileOpen(l->token)) != NULL) {
+        if (core_Parse(&lexer, asm_include2, text, l->token) == 0) {
+            asm_Run (asm_include2); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
+        }
+        else Erro ("FILE %s: %d '%s'\n", lexer.name, lexer.line, l->token);
+        free (text);
+    }
+    else Erro ("%s %d | File Not Found: '%s'\n", l->name, l->line, l->token);
+}
+
+static void word_include (LEXER *l, ASM *a) {
+    static int icount = 1;
+    if (lex(l)==TOK_STRING) {
+        if (icount==1 || icount==2) {
+            int i = icount++;
+            if (i == 1) {
+                include1(l,a);
+            } else if (i==2){
+                include2(l,a);
+            }
+            icount--;
+        }
+        else Erro ("%s: %d Max include 1\n", l->name, l->line);
     }
     else Erro ("%s: %d - INCLUDE USAGE: include %cfile_name%c\n", l->name, l->line, '"', '"' );
 }
-
 
 //
 // define TOK_ID  100
@@ -1769,6 +1778,17 @@ static void word_import (LEXER *l, ASM *a) {
     }
 
     if (LibName[0]=='0') {
+
+        TFunc *f = Gfunc;
+        // if function exist then return 
+        while (f) {
+            if (!strcmp(f->name, FuncName)) {
+                printf("FUNCTION EXIST: %s()\n", f->name);
+                return;
+            }
+            f = f->next;
+        }
+
         #ifdef WIN32
         fp = (void*)GetProcAddress ((HMODULE)p->lib, FuncName);
         #endif
@@ -1797,6 +1817,17 @@ static void word_import (LEXER *l, ASM *a) {
 
     while (p) {
         if (!strcmp(p->name, LibName)) {
+/*
+            TFunc *f = p->func;
+            // if function exist then return 
+            while (f) {
+                if (!strcmp(f->name, FuncName)) {
+                    printf("FUNCTION EXIST: %s.%s()\n", p->name, f->name);
+                    return;
+                }
+                f = f->next;
+            }
+*/
             #ifdef WIN32
             fp = (void*)GetProcAddress ((HMODULE)p->lib, FuncName);
             #endif

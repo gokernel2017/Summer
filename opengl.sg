@@ -1,4 +1,6 @@
 
+#include "hello.sum"
+
 #define GL_POINTS 0
 #define GL_LINES 1
 #define GL_LINE_LOOP 2
@@ -9,4 +11,6 @@
 #define GL_QUADS 7
 #define GL_QUAD_STRIP 8
 #define GL_POLYGON 9
+
+printf ("... INCLUDE Processing 'opengl.sg' ...\n");
 

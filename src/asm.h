@@ -120,7 +120,7 @@ extern const UCHAR OP_pop_edi  [1]; // pop  %edi
 //-----------------  PUBLIC API  ----------------
 //-----------------------------------------------
 //
-LIBIMPORT ASM		*	asm_New						(unsigned int size, char *name);
+LIBIMPORT ASM		*	asm_New						(unsigned int size);
 LIBIMPORT void		asm_Free					(ASM *a);
 LIBIMPORT void		asm_Reset					(ASM *a);
 LIBIMPORT int			asm_SetExecutable_ASM	(ASM *a, unsigned int size);

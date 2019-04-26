@@ -13,7 +13,7 @@
 
 function draw () {
 
-    sgBeginScene();
+//    sgBeginScene();
     sgSet2D(); // set 2D projection mode using OpenGL.
 
     glColor3ub(255,130,30); // color orange

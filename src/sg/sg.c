@@ -125,30 +125,39 @@ void sgRect (int x, int y, int w, int h, int color) {
 }
 
 int sgInit (int argc, char **argv) {
-  int w = 800, h = 600, flag = 0;
   static int init = 0;
 
   if (init) return 1;
   init = 1;
+
+  printf ("sgInit Starting ... OK\n");
 
 #ifdef USE_GL
   SDL_Init (SDL_INIT_VIDEO);
   #ifdef WIN32
   SDL_putenv ("SDL_VIDEO_CENTERED=center");
   #endif
-  SDL_WM_SetCaption ("SG: Summer Graphic (GL/DirectX/HTML Canvas) | To Exit Press ESC !", NULL);
+//  SDL_WM_SetCaption ("SG: Summer Graphic (GL/DirectX/HTML Canvas) | To Exit Press ESC !", NULL);
+
+  printf ("sgInit Starting >>> defined ( USE_GL )... OK\n");
 
   // SDL / OPENGL
   #ifndef USE_SDL
-  flag = SDL_OPENGL;
+  SDL_SetVideoMode (800, 600, 32, SDL_OPENGL);
+  #endif
+  #ifdef USE_SDL
+  screen = SDL_SetVideoMode (800, 600, 16, 0);
   #endif
 
-  screen = SDL_SetVideoMode (w, h, 16, flag);
+  printf ("sgInit SDL_SetVideoMode ... OK\n\n");
+
   #ifndef USE_SDL
   opengl_make_font_8x13 ();
   #endif
 
   atexit (SDL_Quit);
+  printf ("\nsgInit SDL_Quit ... OK\n");
+
 #endif // USE_GL
 
   return 1;
@@ -198,7 +207,7 @@ void sgRun (void (*call) (void)) {
 
 void sgSetEvent (void (*call) (TEvent *e), char *name) {
   if (name) {
-    if (!strcmp(name, "onmouseup")) func_event.onmouseup = call;
+    if (!strcmp(name, "onmouseup"))   func_event.onmouseup   = call;
     if (!strcmp(name, "onmousedown")) func_event.onmousedown = call;
     if (!strcmp(name, "onmousemove")) func_event.onmousemove = call;
   }

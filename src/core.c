@@ -850,13 +850,8 @@ ASM * core_Init (unsigned int size) {
     if ((asm_include1 = asm_New(size)) == NULL) return NULL;
     if ((asm_include2 = asm_New(size)) == NULL) return NULL;
 
-    if (asm_SetExecutable_ASM(asm_include1, size - 2) != 0) {
-        return NULL;
-    }
-    if (asm_SetExecutable_ASM(asm_include2, size - 2) != 0) {
-        return NULL;
-    }
-    printf ("core_Init >>>>>>> ASM CREATED:\nasm_main\nasm_function\nasm_include1\nasm_include2\n");
+    if (asm_SetExecutable_ASM(asm_include1, size - 2) != 0) return NULL;
+    if (asm_SetExecutable_ASM(asm_include2, size - 2) != 0) return NULL;
 
     core_ModuleAdd ("console", "log", "0s", (UCHAR*)lib_printf);
 
@@ -887,6 +882,8 @@ ASM * core_Init (unsigned int size) {
       #endif
     #endif // 32 bits
 
+    printf ("core_Init >>>>>>> ASM CREATED:\nasm_main\nasm_function\nasm_include1\nasm_include2\n");
+
     return a;
   }
   return NULL;
@@ -904,6 +901,8 @@ void core_Finalize (void) {
     fs = temp;
   }
   ASM_FREE (asm_function);
+  ASM_FREE (asm_include1);
+  ASM_FREE (asm_include2);
 }
 
 static int see (LEXER *l) {
@@ -1634,7 +1633,7 @@ static void word_include (LEXER *l, ASM *a) {
             }
             icount--;
         }
-        else Erro ("%s: %d Max include 1\n", l->name, l->line);
+        else Erro ("%s: %d Max include 2\n", l->name, l->line);
     }
     else Erro ("%s: %d - INCLUDE USAGE: include %cfile_name%c\n", l->name, l->line, '"', '"' );
 }

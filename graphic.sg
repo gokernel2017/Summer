@@ -31,6 +31,7 @@ var x = 0, y = 0, dx = 0, dy = 0, MouseX = 0, MouseY = 0;
 
 var angle_x = 30.0, angle_y = 30.0;
 
+
 function DrawScene () {
 
     sgBeginScene();

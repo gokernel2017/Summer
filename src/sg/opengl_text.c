@@ -306,6 +306,7 @@ void opengl_make_font_8x13 (void) {
         glBitmap ( 8, 13, 1.0, 10.0, 8.0, 0.0, font_8x13_data[i] );
         glEndList ( );
     }
+printf ("... Opengl Create Font ... OK\n");
 }
 
 

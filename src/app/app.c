@@ -124,7 +124,7 @@ int app_Init (int argc, char **argv) {
 //    printf ("app_Init : OBJECT SIZEOF = %d\n", (int)sizeof(OBJECT));
     init = 1;
     SDL_Init (SDL_INIT_VIDEO);
-    SDL_WM_SetCaption ("Application API:", NULL);
+//    SDL_WM_SetCaption ("Application API:", NULL);
     #ifdef _WIN32
     SDL_putenv ("SDL_VIDEO_CENTERED=center");
     #endif

@@ -50,7 +50,7 @@ typedef struct {
 //-----------------  PUBLIC API  ----------------
 //-----------------------------------------------
 //
-LIBIMPORT int   sgInit      (int argc, char **argv);
+LIBIMPORT int   sgInit      (void);
 LIBIMPORT void  sgRun       (void (*call) (void));
 LIBIMPORT void  sgSetEvent  (void (*call) (TEvent *e), char *name);
 LIBIMPORT void  sgDrawText  (char *text, int x, int y, int color);

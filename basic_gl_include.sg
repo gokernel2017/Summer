@@ -30,7 +30,7 @@ function draw () {
     sgEndScene();
 }
 
-if (sgInit(0,0)) {
+if (sgInit()) {
 
     draw();
 

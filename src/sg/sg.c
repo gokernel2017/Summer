@@ -124,7 +124,7 @@ void sgRect (int x, int y, int w, int h, int color) {
   SDL_FillRect (screen, &(struct SDL_Rect){ x, y, w, h }, color);
 }
 
-int sgInit (int argc, char **argv) {
+int sgInit (void) {
 //  static int init = 0;
 
 //  if (init) return 1;

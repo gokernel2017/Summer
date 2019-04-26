@@ -29,7 +29,7 @@ function draw () {
     sgEndScene();
 }
 
-  sgInit(0,0);
+  sgInit();
   draw();
   sgRun(0);
 

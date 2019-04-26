@@ -105,7 +105,9 @@ int main (int argc, char *argv[]) {
         }
 
         if (core_Parse(&l, a, prog, argv[1]) == 0) {
+            printf ("<<<<<<<<<<  PARSE OK  >>>>>>>>>>\n");
             if (asm_SetExecutable_ASM(a, 0) == 0) {
+            printf ("---------  RUN THE JIT  --------\n");
                 asm_Run (a); //<<<<<<<<<<  execute the JIT here  >>>>>>>>>>
             }
             else printf ("ERRO:\n%s", ErroGet());

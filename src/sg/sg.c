@@ -125,10 +125,10 @@ void sgRect (int x, int y, int w, int h, int color) {
 }
 
 int sgInit (int argc, char **argv) {
-  static int init = 0;
+//  static int init = 0;
 
-  if (init) return 1;
-  init = 1;
+//  if (init) return 1;
+//  init = 1;
 
   printf ("sgInit Starting ... OK\n");
 

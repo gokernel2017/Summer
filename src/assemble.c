@@ -385,43 +385,43 @@ void Assemble (LEXER *l, ASM *a) {
             } else *p++ = c;
             if (c == '}' && comment==0) break;
         }
-				emit_end (asm_function);
+        emit_end (asm_function);
 
-				if (c != '}') Erro ("ASM ERRO ... Need Close Block: '}'\n");
+        if (c != '}') Erro ("ASM ERRO ... Need Close Block: '}'\n");
 
-				if (erro) return;
+        if (erro) return;
 
-    		// new function:
-    		//
+        // new function:
+        //
         if ((func = (TFunc*) malloc (sizeof(TFunc))) == NULL) {
-						printf ("Create Function(%s) Erro\n", name);
-			return;
-				}
-    		func->name = strdup (name);
-    		func->proto = strdup (proto);
-    		func->type = FUNC_TYPE_COMPILED;
-    		func->len = asm_GetLen(asm_function);
-				func->code = (UCHAR*) malloc (func->len);
+            printf ("Create Function(%s) Erro\n", name);
+            return;
+        }
+        func->name = strdup (name);
+        func->proto = strdup (proto);
+        func->type = FUNC_TYPE_COMPILED;
+        func->len = asm_GetLen(asm_function);
+        func->code = (UCHAR*) malloc (func->len);
 
         code = asm_GetCode(asm_function);
 
-    		// NOW: copy the buffer ( f ):
-    		for (i=0;i<func->len;i++) {
+        // NOW: copy the buffer ( f ):
+        for (i=0;i<func->len;i++) {
             func->code[i] = code[i];
-    		}
+        }
 
         asm_SetExecutable_PTR (func->code, func->len);
 
         FuncAdd (func);
 
-		} else {
+    } else {
         comment = 0;
         while ((c = l->text[l->pos++])) {
             if (c=='/' && l->text[l->pos]=='/') comment = 1;
             if (c == '\n' || c == '|' || (c == '}' && comment==0)) {
                 *p = 0;
                 if (text[0] != 0) {
-										aparse(text, l, a);
+                    aparse(text, l, a);
                 }
                 p = text;
                 *p = 0;
@@ -430,8 +430,8 @@ void Assemble (LEXER *l, ASM *a) {
             } else *p++ = c;
             if (c == '}' && comment==0) break;
         }
-				if (c != '}') Erro ("ASM ERRO ... Need Close Block: '}'\n");
-		}
+        if (c != '}') Erro ("ASM ERRO ... Need Close Block: '}'\n");
+    }
 }
 
 static int GetReg32 (char *s) {
@@ -590,12 +590,6 @@ printf ("ASM pasaando string\n");
                 }
             }
             #endif // WIN32
-
-
-// 41 b8 e8 03 00 00    	mov    $0x3e8,%r8d
-// 41 b9 88 13 00 00    	mov    $0x1388,%r9d
-// 44 8b 04 25 14 30 40 00	mov    0x403014,%r8d
-// 44 8b 0c 25 18 30 40 00	mov    0x403018,%r9d
 
             #ifdef __linux__
             if (i == 1) {

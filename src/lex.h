@@ -33,13 +33,13 @@ extern "C" {
 //---------------  DEFINE / ENUM  ---------------
 //-----------------------------------------------
 //
-#define LEXER_NAME_SIZE		1024
-#define LEXER_TOKEN_SIZE	1024 * 4
+#define LEXER_NAME_SIZE   1024
+#define LEXER_TOKEN_SIZE  1024 * 4
 
 enum {
-		TOK_INT = 255,
+    TOK_INT = 255,
     TOK_FLOAT,
-		TOK_VAR,
+    TOK_VAR,
     TOK_ASM,
     TOK_IF,
     TOK_FOR,
@@ -51,20 +51,18 @@ enum {
     TOK_DEFINE,
     TOK_IFDEF,
     TOK_ENDIF,
-		//
-		TOK_ID,
-		TOK_STRING,
-		TOK_NUMBER,
-		//
-		TOK_NEW_LINE,			// '\n'
-		//
-		TOK_PLUS_PLUS,		// ++
-		TOK_MINUS_MINUS,	// --
-		TOK_EQUAL_EQUAL,	// ==
+    //
+    TOK_ID,
+    TOK_STRING,
+    TOK_NUMBER,
+    //
+    TOK_PLUS_PLUS,    // ++
+    TOK_MINUS_MINUS,  // --
+    TOK_EQUAL_EQUAL,  // ==
     TOK_AND_AND,      // &&
     TOK_OR_OR,        // ||
-		TOK_PLUS_EQUAL,		// +=
-		TOK_MINUS_EQUAL,	// -=
+    TOK_PLUS_EQUAL,   // +=
+    TOK_MINUS_EQUAL,  // -=
     TOK_NOT_EQUAL     // !=
 };
 
@@ -94,10 +92,10 @@ struct LEXER {
 //-----------------  PUBLIC API  ----------------
 //-----------------------------------------------
 //
-extern int 	lex					(LEXER *l);
-extern int 	lex_set			(LEXER *l, char *text, char *name);
-extern void lex_save 		(LEXER *l);
-extern void	lex_restore	(LEXER *l);
+extern int  lex         (LEXER *l);
+extern int  lex_set     (LEXER *l, char *text, char *name);
+extern void lex_save    (LEXER *l);
+extern void lex_restore (LEXER *l);
 
 #ifdef __cplusplus
 }

@@ -103,7 +103,7 @@ static TFunc stdlib[]={
   // SDL:
 #ifdef USE_APPLICATION
   { "app_Init",       "iis",    (UCHAR*)app_Init,    	    0,    0,  	0,  			NULL },
-  { "app_Run",        "0p",		  (UCHAR*)app_Run,    	    0,    0,  	0,  			NULL },
+  { "app_Run",        "0p",     (UCHAR*)app_Run,    	    0,    0,  	0,  			NULL },
   { "app_NewButton",  "ppiiis", (UCHAR*)app_NewButton,    0,    0,  	0,  			NULL },
   { "app_NewEditor",  "ppiisi", (UCHAR*)app_NewEditor,    0,    0,  	0,  			NULL },
   { "app_SetSize",    "0pii",   (UCHAR*)app_SetSize,      0,    0,  	0,  			NULL },

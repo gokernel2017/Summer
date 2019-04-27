@@ -4,6 +4,12 @@
 //
 // The Backend | JIT(x86) 32/64 bits:
 //
+//
+// The Function ( emit_call_direct(ASM *a)) is based in this project:
+//
+//   https://github.com/skeeto/dynamic-function-benchmark
+//
+//
 // FILE:
 //   asm.c
 //
@@ -468,31 +474,38 @@ void emit_mov_long_reg (ASM *a, long value, int reg) {
 }
 
 void emit_mov_var_reg (ASM *a, void *var, int reg) { ///: 32/64 BITS OK: Move variable to %register
-    if (reg >= 0 && reg <= 7) {
-        #if defined(__x86_64__)
-        switch (reg) {
-        case EAX: g3(a,0x8b,0x04,0x25); break; // 8b 04 25   00 0a 60 00 	mov    0x600a00,%eax
-        case ECX: g3(a,0x8b,0x0c,0x25); break; // 8b 0c 25   00 0a 60 00 	mov    0x600a00,%ecx
-        case EDX: g3(a,0x8b,0x14,0x25); break; // 8b 14 25   00 0a 60 00 	mov    0x600a00,%edx
-        case EBX: g3(a,0x8b,0x1c,0x25); break; // 8b 1c 25   00 0a 60 00 	mov    0x600a00,%ebx
-				case ESI: g3(a,0x8b,0x34,0x25); break; // 8b 34 25   20 7a 40 00  mov    0x407a20,%esi
-  			case EDI: g3(a,0x8b,0x3c,0x25); break; // 8b 3c 25   30 7a 40 00  mov    0x407a30,%edi
-        default: return;
-        }
-        asm_get_addr (a, var);
-        #else
-        switch (reg) {
-        case EAX: g(a,0xa1);       break; // a1       60 40 40 00   mov   0x404060, %eax
-        case ECX: g2(a,0x8b,0x0d); break;	// 8b 0d    70 40 40 00   mov   0x404070, %ecx
-        case EDX: g2(a,0x8b,0x15); break; // 8b 15    70 40 40 00   mov   0x404070, %edx
-        case EBX: g2(a,0x8b,0x1d); break; // 8b 1d    60 40 40 00   mov   0x404060, %ebx
-				case ESI: g2(a,0x8b,0x35); break; // 8b 35 		38 54 40 00		mov   0x405438, %esi
-				case EDI: g2(a,0x8b,0x3d); break; // 8b 3d 		34 54 40 00		mov   0x405434, %edi
-        default: return;
-        }
-        asm_get_addr (a, var);
-        #endif
+#if defined(__x86_64__)
+    switch (reg) {
+    case EAX: g3(a,0x8b,0x04,0x25); break; // 8b 04 25   00 0a 60 00 	mov    0x600a00,%eax
+    case ECX: g3(a,0x8b,0x0c,0x25); break; // 8b 0c 25   00 0a 60 00 	mov    0x600a00,%ecx
+    case EDX: g3(a,0x8b,0x14,0x25); break; // 8b 14 25   00 0a 60 00 	mov    0x600a00,%edx
+    case EBX: g3(a,0x8b,0x1c,0x25); break; // 8b 1c 25   00 0a 60 00 	mov    0x600a00,%ebx
+    case ESI: g3(a,0x8b,0x34,0x25); break; // 8b 34 25   20 7a 40 00  mov    0x407a20,%esi
+    case EDI: g3(a,0x8b,0x3c,0x25); break; // 8b 3c 25   30 7a 40 00  mov    0x407a30,%edi
+    //
+    case RAX: g4(a,0x48,0x8b,0x04,0x25); break; // 48 8b 04 25    30 7a 40 00   | mov    0x407a30, %rax
+    //
+    // Windows function POINTER argument 1 & 2
+    case RCX: g4(a,0x48,0x8b,0x0c,0x25); break; // 48 8b 0c 25    30 7a 40 00   | mov   0x407a30, %rcx
+    case RDX: g4(a,0x48,0x8b,0x14,0x25); break; // 48 8b 14 25    30 7a 40 00   | mov   0x407a30, %rdx
+    // Linux function POINTER argument 1 & 2
+    case RDI: g4(a,0x48,0x8b,0x3c,0x25); break; // 48 8b 3c 25    30 7a 40 00   | mov   0x407a30, %rdi
+    case RSI: g4(a,0x48,0x8b,0x34,0x25); break; // 48 8b 34 25    30 7a 40 00   | mov   0x407a30, %rsi
+    default: return;
     }
+    asm_get_addr (a, var);
+#else
+    switch (reg) {
+    case EAX: g(a,0xa1);       break; // a1       60 40 40 00   mov   0x404060, %eax
+    case ECX: g2(a,0x8b,0x0d); break;	// 8b 0d    70 40 40 00   mov   0x404070, %ecx
+    case EDX: g2(a,0x8b,0x15); break; // 8b 15    70 40 40 00   mov   0x404070, %edx
+    case EBX: g2(a,0x8b,0x1d); break; // 8b 1d    60 40 40 00   mov   0x404060, %ebx
+    case ESI: g2(a,0x8b,0x35); break; // 8b 35 		38 54 40 00		mov   0x405438, %esi
+    case EDI: g2(a,0x8b,0x3d); break; // 8b 3d 		34 54 40 00		mov   0x405434, %edi
+    default: return;
+    }
+    asm_get_addr (a, var);
+#endif
 }
 
 void emit_mov_reg_var (ASM *a, int reg, void *var) { ///: 32/64 BITS OK: Move %register to variable
@@ -539,13 +552,29 @@ void emit_mov_EAX_eax (ASM *a, UCHAR c) {
   #endif
 }
 
-void emit_call (ASM *a, void *func, UCHAR arg_count, UCHAR return_type) {
+void emit_call (ASM *a, void *func) {
     // b8   7a 13 40 00       mov    $0x40137a, %eax
     // ff d0                	call   *%eax
     //
     g(a,0xb8); asm_get_addr(a, func);
     g2(a,0xff,0xd0);
 }
+void emit_call_direct (ASM *a, void *func) {
+//#ifdef __linux__
+//#if defined(__x86_64__)
+    //
+    // Codigo baseado neste projeto:
+    //
+    // https://github.com/skeeto/dynamic-function-benchmark
+    //
+    //uintptr_t rel = (uintptr_t)func - (uintptr_t)a->p - 5;
+    *a->p++ = 0xe8;
+    *(long*)a->p = ((void*)func - (void*)a->p - 4);
+    a->p += 4;
+//#endif
+//#endif
+}
+
 
 void emit_sub_esp (ASM *a, char c) { // 32/64 BITS OK
     #if defined(__x86_64__)
@@ -858,7 +887,7 @@ void emit_print_string (ASM *a, char *s) {
 		#endif
 		*(void**)a->p = s;
 		a->p += 4;
-		emit_call (a,print_string,0,0);
+		emit_call (a,print_string);
 #else // 32 bits
 /*
             //  c7 44 24    04    00 30  40 00	    movl   $0x403000,0x4(%esp)
@@ -889,7 +918,7 @@ void emit_pop_print_result (ASM *a, int var_type, int new_line) {
                 asm_get_addr(a,(void*)"%d ");
             // argument 2:
             g2(a,0x89,0xc2); //	mov    %eax,%edx
-            emit_call(a,printf,0,0);
+            emit_call(a,printf);
         }
         if (var_type == 1) { // TYPE_FLOAT | WINDOWS 64
             emit_float_fstps (a, &asmFvalue); // store expression result | TYPE_FLOAT
@@ -915,7 +944,7 @@ void emit_pop_print_result (ASM *a, int var_type, int new_line) {
                 asm_get_addr(a, &("%f\n"));
             else
                 asm_get_addr(a, &("%f "));
-            emit_call(a,printf,0,0);
+            emit_call(a,printf);
         }
         #endif
         #ifdef __linux__
@@ -932,7 +961,7 @@ void emit_pop_print_result (ASM *a, int var_type, int new_line) {
                 asm_get_addr(a,(void*)"%d ");
             // argument 2:
             g2(a,G2_MOV_EAX_ESI);
-            emit_call(a,printf,0,0);
+            emit_call(a,printf);
         }
         if (var_type == 1) { // TYPE_FLOAT | LINUX 64
             emit_float_fstps (a, &asmFvalue); // store expression result | TYPE_FLOAT
@@ -960,7 +989,7 @@ void emit_pop_print_result (ASM *a, int var_type, int new_line) {
                 asm_get_addr(a,(void*)"%f ");
             g2(a,G2_MOV_EAX_EDI); // 89 c7   : mov   %eax,%edi
 
-            emit_call(a,printf,0,0);
+            emit_call(a,printf);
         }
         #endif
     #else // 64 bits

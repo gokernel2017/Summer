@@ -63,6 +63,8 @@ int arg5(int a, int b, int c, int d, int e);
 
 char *lib_float2s (float f);
 
+void CallBack (void (*call) (void));
+
 #ifdef USE_SG
   #ifndef USE_SDL
 void gl_Begin (int i) { glBegin (i); }
@@ -78,13 +80,13 @@ void gl_Vertex3f (float x, float y, float z) { glVertex3f (x,y,z); }
 void sgInitEvent (void) {
     TFunc *fi;
 
-    if ((fi = FuncFind ("onMouseUp")) != NULL) {
+    if ((fi = FuncFind ("MouseUp")) != NULL) {
         sgSetEvent( (void(*)(TEvent*))fi->code, "onmouseup");
     }
-    if ((fi = FuncFind ("onMouseDown")) != NULL) {
+    if ((fi = FuncFind ("MouseDown")) != NULL) {
         sgSetEvent( (void(*)(TEvent*))fi->code, "onmousedown");
     }
-    if ((fi = FuncFind ("onMouseMove")) != NULL) {
+    if ((fi = FuncFind ("MouseMove")) != NULL) {
         sgSetEvent( (void(*)(TEvent*))fi->code, "onmousemove");
     }
 //    sgSetEvent (onMouseMove, "onmousemove");
@@ -100,6 +102,7 @@ static TFunc stdlib[]={
   // name         proto     code                      type  len   sub_esp   next
   //-----------------------------------------------------------------------------
   { "info",       "0i",     (UCHAR*)lib_info,         0,    0,    0,        NULL },
+  { "CallBack",   "0p",     (UCHAR*)CallBack,         0,    0,    0,        NULL },
   { "disasm",     "0s",     (UCHAR*)lib_disasm,       0,    0,    0,        NULL },
   { "float2s",    "pi",     (UCHAR*)lib_float2s,      0,    0,    0,        NULL },
   //
@@ -797,7 +800,12 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 		}
 		#endif
 
-		emit_call (a, func->code, (UCHAR)count, 0);
+    if (func->type == FUNC_TYPE_MODULE) {
+		    emit_call_direct (a, func->code);
+printf ("Call direct(%s)\n", func->name);
+    } else {
+		    emit_call (a, func->code);
+    }
 }
 
 void core_ModuleAdd (char *module_name, char *func_name, char *proto, UCHAR *code) {
@@ -2068,6 +2076,10 @@ int arg5 (int a, int b, int c, int d, int e) {
   printf ("a: %d, b: %d, c: %d, d: %d, e: %d\n", a,b,c,d,e);
   printf ("arg5 result = %d\n\n", a+b+c+d+e);
   return a + b + c + d + e;
+}
+
+void CallBack (void (*call)(void)) {
+    call();
 }
 
 // lines: 1437

@@ -66,6 +66,7 @@ extern "C" {
 #define OP_NOP          0x90
 
 enum {
+    // 32 bits
     EAX = 0,
     ECX,
     EDX,
@@ -73,7 +74,14 @@ enum {
     ESP,
     EBP,
     ESI,
-    EDI
+    EDI,
+    // 64 bits
+    RAX,
+    RCX,
+    RDX,
+    // ...
+    RSI,
+    RDI
 };
 
 enum { // jump type for change the labels
@@ -164,7 +172,8 @@ LIBIMPORT void emit_func_arg_var_float2 (ASM *a, void *var);
 LIBIMPORT void emit_func_arg_var_float3 (ASM *a, void *var);
 LIBIMPORT void emit_func_arg_var_float4 (ASM *a, void *var);
 
-LIBIMPORT void 		emit_call 				(ASM *a, void *func, UCHAR arg_count, UCHAR return_type);
+LIBIMPORT void 		emit_call 				(ASM *a, void *func);
+LIBIMPORT void    emit_call_direct  (ASM *a, void *func);
 LIBIMPORT void 		emit_sub_esp 			(ASM *a, char c); // 32/64 BITS OK
 LIBIMPORT void    emit_movl_ESP     (ASM *a, long value, UCHAR index);
 LIBIMPORT void    emit_mov_eax_ESP  (ASM *a, UCHAR index); // mov  %eax, 4(%esp)

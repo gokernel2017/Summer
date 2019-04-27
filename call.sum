@@ -1,0 +1,23 @@
+var i = 123, a = 55;
+
+function hello_i() {
+  i=i+1; printi(i);
+}
+
+function hello_a() {
+  a=a+1; printi(a);
+}
+
+asm {
+  #ifdef __x86_64__
+    #ifdef WIN32
+    mov hello_i, %rcx
+    call CallBack
+    #endif
+    #ifdef __linux__
+    mov hello_i, %rdi
+    call CallBack
+    #endif
+  #endif
+}
+

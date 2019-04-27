@@ -11,7 +11,7 @@ ifeq ($(OS),Windows_NT)
   # RES  = obj/resource.o
   RES =
 else
-  LIBS = -lSDL -lGL -lGLU
+  LIBS = -ldl -lSDL -lGL -lGLU
   RES =
 endif
 RM = rm -f

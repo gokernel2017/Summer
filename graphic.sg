@@ -68,7 +68,7 @@ function DrawScene () {
 //
 //-----------------------------------------------
 //
-function onMouseMove (e) {
+function MouseMove (e) {
     x = e.offsetX;
     y = e.offsetY;
 
@@ -87,21 +87,20 @@ function onMouseMove (e) {
 
 }
 
-function onMouseDown (e) {
+function MouseDown (e) {
     click = 1;
 }
 
-function onMouseUp (e) {
+function MouseUp (e) {
     click = 0;
 }
-
 
     sgInit();
 
     //-------------------------------------------
-    // onMouseMove, "onmousemove";
-    // onMouseDown, "onmousedown";
-    // onMouseUp,   "onmouseup";
+    // MouseMove, "onmousemove";
+    // MouseDown, "onmousedown";
+    // MouseUp,   "onmouseup";
     //-------------------------------------------
     sgInitEvent();
 

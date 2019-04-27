@@ -40,7 +40,7 @@ enum { // arg.tok[]
 //-----------------------------------------------
 //
 static void execute_function (LEXER *l, ASM *a);
-static int GetReg32 (char *s);
+static int GetReg (char *s);
 //
 static int parse_assemble_4 (ASM *a);
 static int parse_assemble_7 (ASM *a);
@@ -68,6 +68,7 @@ struct ASSEMBLE_4 {
   //---------------------------------------------
   //
   { "mov", T_VAR,  ',',  T_REG },  // mov VAR , %REG
+  { "mov", T_FUN,  ',',  T_REG },  // mov FUN , %REG
   { "mov", T_REG,  ',',  T_VAR },  // mov %REG , VAR
   { "cmp", T_REG,  ',',  T_VAR },  // cmp %REG , VAR
   { NULL, 0, 0, 0 }
@@ -107,7 +108,13 @@ struct ASSEMBLE_5 {
 //-----------------  VARIABLES  -----------------
 //-----------------------------------------------
 //
-static char *reg32[] = { "%eax", "%ecx", "%edx", "%ebx", "%esp", "%ebp", "%esi", "%edi", 0 };
+
+static char *reg[] = {
+    "%eax", "%ecx", "%edx", "%ebx", "%esp", "%ebp", "%esi", "%edi", // 32 bits
+    "%rax", "%rcx", "%rdx", "%rsi", "%rdi", // 64 bits
+    0 
+};
+
 static char *str;
 
 static TFunc *fun;
@@ -165,8 +172,8 @@ label_top:
 
         char *text = arg.text[count];
 					
-        if (text[0] == '%' && text[1] == 'e' && text[4] == 0) {
-            if ((arg.value[count] = GetReg32(text)) != -1)
+        if (text[0] == '%' && (text[1] == 'e' || text[1] == 'r') && text[4] == 0) {
+            if ((arg.value[count] = GetReg(text)) != -1)
                 return (arg.tok[count] = T_REG);
         }
 				
@@ -303,7 +310,7 @@ void aparse (char *text, LEXER *l, ASM *a) {
         // call function_name
         //
         if (!strcmp(arg.text[0], "call") && arg.tok[1] == T_FUN && fun != NULL) {
-            emit_call(a,fun->code,0,0);
+            emit_call(a,fun->code);
             return;
         }
         if (!strcmp(arg.text[0], "incl") && arg.tok[1] == T_VAR) {
@@ -434,10 +441,10 @@ void Assemble (LEXER *l, ASM *a) {
     }
 }
 
-static int GetReg32 (char *s) {
+static int GetReg (char *s) {
     int i = 0;
-    while (reg32[i]) {
-        if (!strcmp(reg32[i], s)) {
+    while (reg[i]) {
+        if (!strcmp(reg[i], s)) {
             return i;
         }
         i++;
@@ -476,9 +483,9 @@ static int parse_assemble_4 (ASM *a) {
             switch (i) {
             // if (arg.tok[1] == T_VAR && arg.tok[2]==',' && arg.tok[3]==T_REG)
             case 0: emit_mov_var_reg (a, &Gvar[ arg.value[1] ].value.l, arg.value[3]); return 1;
-            // if (arg.tok[1] == T_REG && arg.tok[2]==',' && arg.tok[3]==T_VAR)
-            case 1: emit_mov_reg_var (a, arg.value[1], &Gvar[ arg.value[3] ].value.l); return 1;
-            case 2: emit_cmp_eax_var (a, &Gvar[ arg.value[3] ].value.l); return 1;
+            case 1: { printf ("funcao(%s) para registro(%s)\n", fun->name, reg[arg.value[3]] ); emit_mov_var_reg (a, &fun->code, arg.value[3]); return 1; }
+            case 2: emit_mov_reg_var (a, arg.value[1], &Gvar[ arg.value[3] ].value.l); return 1;
+            case 3: emit_cmp_eax_var (a, &Gvar[ arg.value[3] ].value.l); return 1;
             }
         }
         o++; i++;
@@ -616,7 +623,7 @@ printf ("ASM pasaando string\n");
         #endif
         }
     }
-    emit_call(a,fun->code,0,0);
+    emit_call(a,fun->code);
 }
 // line 412
 

@@ -75,6 +75,23 @@ void gl_Color3ub (unsigned char r, unsigned char g, unsigned char b) { glColor3u
 void gl_Vertex2f (float x, float y) { glVertex2f (x,y); }
 void gl_Vertex3f (float x, float y, float z) { glVertex3f (x,y,z); }
   #endif
+void sgInitEvent (void) {
+    TFunc *fi;
+
+    if ((fi = FuncFind ("onMouseUp")) != NULL) {
+        sgSetEvent( (void(*)(TEvent*))fi->code, "onmouseup");
+    }
+    if ((fi = FuncFind ("onMouseDown")) != NULL) {
+        sgSetEvent( (void(*)(TEvent*))fi->code, "onmousedown");
+    }
+    if ((fi = FuncFind ("onMouseMove")) != NULL) {
+        sgSetEvent( (void(*)(TEvent*))fi->code, "onmousemove");
+    }
+//    sgSetEvent (onMouseMove, "onmousemove");
+//    sgSetEvent (onMouseDown, "onmousedown");
+//    sgSetEvent (onMouseUp,   "onmouseup");
+}
+
 #endif
 
 static TFunc stdlib[]={
@@ -114,9 +131,10 @@ static TFunc stdlib[]={
 #ifdef USE_SG
   { "sgInit",       "i0",     (UCHAR*)sgInit,    	    0,    0,  	0,  			NULL },
   { "sgRun",        "00",     (UCHAR*)sgRun,    	    0,    0,  	0,  			NULL },
+  { "sgInitEvent",  "00",     (UCHAR*)sgInitEvent,    0,    0,  	0,  			NULL },
   { "sgSetEvent",   "0ps",    (UCHAR*)sgSetEvent,	    0,    0,  	0,  			NULL },
   { "sgDrawText",   "0siii",  (UCHAR*)sgDrawText,	    0,    0,  	0,  			NULL },
-  { "sgDrawFloat",  "0f",     (UCHAR*)sgDrawFloat,	    0,    0,  	0,  			NULL },
+  { "sgDrawFloat",  "0f",     (UCHAR*)sgDrawFloat,    0,    0,  	0,  			NULL },
   { "sgBeginScene", "00",     (UCHAR*)sgBeginScene,   0,    0,    0,        NULL },
   { "sgEndScene",   "00",     (UCHAR*)sgEndScene,     0,    0,    0,        NULL },
   { "sgClear",      "00",     (UCHAR*)sgClear,	      0,    0,  	0,  			NULL },

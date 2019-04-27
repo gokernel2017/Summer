@@ -1,0 +1,71 @@
+# Project: SUMMER LANGUAGE
+
+CPP  = g++
+CC   = gcc
+OBJ  = obj/core.o obj/lex.o obj/asm.o obj/disasm.o obj/assemble.o obj/summer.o obj/app.o obj/draw.o obj/menu.o obj/o_button.o obj/o_console.o obj/o_edit.o obj/o_editor.o
+BIN  = app
+CFLAGS = -O2 -Wall -DUSE_APPLICATION
+ifeq ($(OS),Windows_NT)
+  # DirectX
+  #LIBS = -ld3dx8d -ld3d8 -lgdi32 -lwinmm
+	LIBS = -lSDL
+#  RES  = obj/resource.o
+  RES =
+else
+  LIBS = -ldl -lSDL
+  RES =
+endif
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before app all-after
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(OBJ) -o "app" $(LIBS) $(RES)
+
+obj/core.o: src/core.c
+	$(CC) $(CFLAGS) -c src/core.c -o obj/core.o
+
+obj/lex.o: src/lex.c
+	$(CC) $(CFLAGS) -c src/lex.c -o obj/lex.o
+
+obj/asm.o: src/asm.c
+	$(CC) $(CFLAGS) -c src/asm.c -o obj/asm.o
+
+obj/disasm.o: src/disasm.c
+	$(CC) $(CFLAGS) -c src/disasm.c -o obj/disasm.o
+
+obj/assemble.o: src/assemble.c
+	$(CC) $(CFLAGS) -c src/assemble.c -o obj/assemble.o
+
+obj/summer.o: src/summer.c
+	$(CC) $(CFLAGS) -c src/summer.c -o obj/summer.o
+
+#################  APPLICATION  ##################
+
+obj/app.o: src/app/app.c
+	$(CC) $(CFLAGS) -c src/app/app.c -o obj/app.o
+
+obj/draw.o: src/app/draw.c
+	$(CC) $(CFLAGS) -c src/app/draw.c -o obj/draw.o
+
+obj/menu.o: src/app/menu.c
+	$(CC) $(CFLAGS) -c src/app/menu.c -o obj/menu.o
+
+obj/o_button.o: src/app/o_button.c
+	$(CC) $(CFLAGS) -c src/app/o_button.c -o obj/o_button.o
+
+obj/o_console.o: src/app/o_console.c
+	$(CC) $(CFLAGS) -c src/app/o_console.c -o obj/o_console.o
+
+obj/o_edit.o: src/app/o_edit.c
+	$(CC) $(CFLAGS) -c src/app/o_edit.c -o obj/o_edit.o
+
+obj/o_editor.o: src/app/o_editor.c
+	$(CC) $(CFLAGS) -c src/app/o_editor.c -o obj/o_editor.o
+
+

@@ -23,8 +23,6 @@
 //
 #include "opengl.sg"
 
-var count = 10, buf;
-
 var click = 0;
 
 var x = 0, y = 0, dx = 0, dy = 0, MouseX = 0, MouseY = 0;
@@ -55,7 +53,6 @@ function DrawScene () {
   glPopMatrix ();
 
     sgSet2D(); // set 2D projection mode using OpenGL.
-    sgDrawText (buf, 100, 100, 64512); // COLOR_ORANGE
 
     sgEndScene();
 //    sgClear ();
@@ -85,10 +82,6 @@ function onMouseMove (e) {
     if (click) {
         angle_x = angle_x - dy;
         angle_y = angle_y - dx;
-
-        sprintf (buf, "Mouse X: %d Y: %d | count: %d", e.offsetX, e.offsetY, count);
-        count = count + 1;
-
         DrawScene();
     }
 
@@ -105,13 +98,12 @@ function onMouseUp (e) {
 
     sgInit();
 
-    buf = malloc(150);
-
-    sgSetEvent (onMouseMove, "onmousemove");
-    sgSetEvent (onMouseDown, "onmousedown");
-    sgSetEvent (onMouseUp,   "onmouseup");
-
-    sprintf (buf, "Mouse X: %d Y: %d | count: %d", 100, 100, count);
+    //-------------------------------------------
+    // onMouseMove, "onmousemove";
+    // onMouseDown, "onmousedown";
+    // onMouseUp,   "onmouseup";
+    //-------------------------------------------
+    sgInitEvent();
 
     DrawScene();
 

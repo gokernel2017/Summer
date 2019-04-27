@@ -1,3 +1,15 @@
+//-------------------------------------------------------------------
+//
+// CallBack Pointer to Function:
+//
+// FILE:
+//   call.sum
+//
+// USAGE:
+//   sum call.sum
+//
+//-------------------------------------------------------------------
+//
 var i = 123, a = 55;
 
 function hello_i() {
@@ -11,11 +23,11 @@ function hello_a() {
 asm {
   #ifdef __x86_64__
     #ifdef WIN32
-    mov hello_i, %rcx
+    mov hello_i, %rcx // Windows Pointer Argument 1
     call CallBack
     #endif
     #ifdef __linux__
-    mov hello_i, %rdi
+    mov hello_i, %rdi // Linux Pointer Argument 1
     call CallBack
     #endif
   #endif

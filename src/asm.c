@@ -553,11 +553,18 @@ void emit_mov_EAX_eax (ASM *a, UCHAR c) {
 }
 
 void emit_call (ASM *a, void *func) {
+#ifdef __x86_64__
+    // 48 c7 c0     30 15 40 00   mov    $0x401530, %rax
+    g3(a,0x48,0xc7,0xc0); asm_get_addr(a, func);
+    // ff d0  |  callq  *%rax
+    g2(a,0xff,0xd0);
+#else
     // b8   7a 13 40 00       mov    $0x40137a, %eax
     // ff d0                	call   *%eax
     //
     g(a,0xb8); asm_get_addr(a, func);
     g2(a,0xff,0xd0);
+#endif
 }
 void emit_call_direct (ASM *a, void *func) {
 //#ifdef __linux__

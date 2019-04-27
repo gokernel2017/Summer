@@ -43,7 +43,7 @@ static int
 void _call_ (void) {
     SDL_Delay (5);
 }
-void (*CallBack) (void) = _call_;
+void (*_CallBack_) (void) = _call_;
 
 void DrawPixel (BMP *bmp, int x, int y, int color) {
     int bpp;
@@ -198,11 +198,11 @@ void sgEvent (void) {
 //void sgRun (void (*call) (void)) {
 void sgRun (void) {
 //    if (call)
-//        CallBack = call;
+//        _CallBack_ = call;
     quit = 0;
     while (!quit) {
         sgEvent();
-        CallBack();
+        _CallBack_();
     }
 }
 

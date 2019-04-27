@@ -51,7 +51,8 @@ typedef struct {
 //-----------------------------------------------
 //
 LIBIMPORT int   sgInit      (void);
-LIBIMPORT void  sgRun       (void (*call) (void));
+//LIBIMPORT void  sgRun       (void (*call) (void));
+LIBIMPORT void  sgRun       (void);
 LIBIMPORT void  sgSetEvent  (void (*call) (TEvent *e), char *name);
 LIBIMPORT void  sgDrawText  (char *text, int x, int y, int color);
 LIBIMPORT void  sgDrawFloat (float f);

@@ -113,7 +113,7 @@ static TFunc stdlib[]={
 #endif
 #ifdef USE_SG
   { "sgInit",       "i0",     (UCHAR*)sgInit,    	    0,    0,  	0,  			NULL },
-  { "sgRun",        "0p",		  (UCHAR*)sgRun,    	    0,    0,  	0,  			NULL },
+  { "sgRun",        "00",		  (UCHAR*)sgRun,    	    0,    0,  	0,  			NULL },
   { "sgSetEvent",   "0ps",	  (UCHAR*)sgSetEvent,	    0,    0,  	0,  			NULL },
   { "sgDrawText",   "0siii",  (UCHAR*)sgDrawText,	    0,    0,  	0,  			NULL },
   { "sgDrawFloat",  "0f",     (UCHAR*)sgDrawFloat,	    0,    0,  	0,  			NULL },

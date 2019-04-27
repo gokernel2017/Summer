@@ -31,5 +31,5 @@ function draw () {
 
   sgInit();
   draw();
-  sgRun(0);
+  sgRun();
 

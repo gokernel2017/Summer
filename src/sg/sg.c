@@ -195,14 +195,15 @@ void sgEvent (void) {
     }// while (SDL_PollEvent(&ev))
 }
 
-void sgRun (void (*call) (void)) {
-  if (call)
-    CallBack = call;
-  quit = 0;
-  while (!quit) {
-    sgEvent();
-    CallBack();
-  }
+//void sgRun (void (*call) (void)) {
+void sgRun (void) {
+//    if (call)
+//        CallBack = call;
+    quit = 0;
+    while (!quit) {
+        sgEvent();
+        CallBack();
+    }
 }
 
 void sgSetEvent (void (*call) (TEvent *e), char *name) {

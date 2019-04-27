@@ -22,24 +22,15 @@
    make clean
    make
 
- 02: To compile SUMMER WITH APPLICATION API type:
-   make -f Makefile_app clean
-   make -f Makefile_app
-
- 03: To compile SUMMER GRAPHIC type:
+ 02: To compile SUMMER GRAPHIC type:
    make -f Makefile_sg clean
    make -f Makefile_sg
 
  To test the SUMMER program, type:
    sum test.sum
 
- To test the SUMMER WITH APPLICATION API, type:
-   app app.app
-   or
-   app
-
  To test the SUMMER GRAPHIC, type:
-   sg graphic.sg
+   sg basic_gl.sg
  
  ----------------------------------------------
 

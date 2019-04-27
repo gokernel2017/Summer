@@ -103,7 +103,7 @@ function onMouseUp (e) {
 }
 
 
-if (sgInit(0,0)) {
+    sgInit();
 
     buf = malloc(150);
 
@@ -115,6 +115,6 @@ if (sgInit(0,0)) {
 
     DrawScene();
 
-    sgRun (0);
-}
+    sgRun ();
+
 

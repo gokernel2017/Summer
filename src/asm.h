@@ -109,7 +109,6 @@ typedef struct ASM ASM; // opaque struct in file: "asm.c"
 //-----------------------------------------------
 //
 LIBIMPORT int   erro;
-LIBIMPORT int   zero;
 LIBIMPORT ASM * asm_function;
 //
 // const EMIT opcode:

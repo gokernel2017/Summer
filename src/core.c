@@ -873,6 +873,7 @@ ASM * core_Init (unsigned int size) {
   if (!init) {
     ASM *a;
     init = 1;
+
     if ((a =            asm_New(size)) == NULL) return NULL;
     if ((asm_function = asm_New(size)) == NULL) return NULL;
     if ((asm_include1 = asm_New(size)) == NULL) return NULL;
@@ -928,6 +929,7 @@ void core_Finalize (void) {
     free(fs);
     fs = temp;
   }
+
   ASM_FREE (asm_function);
   ASM_FREE (asm_include1);
   ASM_FREE (asm_include2);
@@ -1359,8 +1361,9 @@ static void word_function (LEXER *l, ASM *a) {
     func->proto = strdup (proto);
     func->type = FUNC_TYPE_COMPILED;
     func->len = len;
-    #ifdef WIN32
+//    #ifdef WIN32
     func->code = (UCHAR*) malloc (func->len);
+/*
     #endif
     #ifdef __linux__
     if ((func->code = mmap(NULL, func->len, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MMAP_ANON, -1, 0)) == MAP_FAILED) {
@@ -1368,6 +1371,7 @@ static void word_function (LEXER *l, ASM *a) {
         return;
     }
     #endif
+*/
 
     code = asm_GetCode(asm_function);
 

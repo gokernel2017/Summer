@@ -26,6 +26,7 @@ extern "C" {
 //
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -33,6 +34,8 @@ extern "C" {
     #include <windows.h>
 #endif
 #ifdef __linux__
+    #include <fcntl.h>
+    #include <signal.h>
     #include <unistd.h>
     #include <sys/mman.h> // to: mprotect()
     #include <dlfcn.h>    // to: dlopen(), dlsym(), ... in file: cs_library.c
@@ -106,6 +109,7 @@ typedef struct ASM ASM; // opaque struct in file: "asm.c"
 //-----------------------------------------------
 //
 LIBIMPORT int   erro;
+LIBIMPORT int   zero;
 LIBIMPORT ASM * asm_function;
 //
 // const EMIT opcode:

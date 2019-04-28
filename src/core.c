@@ -17,6 +17,8 @@
 // File Size: 49.146
 #include "summer.h"
 
+#define MMAP_ANON 0x20
+
 //-----------------------------------------------
 //-----------------  PROTOTYPES  ----------------
 //-----------------------------------------------
@@ -1357,7 +1359,15 @@ static void word_function (LEXER *l, ASM *a) {
     func->proto = strdup (proto);
     func->type = FUNC_TYPE_COMPILED;
     func->len = len;
+    #ifdef WIN32
     func->code = (UCHAR*) malloc (func->len);
+    #endif
+    #ifdef __linux__
+    if ((func->code = mmap(NULL, func->len, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MMAP_ANON, -1, 0)) == MAP_FAILED) {
+        Erro("Function Failed: mmap\n");
+        return;
+    }
+    #endif
 
     code = asm_GetCode(asm_function);
 
@@ -1394,7 +1404,10 @@ static void word_function (LEXER *l, ASM *a) {
     }
 */
 
-    asm_SetExecutable_PTR (func->code, len);
+    if (asm_SetExecutable_PTR (func->code, len) != 0) {
+        Erro("Function Failed: mprotect\n");
+        return;
+    }
 
     // add on top:
     func->next = Gfunc;

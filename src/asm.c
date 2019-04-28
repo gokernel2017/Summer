@@ -21,6 +21,8 @@
 // size: 31.910
 #include "asm.h"
 
+#define MMAP_ANON 0x20
+
 #define REG_MAX		6
 #define STR_ERRO_SIZE		1024
 
@@ -79,7 +81,12 @@ static void pop_register (void) { if (reg > 0) reg--; }
 //
 ASM *asm_New (unsigned int size) {
     ASM *a = (ASM*)malloc(sizeof(ASM));
+    #ifdef WIN32
     if (a && (a->code=(UCHAR*)malloc(size)) != NULL) {
+    #endif
+    #ifdef __linux__
+    if (a && (a->code = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MMAP_ANON, -1, 0)) != MAP_FAILED) {
+    #endif
         a->p     = a->code;
         a->label = NULL;
         a->jump  = NULL;
@@ -93,7 +100,12 @@ void asm_Free (ASM *a) {
   if (a) {
     asm_Reset(a);
     if (a->code) {
+      #ifdef WIN32
       free (a->code);
+      #endif
+      #ifdef __linux__
+      munmap (a->code, a->size);
+      #endif
       a->code = NULL;
     }
     free(a);
@@ -146,6 +158,7 @@ int asm_SetExecutable_PTR (void *ptr, unsigned int size) {
     end = (unsigned long)ptr + size;
     end = (end + PageSize - 1) & ~(PageSize - 1);
     if (mprotect((void *)start, end - start, PROT_READ | PROT_WRITE | PROT_EXEC) == -1) {
+//    if (mprotect((void *)start, end - start, PROT_EXEC) == -1) {
         Erro ("ERROR: asm_set_executable() ... NOT FOUND - mprotec()\n");
         return 1; // erro
     }
@@ -157,7 +170,7 @@ int asm_SetExecutable_PTR (void *ptr, unsigned int size) {
 int asm_SetExecutable_ASM (ASM *a, unsigned int size) {
   if (size == 0)
     size = (a->p - a->code);
-//printf ("ASM SIZE(%s): %d\n", a->name, size);
+//printf ("ASM SIZE: %d\n", size);
   return asm_SetExecutable_PTR (a->code, size);
 }
 
@@ -551,6 +564,21 @@ void emit_mov_EAX_eax (ASM *a, UCHAR c) {
   g3(a,0x8b,0x40,c); // 8b 40    04             	mov    0x4(%eax),%eax
   #endif
 }
+
+/*
+
+        oad(0xe8 + is_jmp, 0); // call/jmp im
+    } else {
+        // otherwise, indirect call 
+        r = TREG_R11;
+        load(r, vtop);
+        o(0x41); // REX
+        o(0xff); // call/jmp *r
+        o(0xd0 + REG_VALUE(r) + (is_jmp << 4));
+*/
+
+//  4015d6:	eb ae                	jmp    401586 <CallBack>
+//  4015d8:	e8 a9 ff ff ff       	callq  401586 <CallBack>
 
 void emit_call (ASM *a, void *func) {
 #ifdef __x86_64__

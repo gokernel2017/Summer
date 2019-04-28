@@ -1,0 +1,27 @@
+//-------------------------------------------------------------------
+//
+// Assemble Call Function:
+//
+// FILE:
+//   asm_info.sum
+//
+// USAGE:
+//   sum asm_info.sum
+//
+//-------------------------------------------------------------------
+//
+var i = 2;
+
+asm {
+  #ifdef __x86_64__
+    #ifdef WIN32
+    mov i, %ecx // Windows Argument 1
+    call info
+    #endif
+    #ifdef __linux__
+    mov i, %edi // Linux Argument 1
+    call info
+    #endif
+  #endif
+}
+

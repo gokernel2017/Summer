@@ -69,6 +69,9 @@ struct ASSEMBLE_4 {
   //
   { "mov", T_VAR,  ',',  T_REG },  // mov VAR , %REG
   { "mov", T_FUN,  ',',  T_REG },  // mov FUN , %REG
+
+  { "mov", T_STR,  ',',  T_REG },  // mov STR , %REG
+
   { "mov", T_REG,  ',',  T_VAR },  // mov %REG , VAR
   { "cmp", T_REG,  ',',  T_VAR },  // cmp %REG , VAR
   { NULL, 0, 0, 0 }
@@ -108,6 +111,7 @@ struct ASSEMBLE_5 {
 //-----------------  VARIABLES  -----------------
 //-----------------------------------------------
 //
+
 
 static char *reg[] = {
     "%eax", "%ecx", "%edx", "%ebx", "%esp", "%ebp", "%esi", "%edi", // 32 bits
@@ -484,8 +488,18 @@ static int parse_assemble_4 (ASM *a) {
             // if (arg.tok[1] == T_VAR && arg.tok[2]==',' && arg.tok[3]==T_REG)
             case 0: emit_mov_var_reg (a, &Gvar[ arg.value[1] ].value.l, arg.value[3]); return 1;
             case 1: { printf ("funcao(%s) para registro(%s)\n", fun->name, reg[arg.value[3]] ); emit_mov_var_reg (a, &fun->code, arg.value[3]); return 1; }
-            case 2: emit_mov_reg_var (a, arg.value[1], &Gvar[ arg.value[3] ].value.l); return 1;
-            case 3: emit_cmp_eax_var (a, &Gvar[ arg.value[3] ].value.l); return 1;
+
+            case 2: // mov T_STR , T_REG
+                {
+                TFstring *s = fs_new(arg.text[1]);
+                if (s) {
+                    emit_mov_var_reg(a, &(s->s), arg.value[3]);
+                }
+                }
+                return 1;
+
+            case 3: emit_mov_reg_var (a, arg.value[1], &Gvar[ arg.value[3] ].value.l); return 1;
+            case 4: emit_cmp_eax_var (a, &Gvar[ arg.value[3] ].value.l); return 1;
             }
         }
         o++; i++;
@@ -554,7 +568,9 @@ static void execute_function (LEXER *l, ASM *a) {
                 if (arg.tok[1] == T_STR) {
                     TFstring *s = fs_new (arg.text[1]);
                     if (s) {
-                        emit_mov_long_reg (a,(long)(s->s), ECX);
+//                        emit_mov_long_reg (a,(long)(s->s), ECX);
+                        emit_mov_var_reg (a, &(s->s), RCX);
+printf ("ASM pasaando string\n");
                     }
                 }
             }

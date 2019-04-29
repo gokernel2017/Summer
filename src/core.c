@@ -63,6 +63,8 @@ void lib_func_float_int (float f, int i);
 int arg4(int a, int b, int c, int d);
 int arg5(int a, int b, int c, int d, int e);
 
+void linux_call (void *func, VALUE a1, VALUE a2, VALUE a3, VALUE a4, VALUE a5);
+
 char *lib_float2s (float f);
 
 void CallBack (void (*call) (void));
@@ -104,6 +106,7 @@ static TFunc stdlib[]={
   // name         proto     code                      type  len   sub_esp   next
   //-----------------------------------------------------------------------------
   { "info",       "0i",     (UCHAR*)lib_info,         0,    0,    0,        NULL },
+  { "linux_call", "0piiiii",(UCHAR*)linux_call,       0,    0,    0,        NULL },
   { "CallBack",   "0p",     (UCHAR*)CallBack,         0,    0,    0,        NULL },
   { "disasm",     "0s",     (UCHAR*)lib_disasm,       0,    0,    0,        NULL },
   { "float2s",    "pi",     (UCHAR*)lib_float2s,      0,    0,    0,        NULL },
@@ -644,6 +647,63 @@ static void execute_call (LEXER *l, ASM *a, TFunc *func) {
 		#if !defined(__x86_64__)
     int pos = 0, size = 4, is_string = 0;
 		#endif
+
+    //-------------------------------------------
+    //
+    // LINUX CALL 64 BITS FUNCTION JIT ( FUNC_TYPE_COMPILED )
+    //
+    //-------------------------------------------
+    #ifdef __x86_64__
+    #ifdef __linux__
+// INFO: Linux X64 BITS functions arguments:
+// arg 0 = %edi
+// arg 1 = %esi
+// arg 2 = %edx
+// arg 3 = %ecx
+// arg 4 = %r8
+// arg 5 = %r9
+    if (func->type==FUNC_TYPE_COMPILED) {
+printf ("linux_call | Created Function JIT(%s)\n", func->name);
+        int i;
+        emit_mov_var_reg (a, &func->code, RDI); // Argument Pointer 0
+        while (lex(l)) {
+            if (l->tok==TOK_ID || l->tok==TOK_NUMBER || l->tok==TOK_STRING) {
+                if ((i = VarFind(l->token)) != -1) {
+                    if (Gvar[i].type==TYPE_FLOAT) {
+                        if (count==0) emit_func_arg_var_float0 (a,&Gvar[i].value.f);
+                        if (count==1) emit_func_arg_var_float1 (a,&Gvar[i].value.f);
+                        if (count==2) emit_func_arg_var_float2 (a,&Gvar[i].value.f);
+                        if (count==3) emit_func_arg_var_float3 (a,&Gvar[i].value.f);
+                        if (count==4) emit_func_arg_var_float4 (a,&Gvar[i].value.f);
+                    } else {
+                        if (count==0) {
+                            emit_mov_var_reg (a, &Gvar[i].value.l, ESI); // argument 1
+                        }
+                        if (count==1) {
+                            emit_mov_var_reg (a, &Gvar[i].value.l, EDX); // argument 2
+                        }
+                        if (count==2) {
+                            emit_mov_var_reg (a, &Gvar[i].value.l, ECX); // argument 3
+                        }
+                    }
+                    count++;
+                }
+                if (l->tok==TOK_NUMBER && strchr(l->token, '.')) {
+                    if (count==0) emit_func_arg_number_float0 (a,atof(l->token));
+                    if (count==1) emit_func_arg_number_float1 (a,atof(l->token));
+                    if (count==2) emit_func_arg_number_float2 (a,atof(l->token));
+                    if (count==3) emit_func_arg_number_float3 (a,atof(l->token));
+                    if (count==4) emit_func_arg_number_float4 (a,atof(l->token));
+                    count++;
+                }
+            }
+            if (l->tok == ')' || l->tok == ';') break;
+        }
+        emit_call (a, linux_call);
+        return;
+    }
+    #endif
+    #endif    
 
     // no argument
     if (func->proto && func->proto[1] == '0') {
@@ -1361,17 +1421,16 @@ static void word_function (LEXER *l, ASM *a) {
     func->proto = strdup (proto);
     func->type = FUNC_TYPE_COMPILED;
     func->len = len;
-//    #ifdef WIN32
+    #ifdef WIN32
     func->code = (UCHAR*) malloc (func->len);
-/*
     #endif
     #ifdef __linux__
-    if ((func->code = mmap(NULL, func->len, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MMAP_ANON, -1, 0)) == MAP_FAILED) {
+//    if ((func->code = mmap(NULL, func->len, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MMAP_ANON, -1, 0)) == MAP_FAILED) {
+    if ((func->code = mmap(NULL, func->len, PROT_READ | PROT_WRITE, MAP_PRIVATE | MMAP_ANON, -1, 0)) == MAP_FAILED) {
         Erro("Function Failed: mmap\n");
         return;
     }
     #endif
-*/
 
     code = asm_GetCode(asm_function);
 
@@ -1730,8 +1789,8 @@ static void word_module (LEXER *l, ASM *a) {
 
 #ifdef __linux__
     #ifdef __x86_64__
-    Erro ("%s: %d | MODULE Not For Linux 64 bits ... PLEASE WAIT IMPLEMENTATION !!!\n", l->name, l->line);
-    return;
+//    Erro ("%s: %d | MODULE Not For Linux 64 bits ... PLEASE WAIT IMPLEMENTATION !!!\n", l->name, l->line);
+//    return;
     #endif
 #endif
 
@@ -1798,8 +1857,8 @@ static void word_import (LEXER *l, ASM *a) {
 
 #ifdef __linux__
     #ifdef __x86_64__
-    Erro ("%s: %d | IMPORT Not For Linux 64 bits ... PLEASE WAIT IMPLEMENTATION !!!\n", l->name, l->line);
-    return;
+//    Erro ("%s: %d | IMPORT Not For Linux 64 bits ... PLEASE WAIT IMPLEMENTATION !!!\n", l->name, l->line);
+//    return;
     #endif
 #endif
 
@@ -1900,6 +1959,9 @@ static void word_import (LEXER *l, ASM *a) {
 }
 
 
+void linux_call (void *func, VALUE a1, VALUE a2, VALUE a3, VALUE a4, VALUE a5) {
+    ( (void(*)(VALUE, VALUE, VALUE, VALUE, VALUE)) func ) (a1, a2, a3, a4, a5);
+}
 
 void lib_info (int arg) {
     switch (arg) {

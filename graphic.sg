@@ -21,7 +21,7 @@
 //
 //-------------------------------------------------------------------
 //
-#include "opengl.sg"
+//#include "opengl.sg"
 
 var click = 0;
 
@@ -47,7 +47,7 @@ function DrawScene () {
     glRotatef (angle_x, 1.0, 0.0, 0.0);
     glRotatef (angle_y, 0.0, 1.0, 0.0);
 
-    draw_cube(GL_LINE_LOOP); // 2
+    draw_cube(2); // GL_LINE_LOOP
 //    draw_piso();
 
   glPopMatrix ();

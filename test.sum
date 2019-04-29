@@ -11,9 +11,9 @@ var a = 110, b = 30, i = 1500, g = 55, f1 = 170.0, f2 = 700.50, buf;
 //
 function test (int arg) {
     if (a > 70) {
-        console.log ("arg: %d", arg);
+        printi (arg);
     }
 }
 
-  test (12345);
+  test (i);
 

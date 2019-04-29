@@ -10,32 +10,26 @@
 //
 //-------------------------------------------------------------------
 //
-var i = 123, a = 55;
+var value = 150;
 
-function hello_i() {
-  i=i+1; printi(i);
+function hello (int i) {
+  if (i > 100) {
+      printi(i);
+  }
 }
 
-function hello_a() {
-  a=a+1; printi(a);
-}
-/*
 asm {
   #ifdef __x86_64__
     #ifdef WIN32
-    mov hello_i, %rcx // Windows Pointer Argument 1
-    call CallBack
+    mov value, %edx // Windows Argument 2
+    mov hello, %rcx // Windows Pointer Argument 1
+    call linux_call
     #endif
     #ifdef __linux__
-    mov hello_i, %rdi // Linux Pointer Argument 1
-    call CallBack
+    mov value, %esi // Linux Argument 2
+    mov hello, %rdi // Linux Pointer Argument 1
+    call linux_call
     #endif
   #endif
-}
-*/
-asm {
-  mov i, %edx
-  mov "PRIMEIRO Value i: %d\n", %rcx
-  call printf
 }
 

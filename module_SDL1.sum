@@ -30,11 +30,17 @@ import ("sdl",      "SDL_SetVideoMode",   "piiii",  0);
 import (0,          "SDL_Delay",          "0i",     0);
 import (0,          "SDL_Quit",           "00",     0);
 
+var a = 1500;
+
+function hello (int i) {
+    console.log ("Plase Wait 3 Seconds ... Value i: %d\n", i);
+}
+
   sdl.SDL_Init (32);
 
   sdl.SDL_SetVideoMode (800, 600, 16, 0); // color 16
 
-  console.log ("Plase Wait 3 Seconds ...");
+  hello(a);
 
   SDL_Delay (3000);
 

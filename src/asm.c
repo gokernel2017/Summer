@@ -81,14 +81,12 @@ static void pop_register (void) { if (reg > 0) reg--; }
 //
 ASM *asm_New (unsigned int size) {
     ASM *a = (ASM*)malloc(sizeof(ASM));
-//    #ifdef WIN32
+    #ifdef WIN32
     if (a && (a->code=(UCHAR*)malloc(size)) != NULL) {
-/*
     #endif
     #ifdef __linux__
     if (a && (a->code = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MMAP_ANON, -1, 0)) != MAP_FAILED) {
     #endif
-*/
         a->p     = a->code;
         a->label = NULL;
         a->jump  = NULL;
@@ -102,7 +100,12 @@ void asm_Free (ASM *a) {
   if (a) {
     asm_Reset(a);
     if (a->code) {
+      #ifdef WIN32
       free (a->code);
+      #endif
+      #ifdef __linux__
+      munmap (a->code, a->size);
+      #endif
       a->code = NULL;
     }
     free(a);
@@ -156,7 +159,6 @@ int asm_SetExecutable_PTR (void *ptr, unsigned int size) {
     end = (end + PageSize - 1) & ~(PageSize - 1);
     if (mprotect((void *)start, end - start, PROT_READ | PROT_WRITE | PROT_EXEC) == -1) {
 //    if (mprotect((void *)start, end - start, PROT_READ | PROT_EXEC) == -1) {
-//    if (mprotect((void *)start, end - start, PROT_EXEC) == -1) {
         Erro ("ERROR: asm_set_executable() ... NOT FOUND - mprotec()\n");
         return 1; // erro
     }

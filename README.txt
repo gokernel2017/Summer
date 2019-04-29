@@ -16,6 +16,9 @@
 
  SUMMER LANGUAGE:
 
+ Releases:
+ https://github.com/gokernel2017/Summer/releases
+
  TESTED IN:
    1: Windows 7 64 bits !!!
    2: Linux 64 bits ( Slax 7 ) !!!

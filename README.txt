@@ -61,8 +61,8 @@
    for,
    break,
    function,
-   module, ... NOT IMPLEMENTED FOR LINUX 64 BITS
-   import, ... NOT IMPLEMENTED FOR LINUX 64 BITS
+   module,
+   import,
    #include,
    #define,
    #ifdef,
